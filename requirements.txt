@@ -1,0 +1,11 @@
+# TrackIQ — Python dependencies
+#
+# Install:  pip install -r requirements.txt
+# Dev/test: pip install -r requirements.txt pytest
+
+# Audio tag reading and writing (MP3 ID3v2.3, FLAC, M4A, OGG, OPUS, WAV, AIFF)
+mutagen>=1.46.0
+
+# HTTP scraping for Label Intelligence (label-intel subcommand)
+requests>=2.31.0
+beautifulsoup4>=4.12.3
