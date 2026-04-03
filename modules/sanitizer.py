@@ -20,6 +20,7 @@ from typing import Dict, List, Optional, Tuple
 
 import config
 import db
+from modules.junk_patterns import load_junk_patterns
 from modules.textlog import log_action
 
 log = logging.getLogger(__name__)
@@ -77,100 +78,33 @@ _RE_BRACKETED_JUNK = re.compile(
 )
 
 # Plain domain names — e.g. fordjonly.com, beatsource.net
-# Reason: watermarks embedded without brackets, common in comment/title fields
+# TLD list is loaded from config/junk_patterns.json at module init time.
 # Conservative: requires word boundary on both sides, known TLDs only
 # Does NOT match things like "something.org" in the middle of a word
-_RE_PLAIN_DOMAIN = re.compile(
-    r'(?<![/\w])'                           # not preceded by slash or word char
-    r'[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?'  # domain label (1–63 chars)
-    r'\.'
-    r'(?:com|net|org|info|io|dj|fm|me|biz|us|tv|cc|to|uk|de|fr|es|it|nl|pl|ru)'
-    r'(?:/[^\s,;|]*)?'                      # optional path
-    r'(?![.\w])',                            # not followed by another dot or word char
-    re.IGNORECASE,
-)
+def _build_plain_domain_re() -> re.Pattern:
+    tlds = load_junk_patterns().domain_tlds
+    tld_group = "|".join(re.escape(t) for t in tlds) if tlds else "com|net|org"
+    return re.compile(
+        r'(?<![/\w])'
+        r'[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?'
+        r'\.'
+        r'(?:' + tld_group + r')'
+        r'(?:/[^\s,;|]*)?'
+        r'(?![.\w])',
+        re.IGNORECASE,
+    )
+
+_RE_PLAIN_DOMAIN = _build_plain_domain_re()
 
 # Trademark, copyright, and currency symbols — embedded by DJ pools or YouTube
 # auto-tagging; meaningless and sometimes folder-name-unsafe.
 # ™ ® © ℗ $ € £ ¥ ¢
 _RE_SYMBOLS = re.compile(r'[™®©℗$€£¥¢]', re.UNICODE)
 
-# Promo / source phrase patterns — (compiled_regex, replacement_string)
-# Each entry has a comment explaining the source of the junk.
-_PROMO_PHRASES: List[Tuple[re.Pattern, str]] = [
-
-    # Camelot / Open Key prefix accidentally written into non-key fields.
-    # e.g. "8A - My Song" (title imported from a Camelot-prefixed filename),
-    # or "11B | Track Name" in comment/grouping fields.
-    # Only matches at the very start of the string, followed by a separator,
-    # so standalone titles like "8A Records" are unaffected.
-    (re.compile(r'^(1[0-2]|[1-9])[AB]\s*[-|–_]\s*', re.IGNORECASE), ''),
-
-    # "for dj only" / "for djs only" / "for dj use only"
-    # Reason: standard watermark text from promo-only distribution pools
-    (re.compile(r'\bfor\s+dj(?:\'?s?)?\s+(?:use\s+)?only\b', re.IGNORECASE), ''),
-
-    # "promo only" — promo pool distribution marker
-    (re.compile(r'\bpromo\s+only\b', re.IGNORECASE), ''),
-
-    # "djcity" and "dj city" — DJCity.com download-source tag
-    (re.compile(r'\bdjcity\b', re.IGNORECASE), ''),
-    (re.compile(r'\bdj\s+city\b', re.IGNORECASE), ''),
-
-    # "zipdj" — ZipDJ.com download-source tag
-    (re.compile(r'\bzipdj\b', re.IGNORECASE), ''),
-
-    # "traxcrate" — TraxCrate.com download-source tag
-    (re.compile(r'\btraxcrate\b', re.IGNORECASE), ''),
-
-    # "musicafresca" — MusicaFresca.com source watermark
-    (re.compile(r'\bmusicafresca\b', re.IGNORECASE), ''),
-
-    # "beatsource" — Beatsource.com download-source tag
-    (re.compile(r'\bbeatsource\b', re.IGNORECASE), ''),
-
-    # "traxsource" — Traxsource.com embed sometimes added to comments
-    (re.compile(r'\btraxsource\b', re.IGNORECASE), ''),
-
-    # "downloaded from <something>" — generic source tag added by tools.
-    # The domain/URL may already be stripped by earlier steps so make the
-    # trailing token optional to catch "downloaded from" left dangling too.
-    (re.compile(r'\bdownloaded?\s+from(?:\s+\S+)?', re.IGNORECASE), ''),
-
-    # "official audio" / "official video" / "official music video"
-    # Reason: YouTube auto-generates these in auto-tagged files; useless for DJs
-    (re.compile(
-        r'\bofficial\s+(?:audio|video|music\s+video|lyric\s+video|mv|clip)\b',
-        re.IGNORECASE,
-    ), ''),
-
-    # "free download" — promotional label, adds no information
-    (re.compile(r'\bfree\s+download\b', re.IGNORECASE), ''),
-
-    # "buy on beatport" / "buy now" — sales call-to-action, not metadata
-    # Must run BEFORE the standalone "beatport" entry below so the full phrase
-    # is consumed first and "buy on" is not left dangling.
-    (re.compile(
-        r'\bbuy\s+(?:on\s+)?(?:beatport|traxsource|bandcamp|now)\b',
-        re.IGNORECASE,
-    ), ''),
-
-    # "beatport" standalone — source watermark embedded in tags
-    # Placed AFTER the "buy on beatport" pattern so that phrase is consumed
-    # first; this catches any remaining bare "beatport" mentions.
-    (re.compile(r'\bbeatport\b', re.IGNORECASE), ''),
-
-    # "out now on <label>" — release announcement embedded in tags
-    (re.compile(r'\bout\s+now\s+on\s+\S+', re.IGNORECASE), ''),
-
-    # "exclusive" alone (NOT "exclusive mix/remix/edit/version/dub")
-    # Reason: some promo pools mark tracks with "EXCLUSIVE" as a watermark
-    # Preserve: "Exclusive Mix", "Exclusive Remix" etc. — legitimate version names
-    (re.compile(
-        r'\bexclusive\b(?!\s+(?:mix|remix|edit|version|dub|cut))',
-        re.IGNORECASE,
-    ), ''),
-]
+# Promo / source phrase patterns — loaded from config/junk_patterns.json.
+# Order matters (e.g. "buy on beatport" must precede standalone "beatport").
+# The JSON array preserves insertion order, matching the original hardcoded list.
+_PROMO_PHRASES: List[Tuple[re.Pattern, str]] = load_junk_patterns().phrase_patterns
 
 # ---------------------------------------------------------------------------
 # Artifact cleanup patterns (run after content removal)

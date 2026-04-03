@@ -26,21 +26,34 @@ from .normalizer import AliasRegistry, build_label_names, normalize_label
 log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Junk-label detection
+# Junk-label detection — loaded from config/junk_patterns.json
 # ---------------------------------------------------------------------------
-_JUNK_EXACT: frozenset[str] = frozenset({
-    "", "unknown", "n/a", "na", "none", "null",
-    "test", "promo", "various", "various artists", "va",
-    "-", "--", "?", "??", "tbc", "tba", "untitled",
-})
-
-# Genre words that sometimes leak into label fields
-_GENRE_WORDS: frozenset[str] = frozenset({
-    "house", "techno", "deep house", "tech house", "afro house",
-    "drum and bass", "dnb", "jungle", "garage", "uk garage",
-    "trance", "progressive", "melodic house", "organic house",
-    "amapiano", "afrobeats", "electronic", "dance", "edm",
-})
+try:
+    from modules.junk_patterns import load_junk_patterns as _load_jp
+    _jp = _load_jp()
+    _JUNK_EXACT:             frozenset[str]   = _jp.exact_bad_labels
+    _GENRE_WORDS:            frozenset[str]   = _jp.genre_words
+    _SOURCE_JUNK_SUBSTRINGS: tuple[str, ...]  = _jp.source_junk_substrings
+    _domain_tlds_str = "|".join(re.escape(t) for t in _jp.domain_tlds) if _jp.domain_tlds else "com|net|org|fm|dj|co|io"
+except Exception:
+    # Fallback: hardcoded minimums if modules/ is not importable
+    _JUNK_EXACT: frozenset[str] = frozenset({
+        "", "unknown", "n/a", "na", "none", "null",
+        "test", "promo", "various", "various artists", "va",
+        "-", "--", "?", "??", "tbc", "tba", "untitled",
+    })
+    _GENRE_WORDS: frozenset[str] = frozenset({
+        "house", "techno", "deep house", "tech house", "afro house",
+        "drum and bass", "dnb", "jungle", "garage", "uk garage",
+        "trance", "progressive", "melodic house", "organic house",
+        "amapiano", "afrobeats", "electronic", "dance", "edm",
+    })
+    _SOURCE_JUNK_SUBSTRINGS: tuple[str, ...] = (
+        "traxcrate", "fordjonly", "djcity", "zipdj", "musicafresca",
+        "downloaded from", "promo only", "official audio", "official video",
+        "official music video", "free download",
+    )
+    _domain_tlds_str = "com|net|org|fm|dj|co|io"
 
 _JUNK_PATTERNS: list[re.Pattern] = [
     re.compile(r"^\s*$"),                                  # whitespace only
@@ -56,19 +69,10 @@ _CAMELOT_KEY = re.compile(r"^(1[0-2]|[1-9])[AB]\s*[-|_]*\s*$", re.IGNORECASE)
 # URL and domain junk
 _URL_PREFIX    = re.compile(r"https?://|www\.", re.IGNORECASE)
 _DOMAIN_ENDING = re.compile(
-    r"\.(com|net|org|fm|dj|co|io)(\s|/|$)", re.IGNORECASE
+    r"\.(" + _domain_tlds_str + r")(\s|/|$)", re.IGNORECASE
 )
 
-# Known DJ-pool / source-watermark substrings (lowercase)
-_SOURCE_JUNK_SUBSTRINGS: tuple[str, ...] = (
-    "traxcrate",
-    "fordjonly",
-    "djcity",
-    "zipdj",
-    "musicafresca",
-    "downloaded from",
-    "promo only",
-)
+# Known DJ-pool / source-watermark substrings — loaded from JSON above.
 
 # ---------------------------------------------------------------------------
 # Candidate normalization (applied before junk checks)
@@ -231,6 +235,7 @@ class TrackLabelResult:
     action_taken: str                 # kept | cleaned | filled | unresolved | written | error
     notes: list = field(default_factory=list)
     writable: bool = False            # True ↔ confidence >= write_threshold AND label found
+    junk_count: int = 0               # number of candidate values rejected as junk
 
 
 # ---------------------------------------------------------------------------
@@ -249,6 +254,7 @@ def detect_label(
     """
     tags  = read_tags(path)
     notes: list[str] = []
+    _jc   = [0]  # [junk_count] — mutable cell so the nested _result() closure can read it
 
     def _result(raw, cleaned, source, confidence, action, extra=None):
         ln = build_label_names(cleaned) if cleaned else None
@@ -265,7 +271,17 @@ def detect_label(
             action_taken=action,
             notes=notes + (extra or []),
             writable=bool(cleaned) and confidence >= write_threshold,
+            junk_count=_jc[0],
         )
+
+    def _reject_junk(field: str, value: str, reason: str) -> None:
+        """Log a junk rejection at INFO level and increment the per-track counter."""
+        _jc[0] += 1
+        log.info(
+            "LABEL-CLEAN junk rejected — field=%-16s  value=%-30r  reason=%s  file=%s",
+            field, value, reason, path.name,
+        )
+        notes.append(f"{field} junk ({reason}): {value!r}")
 
     # ------------------------------------------------------------------
     # 1. Primary: organization / TPUB
@@ -275,8 +291,7 @@ def detect_label(
         _reason = _junk_reason(org)
         if not _reason:
             return _result(org, org, _SOURCE_EMBEDDED, _CONF_EMBEDDED, "kept")
-        log.debug("Junk label rejected — field=organization  value=%r  reason=%s", org, _reason)
-        notes.append(f"organization tag junk ({_reason}): {org!r}")
+        _reject_junk("organization", org, _reason)
 
     # ------------------------------------------------------------------
     # 2. Fallback fields
@@ -300,8 +315,7 @@ def detect_label(
             if not _reason:
                 notes.append(f"filled from {tag_label} tag")
                 return _result(val, val, _SOURCE_FALLBACK, conf, "filled")
-            log.debug("Junk label rejected — field=%s  value=%r  reason=%s", fld, val, _reason)
-            notes.append(f"{tag_label} tag junk ({_reason}): {val!r}")
+            _reject_junk(fld, val, _reason)
 
     # albumartist — only if it contains a label-indicator word
     aa = tags["albumartist"]
@@ -311,7 +325,7 @@ def detect_label(
             notes.append("filled from albumartist tag (label indicator word present)")
             return _result(aa, aa, _SOURCE_FALLBACK, _CONF_FALLBACK_ALBUMARTIST, "filled")
         if _reason:
-            log.debug("Junk label rejected — field=albumartist  value=%r  reason=%s", aa, _reason)
+            _reject_junk("albumartist", aa, _reason)
 
     # album — only if it contains a label-indicator word
     alb = tags["album"]
@@ -321,7 +335,7 @@ def detect_label(
             notes.append("filled from album tag (label indicator word present)")
             return _result(alb, alb, _SOURCE_FALLBACK, _CONF_FALLBACK_ALBUM, "filled")
         if _reason:
-            log.debug("Junk label rejected — field=album  value=%r  reason=%s", alb, _reason)
+            _reject_junk("album", alb, _reason)
 
     # ------------------------------------------------------------------
     # 3. Filename parsing
@@ -338,11 +352,7 @@ def detect_label(
                 fn_result.confidence,
                 "filled",
             )
-        log.debug(
-            "Junk label rejected — field=filename  value=%r  reason=%s",
-            fn_result.label_candidate, _reason,
-        )
-        notes.append(f"filename candidate junk ({_reason}): {fn_result.label_candidate!r}")
+        _reject_junk("filename", fn_result.label_candidate, _reason)
 
     # ------------------------------------------------------------------
     # 4. Unresolved

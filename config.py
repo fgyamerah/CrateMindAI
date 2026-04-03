@@ -30,15 +30,24 @@ UNKNOWN_ROUTE = LIBRARY / "unknown"   # for tracks with too little metadata
 
 DUPLICATES   = MUSIC_ROOT / "duplicates"
 REJECTED     = MUSIC_ROOT / "rejected"
+# Quarantine folder for corrupt/unreadable audio files.
+# Overridable via config_local.py or the --corrupt-dir CLI flag.
+# Default keeps corrupt files within the main music tree; override to use
+# a path closer to the actual SSD library (e.g. /mnt/music_ssd/KKDJ/_corrupt).
+CORRUPT_DIR  = LIBRARY / "_corrupt"
 PLAYLISTS        = MUSIC_ROOT / "playlists"
 M3U_DIR          = PLAYLISTS / "m3u"
 GENRE_M3U_DIR    = M3U_DIR / "Genre"    # genre-based M3U playlists
 ENERGY_M3U_DIR   = M3U_DIR / "Energy"   # energy-tier M3U playlists (Peak / Mid / Chill)
 COMBINED_M3U_DIR = M3U_DIR / "Combined" # genre+energy combined M3U playlists
+KEY_M3U_DIR      = M3U_DIR / "Key"      # Camelot key playlists (1A … 12B)
+ROUTE_M3U_DIR    = M3U_DIR / "Route"    # route-type playlists (Acapella, Tool, Vocal …)
 XML_DIR          = PLAYLISTS / "xml"
 LOGS_DIR         = MUSIC_ROOT / "logs"
 DB_PATH          = LOGS_DIR / "processed.db"
 REPORTS_DIR      = LOGS_DIR / "reports"
+ARTIST_MERGE_REPORT_DIR       = LOGS_DIR / "artist_merge"
+ARTIST_FOLDER_CLEAN_REPORT_DIR = LOGS_DIR / "artist_folder_clean"
 BEETS_LOG        = LOGS_DIR / "beets_import.log"
 TEXT_LOG_PATH    = LOGS_DIR / "processing_log.txt"   # human-readable append-only run log
 README_PATH      = LOGS_DIR / "README.md"             # auto-generated, overwritten each run
@@ -52,6 +61,30 @@ WINDOWS_DRIVE_LETTER = os.environ.get("DJ_WIN_DRIVE", "E")
 WINDOWS_MUSIC_ROOT   = f"{WINDOWS_DRIVE_LETTER}:\\music"
 # Rekordbox XML location attribute format
 WINDOWS_BASE_URL     = f"file://localhost/{WINDOWS_DRIVE_LETTER}:/music"
+
+# ---------------------------------------------------------------------------
+# Rekordbox export profile  (rekordbox-export subcommand)
+#
+# Maps your Linux SSD mount point to the Windows drive letter so that all
+# generated paths are immediately usable inside Rekordbox on Windows.
+#
+# Example layout:
+#   SSD mounted on Linux : /mnt/music_ssd/
+#   Same SSD on Windows  : M:\
+#   Your KKDJ folder     : /mnt/music_ssd/KKDJ/  ↔  M:\KKDJ\
+#
+# Override either value in config_local.py or via env vars:
+#   export RB_LINUX_ROOT=/mnt/music_ssd
+#   export RB_WIN_DRIVE=M
+# ---------------------------------------------------------------------------
+# Linux path that corresponds to the root of the Windows drive (M:\)
+RB_LINUX_ROOT    = Path(os.environ.get("RB_LINUX_ROOT",  "/mnt/music_ssd"))
+# Windows drive letter assigned to the SSD in Windows Disk Management
+RB_WINDOWS_DRIVE = os.environ.get("RB_WIN_DRIVE", "M")
+
+# Output directories — written to the SSD so they're visible on Windows too
+REKORDBOX_XML_EXPORT_DIR = MUSIC_ROOT / "_REKORDBOX_XML_EXPORT"
+REKORDBOX_M3U_EXPORT_DIR = MUSIC_ROOT / "_PLAYLISTS_M3U_EXPORT"
 
 # ---------------------------------------------------------------------------
 # Quality thresholds
@@ -90,6 +123,23 @@ LABEL_INTEL_DELAY   = 2.0
 LABEL_CLEAN_OUTPUT    = MUSIC_ROOT / "data" / "labels" / "clean"
 LABEL_CLEAN_THRESHOLD = 0.85    # minimum confidence for automatic tag write-back
 
+# metadata-clean subcommand
+METADATA_CLEAN_REPORT_DIR = LOGS_DIR / "metadata_clean"
+
+# cue-suggest subcommand
+CUE_SUGGEST_OUTPUT_DIR    = LOGS_DIR / "cue_suggest"
+CUE_SUGGEST_WRITE_SIDECARS = False    # write .cues.json sidecar next to each audio file
+CUE_SUGGEST_MIN_CONFIDENCE = 0.4      # ignore cues below this confidence when writing to DB
+
+# set-builder subcommand
+SET_BUILDER_OUTPUT_DIR     = LOGS_DIR / "set_builder"
+
+# harmonic-suggest subcommand
+HARMONIC_SUGGEST_OUTPUT_DIR = LOGS_DIR / "harmonic_suggest"
+
+# dedupe subcommand — where duplicate files are moved (never deleted outright)
+DEDUPE_QUARANTINE_DIR = SORTED / "_duplicates"
+
 # ---------------------------------------------------------------------------
 # Beets
 # ---------------------------------------------------------------------------
@@ -104,8 +154,15 @@ SANITIZE_TAGS = True
 # ---------------------------------------------------------------------------
 # Playlist generation toggles
 # ---------------------------------------------------------------------------
+GENERATE_GENRE_PLAYLISTS    = True   # per-genre playlists (Afro House.m3u8, Amapiano.m3u8 …)
 GENERATE_ENERGY_PLAYLISTS   = True   # Peak / Mid / Chill energy-tier playlists
 GENERATE_COMBINED_PLAYLISTS = True   # Genre+Energy combined playlists (e.g. Peak Afro House)
+GENERATE_KEY_PLAYLISTS      = True   # Camelot key playlists (1A.m3u8 … 12B.m3u8)
+GENERATE_ROUTE_PLAYLISTS    = True   # Route playlists (Acapella.m3u8, Tool.m3u8, Vocal.m3u8)
+
+# Minimum number of tracks a playlist must contain to be written.
+# Raises this above 1 to suppress single-track noise in combined playlists.
+PLAYLIST_MIN_TRACKS = 2
 
 # ---------------------------------------------------------------------------
 # Pipeline metadata

@@ -6,6 +6,25 @@
 # Audio tag reading and writing (MP3 ID3v2.3, FLAC, M4A, OGG, OPUS, WAV, AIFF)
 mutagen>=1.46.0
 
+# Numerical processing — required for cue-suggest full-mode analysis
+# (RMS energy, low-frequency energy, spectral flux via FFT).
+# Ships by default on Ubuntu Studio 24; install via: pip install numpy
+numpy>=1.24.0
+
 # HTTP scraping for Label Intelligence (label-intel subcommand)
 requests>=2.31.0
 beautifulsoup4>=4.12.3
+
+# ---------------------------------------------------------------------------
+# Optional dependencies
+# ---------------------------------------------------------------------------
+
+# librosa — primary BPM fallback when aubio is unavailable or fails.
+# analyzer.py tries aubio first, then falls back to librosa automatically.
+# Install via: pip install librosa
+librosa>=0.10.0
+
+# anthropic — required for LLM features (genre suggestions, metadata assist, etc.)
+# utils/llm_client.py wraps all Claude API calls and auto-logs to ./last-prompts/
+# Install via: pip install anthropic
+# anthropic>=0.25.0

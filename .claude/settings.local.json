@@ -3,7 +3,12 @@
     "allow": [
       "Bash(chmod:*)",
       "Bash(python3:*)",
-      "Bash(find /music/inbox -name *.mp3 -o -name *.flac -o -name *.wav -o -name *.aiff -o -name *.m4a)"
+      "Bash(find /music/inbox -name *.mp3 -o -name *.flac -o -name *.wav -o -name *.aiff -o -name *.m4a)",
+      "Bash(for cmd:*)",
+      "Bash(do echo:*)",
+      "Bash(__NEW_LINE_e8a204fba657b8b1__ python3:*)",
+      "Bash(__NEW_LINE_e8a204fba657b8b1__ done:*)",
+      "Bash(grep -rn \"\\\\.post\\\\|\\\\.get\\\\|\\\\.put\\\\|\\\\.delete\\\\|requests\\\\.\" /home/koolkatdj/code/apps/djtoolkit --include=*.py)"
     ]
   }
 }

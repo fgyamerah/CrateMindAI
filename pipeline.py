@@ -42,7 +42,10 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import config
 import db
-from modules import qc, dedupe, organizer, sanitizer, analyzer, tagger, playlists, reporter
+from modules import (
+    qc, dedupe, organizer, sanitizer, analyzer, tagger, playlists, reporter,
+    artist_merge, artist_folder_clean, metadata_clean, tag_normalize,
+)
 from modules.textlog import log_action, log_run_separator
 
 
@@ -66,6 +69,89 @@ log = logging.getLogger("pipeline")
 
 
 # ---------------------------------------------------------------------------
+# Custom library path support
+# ---------------------------------------------------------------------------
+
+def _resolve_path(path_arg: str | None) -> Path | None:
+    """
+    Validate and return the user-supplied --path directory.
+    Returns None when no --path was given (fall back to config defaults).
+    Exits with an error message when the path does not exist.
+    """
+    if not path_arg:
+        return None
+    root = Path(path_arg).expanduser().resolve()
+    if not root.exists():
+        print(f"ERROR: --path directory does not exist: {root}", file=sys.stderr)
+        sys.exit(2)
+    if not root.is_dir():
+        print(f"ERROR: --path is not a directory: {root}", file=sys.stderr)
+        sys.exit(2)
+    return root
+
+
+def _collect_audio_from_dir(root: Path) -> list:
+    """Return all audio files under root (recursive, deduplicated)."""
+    files = []
+    for ext in config.AUDIO_EXTENSIONS:
+        files.extend(root.rglob(f"*{ext}"))
+        files.extend(root.rglob(f"*{ext.upper()}"))
+    seen: set = set()
+    result = []
+    for f in sorted(files):
+        key = str(f)
+        if key not in seen:
+            seen.add(key)
+            result.append(f)
+    return result
+
+
+def _override_music_root(root: Path) -> None:
+    """
+    Override every config path that is derived from MUSIC_ROOT.
+    Called when --path is passed to the main pipeline run so that all
+    modules (organizer, analyzer, tagger, playlists …) use the custom root.
+    """
+    config.MUSIC_ROOT        = root
+    config.INBOX             = root / "inbox"
+    config.PROCESSING        = root / "processing"
+    config.LIBRARY           = root / "library"
+    config.SORTED            = config.LIBRARY / "sorted"
+    config.UNSORTED          = config.SORTED  / "_unsorted"
+    config.COMPILATIONS      = config.SORTED  / "_compilations"
+    config.DUPLICATES        = root / "duplicates"
+    config.REJECTED          = root / "rejected"
+    config.PLAYLISTS         = root / "playlists"
+    config.M3U_DIR           = config.PLAYLISTS / "m3u"
+    config.GENRE_M3U_DIR     = config.M3U_DIR   / "Genre"
+    config.ENERGY_M3U_DIR    = config.M3U_DIR   / "Energy"
+    config.COMBINED_M3U_DIR  = config.M3U_DIR   / "Combined"
+    config.KEY_M3U_DIR       = config.M3U_DIR   / "Key"
+    config.ROUTE_M3U_DIR     = config.M3U_DIR   / "Route"
+    config.XML_DIR           = config.PLAYLISTS / "xml"
+    config.LOGS_DIR          = root / "logs"
+    config.DB_PATH           = config.LOGS_DIR  / "processed.db"
+    config.REPORTS_DIR       = config.LOGS_DIR  / "reports"
+    config.BEETS_LOG         = config.LOGS_DIR  / "beets_import.log"
+    config.TEXT_LOG_PATH     = config.LOGS_DIR  / "processing_log.txt"
+    config.README_PATH       = config.LOGS_DIR  / "README.md"
+    config.LABEL_INTEL_SEEDS             = root / "data" / "labels" / "seeds.txt"
+    config.LABEL_INTEL_OUTPUT            = root / "data" / "labels" / "output"
+    config.LABEL_INTEL_CACHE             = root / ".cache" / "label_intel"
+    config.LABEL_CLEAN_OUTPUT            = root / "data" / "labels" / "clean"
+    config.METADATA_CLEAN_REPORT_DIR      = config.LOGS_DIR / "metadata_clean"
+    config.ARTIST_MERGE_REPORT_DIR        = config.LOGS_DIR / "artist_merge"
+    config.ARTIST_FOLDER_CLEAN_REPORT_DIR = config.LOGS_DIR / "artist_folder_clean"
+    config.DEDUPE_QUARANTINE_DIR          = config.SORTED / "_duplicates"
+
+
+def _log_active_path(label: str, path: Path) -> None:
+    """Emit a consistent INFO line and textlog entry for the active library path."""
+    log.info("Using library path: %s", path)
+    log_action(f"{label} — library path: {path}")
+
+
+# ---------------------------------------------------------------------------
 # Directory initialization
 # ---------------------------------------------------------------------------
 def _init_dirs() -> None:
@@ -81,6 +167,8 @@ def _init_dirs() -> None:
         config.GENRE_M3U_DIR,
         config.ENERGY_M3U_DIR,
         config.COMBINED_M3U_DIR,
+        config.KEY_M3U_DIR,
+        config.ROUTE_M3U_DIR,
         config.XML_DIR,
         config.LOGS_DIR,
         config.REPORTS_DIR,
@@ -131,14 +219,20 @@ def _collect_inbox() -> list:
 # ---------------------------------------------------------------------------
 # Pipeline
 # ---------------------------------------------------------------------------
-def run_pipeline(dry_run: bool, skip_beets: bool, skip_analysis: bool, verbose: bool, reanalyze: bool = False) -> int:
+def run_pipeline(dry_run: bool, skip_beets: bool, skip_analysis: bool, verbose: bool,
+                 reanalyze: bool = False, custom_path: Path | None = None,
+                 skip_cue_suggest: bool = False) -> int:
     """
     Execute the full pipeline.
     Returns exit code: 0 = success, 1 = some files failed, 2 = fatal error.
     """
     t_start = time.monotonic()
 
+    if custom_path is not None:
+        _override_music_root(custom_path)
+
     _setup_logging(verbose)
+    _log_active_path("PIPELINE", config.MUSIC_ROOT)
     _init_dirs()
     db.init_db()
 
@@ -214,8 +308,27 @@ def run_pipeline(dry_run: bool, skip_beets: bool, skip_analysis: bool, verbose: 
         elif row and row["status"] == "error":
             error_count += 1
 
-    # --- Step 8: Playlist generation ---
-    log.info("[7/8] Generating playlists ...")
+    # --- Step 8b: Cue point suggestion (optional, skippable) ---
+    if not skip_cue_suggest and not skip_analysis and files:
+        log.info("[7/8] Cue point suggestion ...")
+        try:
+            from modules import cue_suggest as _cue_suggest
+            min_conf = getattr(config, "CUE_SUGGEST_MIN_CONFIDENCE", 0.4)
+            _analysed, _stored = _cue_suggest.run(
+                [Path(f) if not isinstance(f, Path) else f for f in files],
+                dry_run  = dry_run,
+                min_conf = min_conf,
+            )
+            log.info("Cue suggest: %d analysed, %d stored", _analysed, _stored)
+        except Exception as exc:
+            log.warning("Cue suggest step failed (non-fatal): %s", exc)
+    elif skip_cue_suggest:
+        log.info("[7/8] Skipping cue suggestion (--skip-cue-suggest)")
+    elif skip_analysis:
+        log.info("[7/8] Skipping cue suggestion (analysis was skipped)")
+
+    # --- Step 8c: Playlist generation ---
+    log.info("[8/8] Generating playlists ...")
     playlists.run(files, run_id, dry_run)
 
     # --- Step 9: Report ---
@@ -234,7 +347,7 @@ def run_pipeline(dry_run: bool, skip_beets: bool, skip_analysis: bool, verbose: 
         duration_sec=duration,
     )
 
-    log.info("[8/8] Writing report ...")
+    log.info("[9/9] Writing report ...")
     report_path = reporter.generate(run_id, duration, dry_run)
     reporter.generate_readme(run_id, duration, dry_run)
     reporter.print_summary(run_id, duration)
@@ -437,6 +550,78 @@ def run_label_enrichment_from_library(verbose: bool = False) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Artist Merge
+# ---------------------------------------------------------------------------
+def run_artist_merge(args) -> int:
+    """
+    Scan the sorted library for artist folder variants and merge them.
+
+    Modes:
+      --dry-run   scan + report JSON, no file moves (default when neither flag given)
+      --apply     apply safe merges; uncertain cases go to report only
+    """
+    _setup_logging(getattr(args, "verbose", False))
+    db.init_db()
+
+    custom_path = _resolve_path(getattr(args, "path", None))
+    sorted_root = custom_path if custom_path is not None else config.SORTED
+    report_dir  = config.ARTIST_MERGE_REPORT_DIR
+    report_dir.mkdir(parents=True, exist_ok=True)
+
+    _log_active_path("ARTIST-MERGE", sorted_root)
+
+    do_apply = getattr(args, "apply", False)
+
+    if do_apply:
+        log_action("ARTIST-MERGE APPLY START")
+        artist_merge.run_apply(sorted_root, report_dir)
+        log_action("ARTIST-MERGE APPLY DONE")
+    else:
+        log_action("ARTIST-MERGE DRY-RUN START")
+        artist_merge.run_dry_run(sorted_root, report_dir)
+        log_action("ARTIST-MERGE DRY-RUN DONE")
+
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Artist Folder Clean
+# ---------------------------------------------------------------------------
+def run_artist_folder_clean(args) -> int:
+    """
+    Scan the sorted library for artist folders with bad names (Camelot key
+    prefixes, bracket watermarks, URL/domain names, symbol garbage) and fix
+    them retroactively.
+
+    Modes:
+      --dry-run   scan + report JSON, no file moves (default when neither flag given)
+      --apply     apply all recoverable renames/merges; review cases go to report only
+    """
+    _setup_logging(getattr(args, "verbose", False))
+    db.init_db()
+
+    custom_path = _resolve_path(getattr(args, "path", None))
+    sorted_root = custom_path if custom_path is not None else config.SORTED
+    report_dir  = config.ARTIST_FOLDER_CLEAN_REPORT_DIR
+    report_dir.mkdir(parents=True, exist_ok=True)
+
+    _log_active_path("FOLDER-CLEAN", sorted_root)
+
+    do_apply = getattr(args, "apply", False)
+
+    if do_apply:
+        log_action("FOLDER-CLEAN APPLY START")
+        rc = artist_folder_clean.run_apply(sorted_root, report_dir)
+        log_action("FOLDER-CLEAN APPLY DONE")
+    else:
+        log_action("FOLDER-CLEAN DRY-RUN START")
+        rc = artist_folder_clean.run_dry_run(sorted_root, report_dir)
+        log_action("FOLDER-CLEAN DRY-RUN DONE")
+
+    return rc
+
+
+# ---------------------------------------------------------------------------
 # Label Clean
 # ---------------------------------------------------------------------------
 def run_label_clean(args) -> int:
@@ -469,14 +654,24 @@ def run_label_clean(args) -> int:
 
     db.init_db()
 
-    rows  = db.get_all_ok_tracks()
-    paths = [Path(row["filepath"]) for row in rows if Path(row["filepath"]).exists()]
+    custom_path = _resolve_path(getattr(args, "path", None))
+
+    if custom_path is not None:
+        _log_active_path("LABEL-CLEAN", custom_path)
+        paths = _collect_audio_from_dir(custom_path)
+    else:
+        _log_active_path("LABEL-CLEAN", config.SORTED)
+        rows  = db.get_all_ok_tracks()
+        paths = [Path(row["filepath"]) for row in rows if Path(row["filepath"]).exists()]
 
     if not paths:
-        log.warning(
-            "No processed tracks found in the library database.\n"
-            "Run the full pipeline first so tracks are organised (status='ok')."
-        )
+        if custom_path is not None:
+            log.warning("No audio files found in: %s", custom_path)
+        else:
+            log.warning(
+                "No processed tracks found in the library database.\n"
+                "Run the full pipeline first so tracks are organised (status='ok')."
+            )
         return 0
 
     threshold   = getattr(args, "confidence_threshold", config.LABEL_CLEAN_THRESHOLD)
@@ -524,6 +719,551 @@ def run_label_clean(args) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Dedupe library
+# ---------------------------------------------------------------------------
+def run_dedupe(args) -> int:
+    """
+    Scan the sorted library (or a custom path) for duplicate audio files and
+    optionally quarantine them.
+
+    Modes:
+      --dry-run   scan + preview groups, no files moved
+      (no flag)   scan + quarantine duplicates
+
+    Detection:
+      Case A — exact hash match       → safe to quarantine automatically
+      Case B — same title, lower quality → quarantine lower-quality copy
+      Case C — different versions     → reported only, never removed
+    """
+    from modules import library_dedupe
+
+    _setup_logging(getattr(args, "verbose", False))
+    db.init_db()
+
+    custom_path   = _resolve_path(getattr(args, "path", None))
+    quarantine_raw = getattr(args, "quarantine_dir", None)
+    quarantine_dir = Path(quarantine_raw) if quarantine_raw else config.DEDUPE_QUARANTINE_DIR
+
+    if custom_path is not None:
+        _log_active_path("DEDUPE", custom_path)
+        paths = _collect_audio_from_dir(custom_path)
+    else:
+        _log_active_path("DEDUPE", config.SORTED)
+        rows  = db.get_all_ok_tracks()
+        paths = [Path(row["filepath"]) for row in rows if Path(row["filepath"]).exists()]
+
+    if not paths:
+        if custom_path is not None:
+            log.warning("No audio files found in: %s", custom_path)
+        else:
+            log.warning(
+                "No processed tracks found in the library database.\n"
+                "Run the full pipeline first so tracks are organised (status='ok')."
+            )
+        return 0
+
+    dry_run = getattr(args, "dry_run", False)
+
+    log.info(
+        "Dedupe: %d track(s) to scan  dry_run=%s  quarantine=%s",
+        len(paths), dry_run, quarantine_dir,
+    )
+
+    scanned, groups, quarantined, bytes_freed = library_dedupe.run(
+        paths         = paths,
+        dry_run       = dry_run,
+        quarantine_dir = quarantine_dir,
+    )
+
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Standalone playlist generation
+# ---------------------------------------------------------------------------
+def run_playlists(args) -> int:
+    """
+    Generate all M3U playlists and Rekordbox XML from the current library DB.
+
+    Runs outside the full pipeline — useful after manual library edits, after
+    dedupe cleanup, or any time you want to refresh exports without re-processing
+    the inbox.
+
+    Modes:
+      --dry-run     print what would be written, no files created
+      (no flag)     write all playlist files and rekordbox_library.xml
+
+    Subsets (default: all):
+      --no-genre    skip Genre/ playlists
+      --no-energy   skip Energy/ playlists
+      --no-combined skip Combined/ playlists
+      --no-key      skip Key/ playlists
+      --no-route    skip Route/ playlists
+      --no-xml      skip Rekordbox XML generation
+    """
+    _setup_logging(getattr(args, "verbose", False))
+    db.init_db()
+
+    custom_path = _resolve_path(getattr(args, "path", None))
+    if custom_path is not None:
+        _override_music_root(custom_path)
+        _log_active_path("PLAYLISTS", custom_path)
+
+    dry_run = getattr(args, "dry_run", False)
+
+    # Per-category toggles (command-line can disable individual categories)
+    if getattr(args, "no_genre", False):
+        config.GENERATE_GENRE_PLAYLISTS = False
+    if getattr(args, "no_energy", False):
+        config.GENERATE_ENERGY_PLAYLISTS = False
+    if getattr(args, "no_combined", False):
+        config.GENERATE_COMBINED_PLAYLISTS = False
+    if getattr(args, "no_key", False):
+        config.GENERATE_KEY_PLAYLISTS = False
+    if getattr(args, "no_route", False):
+        config.GENERATE_ROUTE_PLAYLISTS = False
+
+    # Ensure output directories exist
+    for d in [
+        config.M3U_DIR, config.GENRE_M3U_DIR, config.ENERGY_M3U_DIR,
+        config.COMBINED_M3U_DIR, config.KEY_M3U_DIR, config.ROUTE_M3U_DIR,
+        config.XML_DIR,
+    ]:
+        if not dry_run:
+            d.mkdir(parents=True, exist_ok=True)
+
+    log_action(f"PLAYLISTS {'DRY-RUN' if dry_run else 'GENERATE'} START")
+
+    playlists.generate_m3u(dry_run)
+    playlists.generate_genre_m3u(dry_run)
+    playlists.generate_energy_m3u(dry_run)
+    playlists.generate_combined_m3u(dry_run)
+    playlists.generate_key_m3u(dry_run)
+    playlists.generate_route_m3u(dry_run)
+
+    if not getattr(args, "no_xml", False):
+        xml_path = playlists.generate_rekordbox_xml(dry_run)
+        if not dry_run:
+            log.info("Rekordbox XML: %s", xml_path)
+
+    log_action(f"PLAYLISTS {'DRY-RUN' if dry_run else 'GENERATE'} DONE")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Cue Suggest
+# ---------------------------------------------------------------------------
+def run_cue_suggest(args) -> int:
+    """
+    Analyse tracks for cue points (intro / drop / outro) and store results
+    in the database.  Optionally writes .cues.json sidecars per track.
+
+    Modes:
+      --dry-run   analyse and print cues, no DB writes or sidecars
+      (no flag)   analyse + store in DB
+    """
+    from modules import cue_suggest
+
+    _setup_logging(getattr(args, "verbose", False))
+    db.init_db()
+
+    custom_path = _resolve_path(getattr(args, "path", None))
+    dry_run     = getattr(args, "dry_run", False)
+    min_conf    = getattr(args, "min_confidence", config.CUE_SUGGEST_MIN_CONFIDENCE)
+
+    if custom_path is not None:
+        _log_active_path("CUE-SUGGEST", custom_path)
+        paths = _collect_audio_from_dir(custom_path)
+    else:
+        _log_active_path("CUE-SUGGEST", config.SORTED)
+        rows  = db.get_all_ok_tracks()
+        paths = [Path(row["filepath"]) for row in rows if Path(row["filepath"]).exists()]
+
+    if not paths:
+        if custom_path is not None:
+            log.warning("No audio files found in: %s", custom_path)
+        else:
+            log.warning(
+                "No processed tracks found in the library database.\n"
+                "Run the full pipeline first so tracks are organised (status='ok')."
+            )
+        return 0
+
+    track_filter = getattr(args, "track",         None)
+    limit        = getattr(args, "limit",         None)
+    fmt_raw      = getattr(args, "export_format", None)
+    export_fmts  = None
+    if fmt_raw:
+        export_fmts = [f.strip().lower() for f in fmt_raw.split(",") if f.strip()]
+
+    # Apply track filter and limit to the candidate list up front so that
+    # the logged count and the actual iteration both reflect the restriction.
+    if track_filter:
+        paths = [
+            p for p in paths
+            if track_filter.lower() in f"{p.stem} {p.parent.name}".lower()
+        ]
+    if limit is not None:
+        paths = paths[:limit]
+
+    log.info(
+        "cue-suggest: %d candidate(s)  dry_run=%s  min_conf=%.2f",
+        len(paths), dry_run, min_conf,
+    )
+    log_action(f"CUE-SUGGEST {'DRY-RUN' if dry_run else 'START'}: {len(paths)} candidates")
+
+    analysed, stored = cue_suggest.run(
+        paths,
+        dry_run        = dry_run,
+        min_conf       = min_conf,
+        export_formats = export_fmts,
+    )
+
+    log.info("cue-suggest complete: %d analysed, %d cues stored", analysed, stored)
+    log_action(f"CUE-SUGGEST DONE: {analysed} analysed, {stored} cues stored")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Set Builder
+# ---------------------------------------------------------------------------
+def run_set_builder(args) -> int:
+    """
+    Build an energy-curve DJ set from the library database and export it as
+    an M3U playlist + CSV summary.
+
+    Phases: warmup → build → peak → release → outro
+    """
+    from modules import set_builder
+
+    _setup_logging(getattr(args, "verbose", False))
+    db.init_db()
+
+    dry_run  = getattr(args, "dry_run",              False)
+    vibe     = getattr(args, "vibe",                 "peak")
+    duration = getattr(args, "duration",             60)
+    genre    = getattr(args, "genre",                None)
+    strategy = getattr(args, "strategy",             "safest")
+    name     = getattr(args, "name",                 None)
+    start_e  = getattr(args, "start_energy",         None)
+    end_e    = getattr(args, "end_energy",            None)
+
+    log.info(
+        "set-builder: vibe=%s  duration=%dmin  genre=%s  strategy=%s  dry_run=%s",
+        vibe, duration, genre or "any", strategy, dry_run,
+    )
+
+    count, m3u_path = set_builder.run(
+        target_duration_min = duration,
+        genre_filter        = genre,
+        vibe                = vibe,
+        start_energy        = start_e,
+        end_energy          = end_e,
+        strategy            = strategy,
+        name                = name,
+        dry_run             = dry_run,
+    )
+
+    if count == 0:
+        log.warning("set-builder produced no tracks — is your DB populated?")
+        return 1
+
+    if not dry_run and m3u_path:
+        log.info("Set playlist: %s", m3u_path)
+
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Harmonic Suggest
+# ---------------------------------------------------------------------------
+def run_harmonic_suggest(args) -> int:
+    """
+    Suggest the best next tracks based on harmonic / BPM / energy compatibility.
+
+    Two modes:
+      --track PATH   suggest from a specific file already in the library
+      --key K --bpm B  suggest from a virtual track (key + BPM only)
+    """
+    from modules import harmonic
+
+    _setup_logging(getattr(args, "verbose", False))
+    db.init_db()
+
+    track_path = getattr(args, "track",    None)
+    key        = getattr(args, "key",      None)
+    bpm        = getattr(args, "bpm",      None)
+    strategy   = getattr(args, "strategy", "safest")
+    top_n      = getattr(args, "top_n",    10)
+    energy     = getattr(args, "energy",   None)
+    genre      = getattr(args, "genre",    None)
+    json_out   = getattr(args, "json",     False)
+    dry_run    = getattr(args, "dry_run",  False)
+
+    if not track_path and not (key and bpm):
+        log.error(
+            "harmonic-suggest: provide either --track PATH or both --key and --bpm."
+        )
+        return 2
+
+    if track_path:
+        # Track-based mode: look up the source track's metadata from the DB
+        # so we can pass from_title / from_key / from_bpm to the table formatter.
+        # (track lookup not yet implemented — placeholder values used until then)
+        log.info("harmonic-suggest: from track %s  strategy=%s  top_n=%d",
+                 Path(track_path).name, strategy, top_n)
+        results = harmonic.suggest_next(
+            from_filepath    = track_path,
+            strategy         = strategy,
+            top_n            = top_n,
+        )
+        from_title = Path(track_path).stem
+        from_key   = key   or ""
+        from_bpm   = float(bpm) if bpm else 0.0
+    else:
+        log.info("harmonic-suggest: key=%s  bpm=%s  strategy=%s  top_n=%d",
+                 key, bpm, strategy, top_n)
+        results = harmonic.suggest_by_key_bpm(
+            key      = key,
+            bpm      = float(bpm),
+            energy   = energy,
+            genre    = genre,
+            strategy = strategy,
+            top_n    = top_n,
+        )
+        from_title = "Manual Input"
+        from_key   = key
+        from_bpm   = float(bpm)
+
+    if not results:
+        log.warning("harmonic-suggest: no results — is your DB populated?")
+        return 0
+
+    print(harmonic.format_suggestions_table(
+        results, strategy=strategy,
+        from_title=from_title, from_key=from_key, from_bpm=from_bpm,
+    ))
+
+    if json_out and not dry_run:
+        out_path = harmonic.write_suggestions_json(
+            results,
+            strategy    = strategy,
+            from_path   = track_path or f"key={key} bpm={bpm}",
+        )
+        log.info("JSON output: %s", out_path)
+
+    log_action(
+        f"HARMONIC-SUGGEST DONE: {len(results)} suggestions  strategy={strategy}"
+    )
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Analyze Missing
+# ---------------------------------------------------------------------------
+def run_analyze_missing(args) -> int:
+    """
+    Scan the library for tracks missing BPM or Camelot key, run analysis on
+    those tracks only, and write results back to the DB and audio file tags.
+    """
+    from modules import analyze_missing
+
+    _setup_logging(getattr(args, "verbose", False))
+    db.init_db()
+
+    raw_path = getattr(args, "path", None)
+    path = _resolve_path(raw_path) if raw_path else None
+
+    if path:
+        _log_active_path("analyze-missing scope", path)
+
+    raw_corrupt = getattr(args, "corrupt_dir", None)
+    corrupt_base_dir = _resolve_path(raw_corrupt) if raw_corrupt else None
+
+    return analyze_missing.run(
+        path             = path,
+        dry_run          = getattr(args, "dry_run",           False),
+        limit            = getattr(args, "limit",             None),
+        timeout_sec      = getattr(args, "timeout_sec",       None),
+        min_confidence   = getattr(args, "min_confidence",    0.0),
+        verbose          = getattr(args, "verbose",           False),
+        per_file_timeout = getattr(args, "file_timeout_sec",  10.0),
+        isolate_corrupt  = getattr(args, "isolate_corrupt",   True),
+        corrupt_base_dir = corrupt_base_dir,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Rekordbox Export
+# ---------------------------------------------------------------------------
+def run_rekordbox_export(args) -> int:
+    """
+    Export the full library as a Rekordbox-ready package for Windows (M: drive).
+
+    Outputs:
+      _REKORDBOX_XML_EXPORT/rekordbox_library.xml  — Rekordbox-importable XML
+      _REKORDBOX_XML_EXPORT/export_report.txt       — tag validation warnings
+      _PLAYLISTS_M3U_EXPORT/Genre/*.m3u8
+      _PLAYLISTS_M3U_EXPORT/Energy/*.m3u8
+      _PLAYLISTS_M3U_EXPORT/Combined/*.m3u8
+      _PLAYLISTS_M3U_EXPORT/Key/*.m3u8
+      _PLAYLISTS_M3U_EXPORT/Route/*.m3u8
+
+    Path mapping:
+      Linux  (RB_LINUX_ROOT)    /mnt/music_ssd/
+      Windows (RB_WINDOWS_DRIVE) M:\\
+    """
+    from modules import rekordbox_export
+
+    _setup_logging(getattr(args, "verbose", False))
+    db.init_db()
+
+    dry_run              = getattr(args, "dry_run",                 False)
+    skip_xml             = getattr(args, "no_xml",                  False)
+    skip_m3u             = getattr(args, "no_m3u",                  False)
+    recover_missing      = getattr(args, "recover_missing_analysis", False)
+    recover_limit        = getattr(args, "recover_limit",            None)
+    recover_timeout_sec  = getattr(args, "recover_timeout_sec",      None)
+
+    # Allow per-run overrides of drive letter and Linux root
+    win_drive  = getattr(args, "win_drive",  None)
+    linux_root = getattr(args, "linux_root", None)
+    if win_drive:
+        config.RB_WINDOWS_DRIVE = win_drive.rstrip(":\\")
+    if linux_root:
+        from pathlib import Path as _Path
+        config.RB_LINUX_ROOT = _Path(linux_root)
+
+    return rekordbox_export.run(
+        dry_run             = dry_run,
+        skip_xml            = skip_xml,
+        skip_m3u            = skip_m3u,
+        recover_missing     = recover_missing,
+        recover_limit       = recover_limit,
+        recover_timeout_sec = recover_timeout_sec,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Metadata Clean
+# ---------------------------------------------------------------------------
+def run_metadata_clean(args) -> int:
+    """
+    Scan the sorted library for URL/promo junk in all metadata fields and
+    optionally write cleaned values back.
+
+    Modes:
+      --dry-run   scan + preview, no file writes (default when neither flag given)
+      (no flag)   scan + apply all changes
+    """
+    _setup_logging(getattr(args, "verbose", False))
+    db.init_db()
+
+    custom_path = _resolve_path(getattr(args, "path", None))
+
+    if custom_path is not None:
+        _log_active_path("METADATA-CLEAN", custom_path)
+        paths = _collect_audio_from_dir(custom_path)
+    else:
+        _log_active_path("METADATA-CLEAN", config.SORTED)
+        rows  = db.get_all_ok_tracks()
+        paths = [Path(row["filepath"]) for row in rows if Path(row["filepath"]).exists()]
+
+    if not paths:
+        if custom_path is not None:
+            log.warning("No audio files found in: %s", custom_path)
+        else:
+            log.warning(
+                "No processed tracks found in the library database.\n"
+                "Run the full pipeline first so tracks are organised (status='ok')."
+            )
+        return 0
+
+    dry_run = getattr(args, "dry_run", False)
+
+    log.info(
+        "metadata-clean: scanning %d track(s)  dry_run=%s",
+        len(paths), dry_run,
+    )
+    log_action(f"METADATA-CLEAN {'DRY-RUN' if dry_run else 'APPLY'}: {len(paths)} track(s)")
+
+    report_dir = config.METADATA_CLEAN_REPORT_DIR
+    report_dir.mkdir(parents=True, exist_ok=True)
+
+    scanned, changed, fields = metadata_clean.run(paths, dry_run=dry_run)
+
+    if not dry_run:
+        log.info(
+            "metadata-clean summary: %d scanned / %d files modified / %d fields cleaned",
+            scanned, changed, fields,
+        )
+        _print_metadata_clean_summary(scanned, changed, fields)
+
+    return 0
+
+
+def _print_metadata_clean_summary(scanned: int, changed: int, fields: int) -> None:
+    """Print a brief terminal summary after applying metadata-clean."""
+    print(f"\n=== metadata-clean complete ===")
+    print(f"  Tracks scanned  : {scanned}")
+    print(f"  Files modified  : {changed}")
+    print(f"  Fields cleaned  : {fields}")
+    if changed:
+        print(
+            f"\n  Rekordbox note  : re-import your library after cleaning so "
+            f"Rekordbox picks up the updated tags."
+        )
+    print()
+
+
+# ---------------------------------------------------------------------------
+# Tag Normalize
+# ---------------------------------------------------------------------------
+def run_tag_normalize(args) -> int:
+    """
+    Scan the sorted library (or a custom path) for MP3 files with ID3v2.4 tags
+    or a trailing ID3v1 block, and normalise them to ID3v2.3 / no ID3v1.
+    """
+    _setup_logging(getattr(args, "verbose", False))
+
+    custom_path = _resolve_path(getattr(args, "path", None))
+    if custom_path is not None:
+        _log_active_path("TAG-NORMALIZE", custom_path)
+        paths = _collect_audio_from_dir(custom_path)
+    else:
+        _log_active_path("TAG-NORMALIZE", config.SORTED)
+        paths = _collect_audio_from_dir(config.SORTED)
+
+    mp3_paths = [p for p in paths if p.suffix.lower() == ".mp3"]
+
+    if not mp3_paths:
+        log.warning("tag-normalize: no MP3 files found in scan path")
+        return 0
+
+    dry_run = getattr(args, "dry_run", False)
+    scanned, normalized, v24, v1 = tag_normalize.run(
+        paths=mp3_paths,
+        dry_run=dry_run,
+        verbose=getattr(args, "verbose", False),
+    )
+
+    if not dry_run:
+        print(f"\n=== tag-normalize complete ===")
+        print(f"  MP3s scanned    : {scanned}")
+        print(f"  Normalized      : {normalized}")
+        print(f"  v2.4 downgraded : {v24}")
+        print(f"  v1 removed      : {v1}")
+        if normalized:
+            print(
+                f"\n  Rekordbox note  : re-import your library after normalizing so "
+                f"Rekordbox picks up the updated tag format."
+            )
+        print()
+
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 def main() -> None:
@@ -531,6 +1271,19 @@ def main() -> None:
         description="DJ Toolkit — automated library preparation pipeline",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
+            "Artist Folder Clean (retroactive bad-name fix):\n"
+            "  python pipeline.py artist-folder-clean --dry-run # scan + report, no moves\n"
+            "  python pipeline.py artist-folder-clean --apply   # fix recoverable folders\n\n"
+            "Artist Merge:\n"
+            "  python pipeline.py artist-merge --dry-run        # scan + report, no moves\n"
+            "  python pipeline.py artist-merge --apply          # apply safe merges\n\n"
+            "Duplicate Detection and Cleanup:\n"
+            "  python pipeline.py dedupe --dry-run              # preview duplicate groups\n"
+            "  python pipeline.py dedupe                        # quarantine duplicates\n"
+            "  python pipeline.py dedupe --path /mnt/music/     # scan custom directory\n\n"
+            "Metadata Clean (global junk removal):\n"
+            "  python pipeline.py metadata-clean --dry-run      # preview all field changes\n"
+            "  python pipeline.py metadata-clean                # apply changes to library\n\n"
             "Label Clean (local, Phase 1):\n"
             "  python pipeline.py label-clean                   # scan + report, no writes\n"
             "  python pipeline.py label-clean --write-tags      # write high-confidence labels\n"
@@ -540,7 +1293,24 @@ def main() -> None:
             "  python pipeline.py label-intel\n"
             "  python pipeline.py label-intel --label-seeds /music/data/labels/seeds.txt\n\n"
             "Label Enrichment from Library:\n"
-            "  python pipeline.py --label-enrich-from-library\n"
+            "  python pipeline.py --label-enrich-from-library\n\n"
+            "Playlist Generation and Rekordbox Export:\n"
+            "  python pipeline.py playlists --dry-run              # preview all outputs\n"
+            "  python pipeline.py playlists                        # write M3U + XML\n"
+            "  python pipeline.py playlists --no-xml               # M3U only\n"
+            "  python pipeline.py playlists --no-key --no-route    # skip Key/Route\n\n"
+            "Cue Point Suggestion (intro / drop / outro detection):\n"
+            "  python pipeline.py cue-suggest --dry-run            # analyse, no writes\n"
+            "  python pipeline.py cue-suggest                      # analyse + store in DB\n"
+            "  python pipeline.py cue-suggest --path /music/inbox/ # custom directory\n\n"
+            "Set Builder (energy-curve auto set):\n"
+            "  python pipeline.py set-builder --dry-run            # preview set, no files\n"
+            "  python pipeline.py set-builder --vibe peak          # build a peak-energy set\n"
+            "  python pipeline.py set-builder --duration 90 --vibe warm --genre 'afro house'\n\n"
+            "Harmonic Mixing Suggestions:\n"
+            "  python pipeline.py harmonic-suggest --track /path/to/track.mp3\n"
+            "  python pipeline.py harmonic-suggest --key 8A --bpm 128\n"
+            "  python pipeline.py harmonic-suggest --track ... --strategy energy_lift --json\n"
         ),
     )
     # ----- existing pipeline flags -----
@@ -561,6 +1331,14 @@ def main() -> None:
         help="Re-run BPM+key analysis on sorted library tracks missing those values"
     )
     parser.add_argument(
+        "--skip-cue-suggest", action="store_true",
+        help=(
+            "Skip automatic cue point suggestion after tag writing. "
+            "Cue suggest runs by default on each newly processed batch; "
+            "use this flag to skip it (e.g. for faster re-runs)."
+        ),
+    )
+    parser.add_argument(
         "--verbose", "-v", action="store_true",
         help="Enable debug logging"
     )
@@ -570,6 +1348,13 @@ def main() -> None:
             "Enrich the label database using BPM/genre data from your local library. "
             "Reads the label tag (TPUB/organization) from all OK tracks — no re-analysis. "
             "Example: python pipeline.py --label-enrich-from-library"
+        ),
+    )
+    parser.add_argument(
+        "--path", metavar="DIR",
+        help=(
+            "Override the music root directory. Replaces DJ_MUSIC_ROOT / config defaults. "
+            "Example: --path /mnt/music_ssd/KKDJ/"
         ),
     )
 
@@ -613,6 +1398,52 @@ def main() -> None:
     p_li.add_argument(
         "--verbose", "-v", action="store_true",
         help="Enable debug logging",
+    )
+
+    # ----- artist-folder-clean subcommand -----
+    p_afc = subparsers.add_parser(
+        "artist-folder-clean",
+        help="Fix bad artist folder names already on disk (Camelot prefixes, bracket junk, etc.)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Retroactively clean up artist folder names that were created before\n"
+            "parser/sanitization fixes were in place.\n\n"
+            "Detection rules:\n"
+            "  pure_camelot    e.g. '10B', '1A'                  → review\n"
+            "  camelot_prefix  e.g. '1A - Afrikan Roots'         → rename/merge\n"
+            "  bracket_junk    e.g. '[HouseGrooveSA]'            → review\n"
+            "  url_junk        e.g. 'djcity.com'                 → review\n"
+            "  symbol_heavy    < 40%% alphanumeric chars         → review\n\n"
+            "Outcomes:\n"
+            "  rename  — cleaned name is valid, target folder does not exist\n"
+            "  merge   — cleaned name is valid, target folder already exists\n"
+            "  review  — no valid name can be recovered; written to report only\n\n"
+            "Examples:\n"
+            "  python pipeline.py artist-folder-clean --dry-run\n"
+            "  python pipeline.py artist-folder-clean --apply\n"
+        ),
+    )
+    p_afc.add_argument(
+        "--dry-run", action="store_true",
+        help="Scan and report only — make no file moves (default behavior)",
+    )
+    p_afc.add_argument(
+        "--apply", action="store_true",
+        help=(
+            "Apply all recoverable renames and merges. "
+            "Unrecoverable folders go to the review report."
+        ),
+    )
+    p_afc.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Enable debug logging",
+    )
+    p_afc.add_argument(
+        "--path", metavar="DIR",
+        help=(
+            "Scan this directory instead of the default sorted library. "
+            "Example: --path /mnt/music_ssd/KKDJ/"
+        ),
     )
 
     # ----- label-clean subcommand -----
@@ -664,8 +1495,647 @@ def main() -> None:
         "--verbose", "-v", action="store_true",
         help="Enable debug logging",
     )
+    p_lc.add_argument(
+        "--path", metavar="DIR",
+        help=(
+            "Scan audio files in this directory instead of pulling from the database. "
+            "Example: --path /mnt/music_ssd/KKDJ/"
+        ),
+    )
+
+    # ----- artist-merge subcommand -----
+    p_am = subparsers.add_parser(
+        "artist-merge",
+        help="Merge artist folder variants (capitalisation / feat / collab suffixes)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Scan the sorted library for artist folders that represent the same\n"
+            "base artist and merge them into a single canonical folder.\n\n"
+            "Safe merges (only case / feat / collaborator differences) are applied\n"
+            "automatically with --apply.  Uncertain merges (primary artist differs)\n"
+            "are written to the review report only.\n\n"
+            "Examples:\n"
+            "  python pipeline.py artist-merge --dry-run   # scan + report, no moves\n"
+            "  python pipeline.py artist-merge --apply     # apply safe merges\n"
+        ),
+    )
+    p_am.add_argument(
+        "--dry-run", action="store_true",
+        help="Scan and report only — make no file moves (default behavior)",
+    )
+    p_am.add_argument(
+        "--apply", action="store_true",
+        help="Apply safe merges. Uncertain merges go to the review report.",
+    )
+    p_am.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Enable debug logging",
+    )
+    p_am.add_argument(
+        "--path", metavar="DIR",
+        help=(
+            "Scan this directory instead of the default sorted library. "
+            "Example: --path /mnt/music_ssd/KKDJ/"
+        ),
+    )
+
+    # ----- metadata-clean subcommand -----
+    p_mc = subparsers.add_parser(
+        "metadata-clean",
+        help="Remove URL/promo junk from ALL metadata fields across the library",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Scan every processed track for junk metadata and optionally write\n"
+            "cleaned values back.\n\n"
+            "Fields cleaned:\n"
+            "  title, artist, album, albumartist, genre, comment,\n"
+            "  label (organization/TPUB), grouping (TIT1), catalog number\n\n"
+            "What is removed:\n"
+            "  URLs / domains    https://djsoundtop.com, TraxCrate.com, www.djcity.com\n"
+            "  DJ pool phrases   fordjonly, djcity, zipdj, musicafresca, promo only\n"
+            "  Promo phrases     official audio, free download, downloaded from\n"
+            "  Comment noise     Camelot keys (6A), BPM strings (121 BPM),\n"
+            "                    combinations like '6A | Gm | 121 BPM'\n\n"
+            "Field-specific behaviour:\n"
+            "  albumartist     — cleared entirely when the value is a bare URL/domain\n"
+            "  catalog number  — cleared entirely when the value is a bare URL/domain\n"
+            "  comment         — URL/promo stripped; Camelot + BPM tokens also removed\n\n"
+            "Examples:\n"
+            "  python pipeline.py metadata-clean --dry-run   # preview, no writes\n"
+            "  python pipeline.py metadata-clean             # apply changes\n"
+        ),
+    )
+    p_mc.add_argument(
+        "--dry-run", action="store_true",
+        help="Preview what would be cleaned — make no file changes",
+    )
+    p_mc.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Enable debug logging",
+    )
+    p_mc.add_argument(
+        "--path", metavar="DIR",
+        help=(
+            "Scan audio files in this directory instead of pulling from the database. "
+            "Example: --path /mnt/music_ssd/KKDJ/"
+        ),
+    )
+
+    # ----- tag-normalize subcommand -----
+    p_tn = subparsers.add_parser(
+        "tag-normalize",
+        help="Standardize MP3 ID3 tags for Rekordbox (ID3v2.4→v2.3, remove ID3v1)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Scan MP3 files and normalize their ID3 tag format for Rekordbox compatibility.\n\n"
+            "What is fixed:\n"
+            "  ID3v2.4 → ID3v2.3  — Rekordbox reads v2.3 correctly on all platforms\n"
+            "  ID3v1 removed      — 128-byte end-of-file block, never needed\n\n"
+            "Log tags emitted per file:\n"
+            "  [ID3V24_DOWNGRADED]   — was ID3v2.4, converted to v2.3\n"
+            "  [ID3V1_REMOVED]       — ID3v1 block stripped\n"
+            "  [ID3V23_NORMALIZED]   — file saved as ID3v2.3\n\n"
+            "Non-MP3 files (FLAC, WAV, AIFF, M4A, OGG, OPUS) are always skipped.\n\n"
+            "Examples:\n"
+            "  python pipeline.py tag-normalize --dry-run\n"
+            "  python pipeline.py tag-normalize\n"
+            "  python pipeline.py tag-normalize --path /mnt/music_ssd/KKDJ/sorted/\n"
+        ),
+    )
+    p_tn.add_argument(
+        "--dry-run", action="store_true",
+        help="Detect issues without writing any files",
+    )
+    p_tn.add_argument(
+        "--verbose", action="store_true",
+        help="Enable debug logging",
+    )
+    p_tn.add_argument(
+        "--path", metavar="DIR",
+        help="Scan this directory instead of the default sorted library",
+    )
+
+    # ----- dedupe subcommand -----
+    p_dd = subparsers.add_parser(
+        "dedupe",
+        help="Detect and quarantine duplicate audio files across the library",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Scan the library for duplicate audio files and optionally move\n"
+            "them to a quarantine folder (never deleted outright).\n\n"
+            "Detection cases:\n"
+            "  Case A — Exact duplicate   : same SHA-256 hash\n"
+            "                               → keep one, quarantine the rest\n"
+            "  Case B — Quality duplicate : same track, different format/bitrate\n"
+            "                               → keep best quality, quarantine rest\n"
+            "  Case C — Different versions: 'Extended Mix' vs 'Radio Edit' etc.\n"
+            "                               → keep all, reported only\n\n"
+            "Quality priority (highest first):\n"
+            "  WAV / AIFF  >  FLAC  >  MP3 320  >  MP3 256  >  M4A  >\n"
+            "  MP3 192  >  OGG / OPUS  >  MP3 128  >  MP3 <128\n\n"
+            "Safety rules:\n"
+            "  • Files are MOVED, never deleted — always recoverable\n"
+            "  • Ambiguous quality ties are skipped (manual review)\n"
+            "  • Case C (versions) is never auto-removed\n\n"
+            "Examples:\n"
+            "  python pipeline.py dedupe --dry-run\n"
+            "  python pipeline.py dedupe\n"
+            "  python pipeline.py dedupe --path /mnt/music_ssd/KKDJ/\n"
+            "  python pipeline.py dedupe --quarantine-dir /music/review/\n"
+        ),
+    )
+    p_dd.add_argument(
+        "--dry-run", action="store_true",
+        help="Preview duplicate groups — move no files",
+    )
+    p_dd.add_argument(
+        "--path", metavar="DIR",
+        help=(
+            "Scan this directory instead of pulling from the database. "
+            "Example: --path /mnt/music_ssd/KKDJ/"
+        ),
+    )
+    p_dd.add_argument(
+        "--quarantine-dir", metavar="DIR",
+        default=None,
+        help=(
+            f"Directory to move duplicate files into. "
+            f"Default: {config.DEDUPE_QUARANTINE_DIR}"
+        ),
+    )
+    p_dd.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Enable debug logging",
+    )
+
+    # ----- playlists subcommand -----
+    p_pl = subparsers.add_parser(
+        "playlists",
+        help="Generate all M3U playlists and Rekordbox XML from the library DB",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Generate all playlist files from the current library database without\n"
+            "running the full inbox pipeline.  Useful after manual library edits,\n"
+            "after running dedupe, or any time you want a fresh export.\n\n"
+            "Output structure:\n"
+            "  M3U_DIR/           letter playlists (A.m3u8 … Z.m3u8) + _all_tracks.m3u8\n"
+            "  M3U_DIR/Genre/     Afro House.m3u8, Amapiano.m3u8 …\n"
+            "  M3U_DIR/Energy/    Peak.m3u8, Mid.m3u8, Chill.m3u8\n"
+            "  M3U_DIR/Combined/  Peak Afro House.m3u8, Chill Deep House.m3u8 …\n"
+            "  M3U_DIR/Key/       1A.m3u8, 1B.m3u8 … 12A.m3u8, 12B.m3u8\n"
+            "  M3U_DIR/Route/     Acapella.m3u8, Tool.m3u8, Vocal.m3u8\n"
+            "  XML_DIR/           rekordbox_library.xml\n\n"
+            "Examples:\n"
+            "  python pipeline.py playlists --dry-run\n"
+            "  python pipeline.py playlists\n"
+            "  python pipeline.py playlists --no-xml\n"
+            "  python pipeline.py playlists --path /mnt/music_ssd/\n"
+        ),
+    )
+    p_pl.add_argument(
+        "--dry-run", action="store_true",
+        help="Show what would be written — create no files",
+    )
+    p_pl.add_argument(
+        "--no-genre", action="store_true",
+        help="Skip Genre/ playlists",
+    )
+    p_pl.add_argument(
+        "--no-energy", action="store_true",
+        help="Skip Energy/ playlists",
+    )
+    p_pl.add_argument(
+        "--no-combined", action="store_true",
+        help="Skip Combined/ playlists",
+    )
+    p_pl.add_argument(
+        "--no-key", action="store_true",
+        help="Skip Key/ (Camelot) playlists",
+    )
+    p_pl.add_argument(
+        "--no-route", action="store_true",
+        help="Skip Route/ playlists (Acapella, Tool, Vocal)",
+    )
+    p_pl.add_argument(
+        "--no-xml", action="store_true",
+        help="Skip Rekordbox XML export",
+    )
+    p_pl.add_argument(
+        "--path", metavar="DIR",
+        help=(
+            "Override the music root directory for all output paths. "
+            "Example: --path /mnt/music_ssd/"
+        ),
+    )
+    p_pl.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Enable debug logging",
+    )
+
+    # ----- rekordbox-export subcommand -----
+    p_rb = subparsers.add_parser(
+        "rekordbox-export",
+        help="Export library as Rekordbox-ready XML + M3U playlists for Windows (M: drive)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Generate a plug-and-play Rekordbox export package.\n\n"
+            "Converts all Linux paths to Windows M: drive paths and exports:\n"
+            "  _REKORDBOX_XML_EXPORT/rekordbox_library.xml  — import into Rekordbox\n"
+            "  _PLAYLISTS_M3U_EXPORT/Genre/*.m3u8\n"
+            "  _PLAYLISTS_M3U_EXPORT/Energy/*.m3u8\n"
+            "  _PLAYLISTS_M3U_EXPORT/Combined/*.m3u8\n"
+            "  _PLAYLISTS_M3U_EXPORT/Key/*.m3u8\n"
+            "  _PLAYLISTS_M3U_EXPORT/Route/*.m3u8\n\n"
+            "Default behaviour:\n"
+            "  Tracks missing BPM or Camelot key are EXCLUDED (fast, predictable).\n"
+            "  To recover them inline use --recover-missing-analysis.\n"
+            "  For large libraries, run analysis separately first:\n"
+            "    python3 pipeline.py analyze-missing --path /mnt/music_ssd/KKDJ/\n\n"
+            "Path mapping (defaults):\n"
+            "  Linux root : /mnt/music_ssd   (= root of M: drive on Windows)\n"
+            "  Windows    : M:\\\n\n"
+            "Override via env vars:  export RB_LINUX_ROOT=/mnt/music_ssd\n"
+            "                        export RB_WIN_DRIVE=M\n"
+            "Or via config_local.py: RB_LINUX_ROOT = Path('/mnt/music_ssd')\n"
+            "                        RB_WINDOWS_DRIVE = 'M'\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py rekordbox-export --dry-run\n"
+            "  python3 pipeline.py rekordbox-export\n"
+            "  python3 pipeline.py rekordbox-export --no-m3u\n"
+            "  python3 pipeline.py rekordbox-export --recover-missing-analysis\n"
+            "  python3 pipeline.py rekordbox-export --recover-missing-analysis "
+            "--recover-limit 50 --recover-timeout-sec 300\n"
+        ),
+    )
+    p_rb.add_argument(
+        "--dry-run", action="store_true",
+        help="Preview what would be exported — create no files (tag warnings still shown)",
+    )
+    p_rb.add_argument(
+        "--no-xml", action="store_true",
+        help="Skip Rekordbox XML generation",
+    )
+    p_rb.add_argument(
+        "--no-m3u", action="store_true",
+        help="Skip M3U playlist generation",
+    )
+    p_rb.add_argument(
+        "--win-drive", metavar="LETTER", default=None,
+        help="Windows drive letter (default: M, from RB_WIN_DRIVE env or config)",
+    )
+    p_rb.add_argument(
+        "--linux-root", metavar="PATH", default=None,
+        help="Linux path that is the root of the Windows drive (default: /mnt/music_ssd)",
+    )
+    p_rb.add_argument(
+        "--recover-missing-analysis",
+        action="store_true",
+        dest="recover_missing_analysis",
+        help=(
+            "Run aubio BPM detection and keyfinder-cli key detection for tracks "
+            "missing those values before deciding to exclude them. "
+            "Off by default — export is fast and predictable without it. "
+            "For large libraries, prefer running 'analyze-missing' separately first."
+        ),
+    )
+    p_rb.add_argument(
+        "--recover-limit",
+        metavar="N",
+        type=int,
+        default=None,
+        dest="recover_limit",
+        help=(
+            "Maximum number of tracks to attempt analysis on when "
+            "--recover-missing-analysis is active (default: unlimited)."
+        ),
+    )
+    p_rb.add_argument(
+        "--recover-timeout-sec",
+        metavar="N",
+        type=float,
+        default=None,
+        dest="recover_timeout_sec",
+        help=(
+            "Stop inline analysis after this many seconds when "
+            "--recover-missing-analysis is active (default: no timeout)."
+        ),
+    )
+    p_rb.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Enable debug logging",
+    )
+
+    # ----- analyze-missing subcommand -----
+    p_am = subparsers.add_parser(
+        "analyze-missing",
+        help="Detect BPM and key for tracks missing that data — writes to DB and audio tags",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Scan the library for tracks where BPM or Camelot key is absent,\n"
+            "run aubio (BPM) and keyfinder-cli (key) only on those tracks,\n"
+            "and write the results back to the database and audio file tags.\n\n"
+            "Safe to run multiple times — will not overwrite valid existing values.\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py analyze-missing\n"
+            "  python3 pipeline.py analyze-missing --path /mnt/music_ssd/KKDJ/\n"
+            "  python3 pipeline.py analyze-missing --limit 50 --timeout-sec 300\n"
+            "  python3 pipeline.py analyze-missing --dry-run --verbose\n"
+        ),
+    )
+    p_am.add_argument(
+        "--path", metavar="PATH", default=None,
+        help="Restrict analysis to tracks under this directory (default: entire library)",
+    )
+    p_am.add_argument(
+        "--dry-run", action="store_true",
+        help="Run detection but do not write to DB or audio file tags",
+    )
+    p_am.add_argument(
+        "--limit", metavar="N", type=int, default=None,
+        help="Maximum number of tracks to process in this run",
+    )
+    p_am.add_argument(
+        "--timeout-sec", metavar="N", type=float, default=None, dest="timeout_sec",
+        help="Stop processing after this many seconds (default: no timeout)",
+    )
+    p_am.add_argument(
+        "--min-confidence", metavar="FLOAT", type=float, default=0.0, dest="min_confidence",
+        help="Minimum BPM confidence score to accept a result (default: 0.0 — accept all)",
+    )
+    p_am.add_argument(
+        "--file-timeout-sec", metavar="N", type=float, default=10.0, dest="file_timeout_sec",
+        help=(
+            "Hard per-file wall-clock timeout in seconds (default: 10). "
+            "Files that exceed this limit are skipped immediately — prevents "
+            "corrupt MP3s from causing multi-hour aubio/librosa resync loops."
+        ),
+    )
+    p_am.add_argument(
+        "--no-isolate-corrupt",
+        action="store_false",
+        dest="isolate_corrupt",
+        help=(
+            "Disable automatic corrupt-file isolation (isolation is ON by default). "
+            "By default, files that fail analysis are moved to <corrupt-dir>/. "
+            "Bad/non-file paths are always logged but never moved. "
+            "A persistent log is written to logs/analyze_missing/corrupt_moves.txt."
+        ),
+    )
+    p_am.add_argument(
+        "--corrupt-dir",
+        metavar="PATH",
+        default=None,
+        dest="corrupt_dir",
+        help=(
+            "Base directory for quarantined files (default: <--path>/_corrupt when "
+            "--path is given, otherwise config.CORRUPT_DIR). "
+            "Corrupt audio goes into <corrupt-dir>/audio_failures/. "
+            "Example: --corrupt-dir /mnt/music_ssd/KKDJ/_corrupt"
+        ),
+    )
+    p_am.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Enable debug logging",
+    )
+
+    # ----- cue-suggest subcommand -----
+    p_cs = subparsers.add_parser(
+        "cue-suggest",
+        help="Auto-detect cue points (intro / drop / outro) for library tracks",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Analyse audio to detect cue point positions for every track\n"
+            "in the library and store results in the database.\n\n"
+            "NOTE: These are SUGGESTED positions only. Native Rekordbox\n"
+            "hot-cues are NOT written. Review all cues in Rekordbox.\n\n"
+            "Cue types detected:\n"
+            "  intro_start  — bar 1 (always present, confidence 1.0)\n"
+            "  mix_in       — first stable DJ entry point\n"
+            "  groove_start — first full-arrangement section\n"
+            "  drop         — main energy arrival / impact\n"
+            "  breakdown    — energy/density reduction after peak\n"
+            "  outro_start  — beginning of mix-out section\n\n"
+            "Signal features used (full mode):\n"
+            "  RMS energy, low-frequency energy (< 250 Hz, bass/kick proxy),\n"
+            "  spectral flux (onset strength). All bar-grid aligned via BPM.\n\n"
+            "Fallback: BPM-only heuristic when audio decode fails.\n\n"
+            "Output files:\n"
+            "  logs/cue_suggest/cue_suggestions.json   (master, all tracks)\n"
+            "  logs/cue_suggest/cue_suggestions.csv    (wide format, 1 row/track)\n"
+            "  logs/cue_suggest/runs/cues_TIMESTAMP.csv (per-run detail log)\n\n"
+            "Examples:\n"
+            "  python pipeline.py cue-suggest --dry-run\n"
+            "  python pipeline.py cue-suggest\n"
+            "  python pipeline.py cue-suggest --limit 20 --track 'Black Coffee'\n"
+            "  python pipeline.py cue-suggest --export-format json\n"
+        ),
+    )
+    p_cs.add_argument(
+        "--dry-run", action="store_true",
+        help="Analyse and print cue points — make no DB writes",
+    )
+    p_cs.add_argument(
+        "--min-confidence", type=float, metavar="FLOAT",
+        default=config.CUE_SUGGEST_MIN_CONFIDENCE,
+        help=(
+            f"Minimum confidence score to store a cue point. "
+            f"Default: {config.CUE_SUGGEST_MIN_CONFIDENCE}"
+        ),
+    )
+    p_cs.add_argument(
+        "--limit", type=int, metavar="N",
+        default=None,
+        help="Stop after analysing this many tracks (useful for testing).",
+    )
+    p_cs.add_argument(
+        "--track", metavar="NAME",
+        default=None,
+        help=(
+            "Only analyse tracks whose artist, title, or filename contains NAME "
+            "(case-insensitive substring). Example: --track 'Enoo Napa'"
+        ),
+    )
+    p_cs.add_argument(
+        "--export-format", metavar="FMT",
+        default=None,
+        help=(
+            "Comma-separated list of master output formats to write: json, csv. "
+            "Default: both. Example: --export-format json,csv"
+        ),
+    )
+    p_cs.add_argument(
+        "--path", metavar="DIR",
+        help="Analyse audio files in this directory instead of the library DB.",
+    )
+    p_cs.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Enable debug logging",
+    )
+
+    # ----- set-builder subcommand -----
+    p_sb = subparsers.add_parser(
+        "set-builder",
+        help="Build an energy-curve DJ set from the library database",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Automatically build a DJ set from tracks in the library database,\n"
+            "arranging them across energy phases with harmonic transitions.\n\n"
+            "Phases (always in order):\n"
+            "  warmup  — gentle intro, Chill/Mid energy\n"
+            "  build   — rising energy\n"
+            "  peak    — high-energy section\n"
+            "  release — brief energy drop after peak\n"
+            "  outro   — wind-down / closing\n\n"
+            "Vibe presets control how much time each phase gets:\n"
+            "  warm     — extended warmup/build, light peak\n"
+            "  peak     — strong peak section (40% of set)\n"
+            "  deep     — melodic/organic genres preferred, relaxed pacing\n"
+            "  driving  — sustained mid-to-peak energy throughout\n\n"
+            "Transition strategies:\n"
+            "  safest       — highest Camelot × BPM composite\n"
+            "  energy_lift  — incoming energy or BPM is higher\n"
+            "  smooth_blend — very close BPM + Camelot\n"
+            "  best_warmup  — Chill/Mid energy, relaxed BPM\n"
+            "  best_late_set — Peak energy, high BPM, strong Camelot\n\n"
+            "Output:\n"
+            "  SET_BUILDER_OUTPUT_DIR/<name>.m3u8   — playable playlist\n"
+            "  SET_BUILDER_OUTPUT_DIR/<name>.csv    — full metadata + transition notes\n\n"
+            "Examples:\n"
+            "  python pipeline.py set-builder --dry-run\n"
+            "  python pipeline.py set-builder --vibe peak --duration 90\n"
+            "  python pipeline.py set-builder --vibe deep --genre 'afro house'\n"
+            "  python pipeline.py set-builder --strategy energy_lift --name my_set\n"
+        ),
+    )
+    p_sb.add_argument(
+        "--dry-run", action="store_true",
+        help="Preview the set — write no files",
+    )
+    p_sb.add_argument(
+        "--vibe", metavar="VIBE",
+        default="peak",
+        choices=["warm", "peak", "deep", "driving"],
+        help="Phase-weight preset (warm / peak / deep / driving). Default: peak",
+    )
+    p_sb.add_argument(
+        "--duration", type=int, metavar="MINS",
+        default=60,
+        help="Target set duration in minutes. Default: 60",
+    )
+    p_sb.add_argument(
+        "--genre", metavar="GENRE",
+        default=None,
+        help="Restrict track selection to this genre (substring match, e.g. 'afro house')",
+    )
+    p_sb.add_argument(
+        "--strategy", metavar="STRATEGY",
+        default="safest",
+        choices=["safest", "energy_lift", "smooth_blend", "best_warmup", "best_late_set"],
+        help="Harmonic transition ranking strategy. Default: safest",
+    )
+    p_sb.add_argument(
+        "--start-energy", metavar="TIER",
+        default=None,
+        choices=["Chill", "Mid", "Peak"],
+        help="Preferred energy tier for the first track",
+    )
+    p_sb.add_argument(
+        "--end-energy", metavar="TIER",
+        default=None,
+        choices=["Chill", "Mid", "Peak"],
+        help="Preferred energy tier for the last track",
+    )
+    p_sb.add_argument(
+        "--name", metavar="NAME",
+        default=None,
+        help="Base name for output files (no extension). Default: auto-generated timestamp",
+    )
+    p_sb.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Enable debug logging",
+    )
+
+    # ----- harmonic-suggest subcommand -----
+    p_hs = subparsers.add_parser(
+        "harmonic-suggest",
+        help="Suggest the best next tracks using harmonic + BPM + energy scoring",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Given a track (or a key + BPM pair), rank every track in the\n"
+            "library by harmonic compatibility and print the top suggestions.\n\n"
+            "Scoring factors:\n"
+            "  Camelot compatibility  (35%)  — Camelot wheel distance\n"
+            "  BPM compatibility      (30%)  — tempo delta, halftime/doubletime aware\n"
+            "  Energy compatibility   (20%)  — Peak / Mid / Chill tier match\n"
+            "  Genre compatibility    (15%)  — exact / related / different\n\n"
+            "Ranking strategies:\n"
+            "  safest       — highest Camelot × BPM composite\n"
+            "  energy_lift  — incoming energy or BPM is higher\n"
+            "  smooth_blend — very close BPM + Camelot\n"
+            "  best_warmup  — Chill/Mid energy, relaxed BPM, harmonic\n"
+            "  best_late_set — Peak energy, high BPM, strong Camelot\n\n"
+            "Examples:\n"
+            "  python pipeline.py harmonic-suggest --track '/music/.../track.mp3'\n"
+            "  python pipeline.py harmonic-suggest --key 8A --bpm 128\n"
+            "  python pipeline.py harmonic-suggest --track ... --strategy energy_lift\n"
+            "  python pipeline.py harmonic-suggest --key 5B --bpm 124 --top-n 20 --json\n"
+        ),
+    )
+    _hs_group = p_hs.add_mutually_exclusive_group()
+    _hs_group.add_argument(
+        "--track", metavar="PATH",
+        help="Path to a track already in the library DB to suggest from",
+    )
+    p_hs.add_argument(
+        "--key", metavar="KEY",
+        help="Camelot key of the current track (e.g. 8A, 5B) — used with --bpm",
+    )
+    p_hs.add_argument(
+        "--bpm", type=float, metavar="BPM",
+        help="BPM of the current track — used with --key",
+    )
+    p_hs.add_argument(
+        "--strategy", metavar="STRATEGY",
+        default="safest",
+        choices=["safest", "energy_lift", "smooth_blend", "best_warmup", "best_late_set"],
+        help="Ranking strategy. Default: safest",
+    )
+    p_hs.add_argument(
+        "--top-n", type=int, metavar="N",
+        default=10,
+        help="Number of suggestions to return. Default: 10",
+    )
+    p_hs.add_argument(
+        "--energy", metavar="TIER",
+        default=None,
+        choices=["Chill", "Mid", "Peak"],
+        help="Treat the current track as this energy tier (used with --key/--bpm)",
+    )
+    p_hs.add_argument(
+        "--genre", metavar="GENRE",
+        default=None,
+        help="Genre of the current track (used with --key/--bpm for genre scoring)",
+    )
+    p_hs.add_argument(
+        "--json", action="store_true",
+        help="Write suggestions to a JSON file in HARMONIC_SUGGEST_OUTPUT_DIR",
+    )
+    p_hs.add_argument(
+        "--dry-run", action="store_true",
+        help="Print suggestions only — do not write JSON output",
+    )
+    p_hs.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Enable debug logging",
+    )
 
     args = parser.parse_args()
+
+    if args.command == "artist-merge":
+        sys.exit(run_artist_merge(args))
+
+    if args.command == "artist-folder-clean":
+        sys.exit(run_artist_folder_clean(args))
 
     if args.command == "label-intel":
         sys.exit(run_label_intel(args))
@@ -673,15 +2143,44 @@ def main() -> None:
     if args.command == "label-clean":
         sys.exit(run_label_clean(args))
 
+    if args.command == "metadata-clean":
+        sys.exit(run_metadata_clean(args))
+
+    if args.command == "tag-normalize":
+        sys.exit(run_tag_normalize(args))
+
+    if args.command == "dedupe":
+        sys.exit(run_dedupe(args))
+
+    if args.command == "playlists":
+        sys.exit(run_playlists(args))
+
+    if args.command == "analyze-missing":
+        sys.exit(run_analyze_missing(args))
+
+    if args.command == "rekordbox-export":
+        sys.exit(run_rekordbox_export(args))
+
+    if args.command == "cue-suggest":
+        sys.exit(run_cue_suggest(args))
+
+    if args.command == "set-builder":
+        sys.exit(run_set_builder(args))
+
+    if args.command == "harmonic-suggest":
+        sys.exit(run_harmonic_suggest(args))
+
     if args.label_enrich_from_library:
         sys.exit(run_label_enrichment_from_library(args.verbose))
 
     sys.exit(run_pipeline(
-        dry_run=args.dry_run,
-        skip_beets=args.skip_beets,
-        skip_analysis=args.skip_analysis,
-        verbose=args.verbose,
-        reanalyze=args.reanalyze,
+        dry_run          = args.dry_run,
+        skip_beets       = args.skip_beets,
+        skip_analysis    = args.skip_analysis,
+        verbose          = args.verbose,
+        reanalyze        = args.reanalyze,
+        custom_path      = _resolve_path(getattr(args, "path", None)),
+        skip_cue_suggest = getattr(args, "skip_cue_suggest", False),
     ))
 
 

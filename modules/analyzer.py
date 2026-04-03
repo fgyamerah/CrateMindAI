@@ -80,6 +80,59 @@ _HIGH_BPM_GENRES = {"drum and bass", "dnb", "jungle", "hardcore", "gabber", "spe
 
 
 # ---------------------------------------------------------------------------
+# Shared BPM correction helper (genre-aware halving/doubling + range clamp)
+# Applied identically to results from both aubio and librosa.
+# ---------------------------------------------------------------------------
+def _apply_bpm_correction(raw_bpm: float, genre: str, name: str, source: str) -> Optional[float]:
+    genre_lower = genre.lower()
+    if raw_bpm < 90:
+        corrected = raw_bpm * 2
+        log.debug("BPM doubled (%s): %.1f → %.1f (%s)", source, raw_bpm, corrected, name)
+        raw_bpm = corrected
+    elif raw_bpm > 160 and not any(g in genre_lower for g in _HIGH_BPM_GENRES):
+        corrected = raw_bpm / 2
+        log.debug("BPM halved (%s): %.1f → %.1f (%s)", source, raw_bpm, corrected, name)
+        raw_bpm = corrected
+
+    if not (config.BPM_MIN <= raw_bpm <= config.BPM_MAX):
+        log.warning("BPM out of range (%.1f) via %s for %s — discarding", raw_bpm, source, name)
+        return None
+
+    return round(raw_bpm, 2)
+
+
+# ---------------------------------------------------------------------------
+# Librosa BPM fallback
+# Used when aubio is unavailable or returns no usable result.
+# ---------------------------------------------------------------------------
+def _detect_bpm_librosa(path: Path, genre: str = "") -> Optional[float]:
+    """
+    Estimate BPM via librosa beat tracking.
+    Returns None if librosa is not installed or analysis fails.
+    """
+    try:
+        import librosa  # type: ignore
+    except ImportError:
+        log.debug("BPM: librosa not installed — cannot use as fallback (pip install librosa)")
+        return None
+
+    try:
+        log.debug("BPM: loading %s via librosa", path.name)
+        y, sr = librosa.load(str(path), sr=None, mono=True)
+        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+        raw_bpm = float(tempo)
+    except Exception as exc:
+        log.warning("BPM: librosa failed on %s: %s", path.name, exc)
+        return None
+
+    if not (20 < raw_bpm < 400):
+        log.debug("BPM: librosa out-of-range %.1f for %s — discarding", raw_bpm, path.name)
+        return None
+
+    return _apply_bpm_correction(raw_bpm, genre, path.name, "librosa")
+
+
+# ---------------------------------------------------------------------------
 # BPM binary resolution
 #
 # Cached once on first call. Priority:
@@ -145,14 +198,29 @@ def _resolve_aubio_binary() -> Tuple[Optional[str], str]:
 # ---------------------------------------------------------------------------
 # BPM detection
 # ---------------------------------------------------------------------------
+def _librosa_fallback(path: Path, genre: str, reason: str) -> Optional[float]:
+    """Log reason aubio was skipped/failed, then attempt librosa."""
+    log.info("BPM: %s for %s — trying librosa fallback", reason, path.name)
+    result = _detect_bpm_librosa(path, genre)
+    if result is not None:
+        log.info("BPM recovered via librosa: %.1f for %s", result, path.name)
+    else:
+        log.debug("BPM: librosa also returned no result for %s", path.name)
+    return result
+
+
 def detect_bpm(path: Path, genre: str = "") -> Optional[float]:
     """
-    Run the available aubio binary on a file and return the median BPM.
-    Returns None if no binary is available or detection fails.
+    Detect BPM for a file. Tries aubio first; falls back to librosa if aubio
+    is unavailable, crashes, or returns no usable output.
+
+    Recovery order:
+      1. aubio (if binary is found and works)
+      2. librosa (if installed) — used whenever aubio cannot produce a result
     """
     binary, style = _resolve_aubio_binary()
     if not binary:
-        return None
+        return _librosa_fallback(path, genre, "aubio unavailable")
 
     # Build command based on detected binary style:
     #   aubio     → aubio tempo <file>
@@ -168,10 +236,10 @@ def detect_bpm(path: Path, genre: str = "") -> Optional[float]:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
     except FileNotFoundError:
         log.error("BPM: binary not executable: %s", binary)
-        return None
+        return _librosa_fallback(path, genre, "aubio binary not executable")
     except subprocess.TimeoutExpired:
-        log.warning("BPM: timed out on %s", path.name)
-        return None
+        log.warning("BPM: aubio timed out on %s", path.name)
+        return _librosa_fallback(path, genre, "aubio timed out")
 
     if result.returncode != 0:
         log.debug(
@@ -204,27 +272,10 @@ def detect_bpm(path: Path, genre: str = "") -> Optional[float]:
         log.debug("BPM: no valid values from %s for %s", Path(binary).name, path.name)
         if result.stderr.strip():
             log.debug("BPM stderr: %s", result.stderr.strip()[:300])
-        return None
+        return _librosa_fallback(path, genre, "aubio returned no usable output")
 
     raw_bpm = statistics.median(values)
-
-    # Genre-aware correction (unchanged)
-    genre_lower = genre.lower()
-    if raw_bpm < 90:
-        corrected = raw_bpm * 2
-        log.debug("BPM doubled: %.1f → %.1f (%s)", raw_bpm, corrected, path.name)
-        raw_bpm = corrected
-    elif raw_bpm > 160 and not any(g in genre_lower for g in _HIGH_BPM_GENRES):
-        corrected = raw_bpm / 2
-        log.debug("BPM halved: %.1f → %.1f (%s)", raw_bpm, corrected, path.name)
-        raw_bpm = corrected
-
-    # Final sanity clamp
-    if not (config.BPM_MIN <= raw_bpm <= config.BPM_MAX):
-        log.warning("BPM out of range (%.1f) for %s — discarding", raw_bpm, path.name)
-        return None
-
-    return round(raw_bpm, 2)
+    return _apply_bpm_correction(raw_bpm, genre, path.name, "aubio")
 
 
 # ---------------------------------------------------------------------------

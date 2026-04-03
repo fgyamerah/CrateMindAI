@@ -1,0 +1,201 @@
+{
+  "_comment": "Centralized junk/promo-source detection patterns for DJ Toolkit. Edit here to add/remove watermark terms without touching Python code.",
+
+  "phrase_patterns": [
+    {
+      "regex": "^(1[0-2]|[1-9])[AB]\\s*[-|\\u2013_]\\s*",
+      "flags": "IGNORECASE",
+      "replacement": "",
+      "description": "Camelot/Open Key prefix accidentally written into non-key fields (e.g. '8A - My Song')"
+    },
+    {
+      "regex": "\\bfor\\s+dj(?:'?s?)?\\s+(?:use\\s+)?only\\b",
+      "flags": "IGNORECASE",
+      "replacement": "",
+      "description": "for dj only / for djs only / for dj use only — promo distribution watermark"
+    },
+    {
+      "regex": "\\bpromo\\s+only\\b",
+      "flags": "IGNORECASE",
+      "replacement": "",
+      "description": "promo only — distribution marker"
+    },
+    {
+      "regex": "\\bdjcity\\b",
+      "flags": "IGNORECASE",
+      "replacement": "",
+      "description": "djcity — DJCity.com download-source tag"
+    },
+    {
+      "regex": "\\bdj\\s+city\\b",
+      "flags": "IGNORECASE",
+      "replacement": "",
+      "description": "dj city — DJCity.com source tag variant"
+    },
+    {
+      "regex": "\\bzipdj\\b",
+      "flags": "IGNORECASE",
+      "replacement": "",
+      "description": "zipdj — ZipDJ.com download-source tag"
+    },
+    {
+      "regex": "\\btraxcrate\\b",
+      "flags": "IGNORECASE",
+      "replacement": "",
+      "description": "traxcrate — TraxCrate.com download-source tag"
+    },
+    {
+      "regex": "\\bmusicafresca\\b",
+      "flags": "IGNORECASE",
+      "replacement": "",
+      "description": "musicafresca — MusicaFresca.com source watermark"
+    },
+    {
+      "regex": "\\bbeatsource\\b",
+      "flags": "IGNORECASE",
+      "replacement": "",
+      "description": "beatsource — Beatsource.com download-source tag"
+    },
+    {
+      "regex": "\\btraxsource\\b",
+      "flags": "IGNORECASE",
+      "replacement": "",
+      "description": "traxsource — Traxsource.com source tag"
+    },
+    {
+      "regex": "\\bdownloaded?\\s+from(?:\\s+\\S+)?",
+      "flags": "IGNORECASE",
+      "replacement": "",
+      "description": "downloaded from <source> — generic source tag; trailing token optional (may already be stripped)"
+    },
+    {
+      "regex": "\\bofficial\\s+(?:audio|video|music\\s+video|lyric\\s+video|mv|clip)\\b",
+      "flags": "IGNORECASE",
+      "replacement": "",
+      "description": "official audio/video/music video — YouTube auto-generated tags; useless for DJs"
+    },
+    {
+      "regex": "\\bfree\\s+download\\b",
+      "flags": "IGNORECASE",
+      "replacement": "",
+      "description": "free download — promotional label, adds no information"
+    },
+    {
+      "regex": "\\bbuy\\s+(?:on\\s+)?(?:beatport|traxsource|bandcamp|now)\\b",
+      "flags": "IGNORECASE",
+      "replacement": "",
+      "description": "buy on beatport/now — sales call-to-action; MUST precede standalone beatport entry"
+    },
+    {
+      "regex": "\\bbeatport\\b",
+      "flags": "IGNORECASE",
+      "replacement": "",
+      "description": "beatport standalone — source watermark; placed AFTER buy-on-beatport pattern"
+    },
+    {
+      "regex": "\\bout\\s+now\\s+on\\s+\\S+",
+      "flags": "IGNORECASE",
+      "replacement": "",
+      "description": "out now on <label> — release announcement embedded in tags"
+    },
+    {
+      "regex": "\\bexclusive\\b(?!\\s+(?:mix|remix|edit|version|dub|cut))",
+      "flags": "IGNORECASE",
+      "replacement": "",
+      "description": "exclusive alone — promo watermark; preserves 'Exclusive Mix', 'Exclusive Remix' etc."
+    },
+    {
+      "regex": "[\\[\\(]?\\s*\\by\\b\\s+\\bdj\\b\\s+l\\.?\\s*p\\.?\\s*[\\]\\)]?",
+      "flags": "IGNORECASE",
+      "replacement": "",
+      "description": "[y DJ L.p.] and all normalised variants — promo/source watermark"
+    }
+  ],
+
+  "exact_source_junk": [
+    "traxcrate",
+    "musicafresca",
+    "housegroovesa",
+    "fordjonly",
+    "djcity",
+    "zipdj",
+    "beatsource",
+    "traxsource",
+    "beatport",
+    "promo only",
+    "promo-only",
+    "fordjonly.com",
+    "djcity.com",
+    "traxcrate.com",
+    "musicafresca.com",
+    "zipdj.com"
+  ],
+
+  "source_junk_substrings": [
+    "traxcrate",
+    "fordjonly",
+    "djcity",
+    "zipdj",
+    "musicafresca",
+    "beatsource",
+    "traxsource",
+    "beatport",
+    "downloaded from",
+    "promo only",
+    "promo-only",
+    "official audio",
+    "official video",
+    "official music video",
+    "free download",
+    "exclusive"
+  ],
+
+  "exact_bad_labels": [
+    "",
+    "unknown",
+    "n/a",
+    "na",
+    "none",
+    "null",
+    "test",
+    "promo",
+    "various",
+    "various artists",
+    "va",
+    "-",
+    "--",
+    "?",
+    "??",
+    "tbc",
+    "tba",
+    "untitled"
+  ],
+
+  "genre_words": [
+    "house",
+    "techno",
+    "deep house",
+    "tech house",
+    "afro house",
+    "drum and bass",
+    "dnb",
+    "jungle",
+    "garage",
+    "uk garage",
+    "trance",
+    "progressive",
+    "melodic house",
+    "organic house",
+    "amapiano",
+    "afrobeats",
+    "electronic",
+    "dance",
+    "edm"
+  ],
+
+  "domain_tlds": [
+    "com", "net", "org", "info", "io", "dj", "fm",
+    "me", "biz", "us", "tv", "cc", "to", "co",
+    "uk", "de", "fr", "es", "it", "nl", "pl", "ru"
+  ]
+}

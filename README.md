@@ -2,7 +2,7 @@
 
 > Automated DJ library preparation — from raw downloads to a Rekordbox-ready collection.
 
-TrackIQ is a local-first, pipeline-based toolkit that takes audio files from an inbox folder and produces a clean, fully-tagged, BPM/key-analysed music library with Rekordbox-compatible XML exports and a full set of energy, genre, and combined playlists. It runs unattended on Linux (Ubuntu Studio 24), optionally on a timer or inbox-watch trigger, and outputs a library that transfers directly to a DJ drive for use on Windows.
+TrackIQ is a local-first, pipeline-based toolkit that takes audio files from an inbox folder and produces a clean, fully-tagged, BPM/key-analysed music library with Rekordbox-compatible XML exports and a full set of energy, genre, key, and route playlists. It runs unattended on Linux (Ubuntu Studio 24), optionally on a timer or inbox-watch trigger, and outputs a library that transfers directly to a DJ drive for use on Windows.
 
 ---
 
@@ -16,6 +16,14 @@ TrackIQ is a local-first, pipeline-based toolkit that takes audio files from an 
 6. [Configuration](#configuration)
 7. [Usage](#usage)
    - [Main Pipeline](#main-pipeline)
+   - [Standalone Playlist Generation](#standalone-playlist-generation)
+   - [Duplicate Detection and Cleanup](#duplicate-detection-and-cleanup-dedupe)
+   - [Cue Point Suggestion](#cue-point-suggestion-cue-suggest)
+   - [Set Builder](#set-builder-set-builder)
+   - [Harmonic Mixing Suggestions](#harmonic-mixing-suggestions-harmonic-suggest)
+   - [Artist Folder Clean](#artist-folder-clean-subcommand)
+   - [Artist Merge](#artist-merge-subcommand)
+   - [Metadata Clean](#metadata-clean-subcommand)
    - [Label Intelligence](#label-intelligence-subcommand)
    - [Label Clean](#label-clean-subcommand)
    - [Library Enrichment](#library-enrichment-flag)
@@ -45,8 +53,16 @@ TrackIQ solves this by running each file through a deterministic, idempotent pip
 5. **Detects BPM** using aubio with windowed median averaging
 6. **Detects musical key** in Camelot notation using keyfinder-cli
 7. **Writes final tags** in ID3v2.3 (MP3), FLAC, or M4A format
-8. **Generates playlists** — per-letter, per-genre, energy-tier (Peak/Mid/Chill), and combined genre+energy M3U playlists, plus a full Rekordbox XML with all four playlist hierarchies
+8. **Generates playlists** — per-letter, per-genre, energy-tier (Peak/Mid/Chill), combined genre+energy, Camelot key (1A–12B), and route-type (Acapella, Tool, Vocal) M3U playlists, plus a full Rekordbox XML with all playlist hierarchies
 9. **Reports** on every run
+
+Standalone post-pipeline tools provide:
+- **Library dedupe** — detect and quarantine exact/quality duplicates without inbox re-processing
+- **Cue point suggestion** — multi-feature audio analysis (RMS, LF energy, spectral flux) to suggest intro/mix-in/drop/breakdown/outro positions
+- **Set building** — energy-curve-aware automatic set generation from your library
+- **Harmonic mixing suggestions** — Camelot-wheel + BPM + energy + genre scoring for next-track recommendations
+- **Metadata clean** — retroactive global junk removal across all tag fields
+- **Artist merge / folder clean** — consolidate artist spelling variants and remove bad folder names
 
 The result is a library that is ready to transfer to a DJ drive and import into Rekordbox without any manual cleanup.
 
@@ -69,43 +85,55 @@ The result is a library that is ready to transfer to a DJ drive and import into 
 
 | Feature | Implementation | Status |
 |---|---|---|
-| Audio file validation (bitrate, duration, codec) | `modules/qc.py` + ffprobe | ✅ Implemented |
-| Duplicate detection | `modules/dedupe.py` + rmlint | ✅ Implemented |
-| Smart file organisation | `modules/organizer.py` + Beets / Python parser | ✅ Implemented |
-| Camelot key / artist / title prefix stripping | `modules/parser.py` | ✅ Implemented |
-| Global junk removal from all tag fields (incl. label) | `modules/sanitizer.py` | ✅ Implemented |
-| Camelot-key prefix removal from non-key fields | `modules/sanitizer.py` | ✅ Implemented |
-| DJ-pool watermark removal (traxcrate, musicafresca, etc.) | `modules/sanitizer.py` | ✅ Implemented |
-| Label-name detection in artist/album_artist fields | `modules/parser.py` → `classify_name_candidate()` | ✅ Implemented |
-| BPM detection with windowed median | `modules/analyzer.py` + aubio | ✅ Implemented |
-| Musical key detection (Camelot) | `modules/analyzer.py` + keyfinder-cli | ✅ Implemented |
-| ID3v2.3 / FLAC / M4A tag writing | `modules/tagger.py` + mutagen | ✅ Implemented |
-| Per-letter M3U playlists | `modules/playlists.py` | ✅ Implemented |
-| Per-genre M3U playlists | `modules/playlists.py` | ✅ Implemented |
-| Energy-tier M3U playlists (Peak / Mid / Chill) | `modules/playlists.py` | ✅ Implemented |
-| Combined genre+energy M3U playlists | `modules/playlists.py` | ✅ Implemented |
-| Rekordbox XML with Energy + Combined playlist nodes | `modules/playlists.py` | ✅ Implemented |
-| Run reports | `modules/reporter.py` | ✅ Implemented |
-| SQLite audit trail + rollback | `db.py` + `scripts/rollback.py` | ✅ Implemented |
-| Metadata rollback CLI | `scripts/rollback.py` | ✅ Implemented |
-| Inbox-watch trigger | `scripts/watch_inbox.sh` + inotifywait | ✅ Implemented |
-| Transfer to DJ drive | `scripts/transfer.sh` + rsync | ✅ Implemented |
-| systemd timer + watch service | `systemd/` | ✅ Implemented |
+| Audio file validation (bitrate, duration, codec) | `modules/qc.py` + ffprobe | ✅ |
+| Duplicate detection (inbox) | `modules/dedupe.py` + rmlint | ✅ |
+| Smart file organisation | `modules/organizer.py` + Beets / Python parser | ✅ |
+| Camelot key / artist / title prefix stripping | `modules/parser.py` | ✅ |
+| Global junk removal from all tag fields (incl. label) | `modules/sanitizer.py` | ✅ |
+| DJ-pool watermark removal (traxcrate, musicafresca, etc.) | `modules/sanitizer.py` | ✅ |
+| Label-name detection in artist/album_artist fields | `modules/parser.py` → `classify_name_candidate()` | ✅ |
+| BPM detection with windowed median | `modules/analyzer.py` + aubio | ✅ |
+| Musical key detection (Camelot) | `modules/analyzer.py` + keyfinder-cli | ✅ |
+| ID3v2.3 / FLAC / M4A tag writing | `modules/tagger.py` + mutagen | ✅ |
+| Per-letter M3U playlists | `modules/playlists.py` | ✅ |
+| Per-genre M3U playlists | `modules/playlists.py` | ✅ |
+| Energy-tier M3U playlists (Peak / Mid / Chill) | `modules/playlists.py` | ✅ |
+| Combined genre+energy M3U playlists | `modules/playlists.py` | ✅ |
+| **Camelot key playlists (1A–12B)** | `modules/playlists.py` | ✅ |
+| **Route playlists (Acapella / Tool / Vocal)** | `modules/playlists.py` | ✅ |
+| Rekordbox XML with all playlist hierarchies | `modules/playlists.py` | ✅ |
+| Run reports | `modules/reporter.py` | ✅ |
+| SQLite audit trail + rollback | `db.py` + `scripts/rollback.py` | ✅ |
+
+### Standalone Subcommands
+
+| Subcommand | Purpose | Module |
+|---|---|---|
+| `playlists` | Regenerate all M3U playlists and Rekordbox XML without running inbox pipeline | `modules/playlists.py` |
+| `dedupe` | Detect and quarantine exact/quality duplicates across the sorted library | `modules/library_dedupe.py` |
+| `cue-suggest` | Suggest intro/mix-in/drop/breakdown/outro cue points from audio analysis | `modules/cue_suggest.py` |
+| `set-builder` | Build an energy-curve DJ set from the library database | `modules/set_builder.py` |
+| `harmonic-suggest` | Rank next-track suggestions by Camelot + BPM + energy + genre | `modules/harmonic.py` |
+| `metadata-clean` | Retroactive junk removal from all tag fields across the library | `modules/metadata_clean.py` |
+| `artist-folder-clean` | Fix bad artist folder names (Camelot prefixes, URL junk, symbols) | `modules/artist_folder_clean.py` |
+| `artist-merge` | Merge artist folder spelling variants into a single canonical folder | `modules/artist_merge.py` |
+| `label-clean` | Detect, normalize, and optionally write back label/TPUB tags | `label_intel/cleaner.py` |
+| `label-intel` | Scrape label metadata from Beatport and Traxsource | `label_intel/scraper.py` |
 
 ### Label Intelligence
 
 | Feature | Command | Status |
 |---|---|---|
-| Web scraping (Beatport + Traxsource) | `label-intel` | ✅ Implemented |
-| JSON / CSV / TXT / SQLite export | `label-intel` | ✅ Implemented |
-| Library enrichment (BPM/genre from local tracks) | `--label-enrich-from-library` | ✅ Implemented |
-| Label tag detection + normalization + confidence scoring | `label-clean` | ✅ Implemented (Phase 1) |
-| Junk label rejection (Camelot keys, URLs, DJ-pool watermarks) | `label-clean` | ✅ Implemented |
-| Filename-based label extraction | `label-clean` | ✅ Implemented |
-| Alias merging across spelling variants | `label-clean` | ✅ Implemented |
-| Conservative tag write-back | `label-clean --write-tags` | ✅ Implemented |
-| Discogs provider | `--use-discogs` | 🔲 Placeholder (Phase 2) |
-| Beatport single-label lookup | `--use-beatport` | 🔲 Placeholder (Phase 2) |
+| Web scraping (Beatport + Traxsource) | `label-intel` | ✅ |
+| JSON / CSV / TXT / SQLite export | `label-intel` | ✅ |
+| Library enrichment (BPM/genre from local tracks) | `--label-enrich-from-library` | ✅ |
+| Label tag detection + normalization + confidence scoring | `label-clean` | ✅ Phase 1 |
+| Junk label rejection (Camelot keys, URLs, DJ-pool watermarks) | `label-clean` | ✅ |
+| Filename-based label extraction | `label-clean` | ✅ |
+| Alias merging across spelling variants | `label-clean` | ✅ |
+| Conservative tag write-back | `label-clean --write-tags` | ✅ |
+| Discogs provider | `--use-discogs` | 🔲 Phase 2 |
+| Beatport single-label lookup | `--use-beatport` | 🔲 Phase 2 |
 
 ### Routing
 
@@ -129,29 +157,39 @@ Tracks are automatically routed into specialised library folders based on title 
 ```
 trackiq/
 │
-├── pipeline.py               Main entry point — orchestrates all stages
+├── pipeline.py               Main entry point — orchestrates all stages + all subcommands
 ├── pipeline.sh               Bash wrapper (locking, env, dependency checks)
 ├── config.py                 Central configuration and path definitions
 ├── config_local.py           User-local overrides (git-ignored, created by setup.sh)
-├── db.py                     SQLite database layer — all pipeline state
+├── db.py                     SQLite database layer — all pipeline state + cue/set tables
 ├── beets_config.yaml         Beets music organizer configuration template
 ├── setup.sh                  First-time installer (directories, packages, services)
 ├── known_labels.txt          Label blocklist for parser/label-clean
 ├── PROJECT_CONTEXT.txt       Detailed technical documentation
 │
-├── modules/                  Pipeline stage modules
-│   ├── parser.py             Filename/metadata parsing, prefix removal, validation,
-│   │                         classify_name_candidate() for label vs artist detection
+├── modules/                  Pipeline stage and subcommand modules
+│   ├── parser.py             Filename/metadata parsing, prefix removal, validation
 │   ├── sanitizer.py          Junk removal from all tag fields including label/TPUB
 │   ├── organizer.py          File routing, folder construction, beets integration
 │   ├── qc.py                 Quality control (ffprobe — bitrate, duration, codec)
-│   ├── dedupe.py             Duplicate detection (rmlint)
+│   ├── dedupe.py             Duplicate detection during pipeline (rmlint)
+│   ├── library_dedupe.py     Standalone library-wide dedupe (Case A/B/C, quarantine)
 │   ├── analyzer.py           BPM (aubio) and key (keyfinder-cli) analysis
 │   ├── tagger.py             Final tag writing (mutagen, ID3v2.3/FLAC/M4A)
 │   ├── playlists.py          M3U and Rekordbox XML generation (letter, genre,
-│   │                         energy, combined genre+energy)
+│   │                         energy, combined, Camelot key 1A–12B, route types)
 │   ├── reporter.py           Human-readable run summary reports
-│   └── textlog.py            Append-only plaintext audit log
+│   ├── textlog.py            Append-only plaintext audit log
+│   ├── junk_patterns.py      Centralised junk-pattern loader (from config/junk_patterns.json)
+│   ├── metadata_clean.py     Retroactive global junk removal from all tag fields
+│   ├── artist_merge.py       Artist folder variant detection and merge
+│   ├── artist_folder_clean.py Retroactive bad-name folder repair
+│   ├── cue_suggest.py        Audio cue point suggestion (RMS + LF + spectral flux)
+│   ├── harmonic.py           Harmonic mixing suggestions (Camelot + BPM + energy + genre)
+│   └── set_builder.py        Energy-curve auto set builder
+│
+├── config/
+│   └── junk_patterns.json    Centralised junk pattern definitions (URLs, promo, symbols)
 │
 ├── label_intel/              Label Intelligence package
 │   ├── models.py             LabelRecord dataclass
@@ -225,7 +263,7 @@ The installer installs these system packages via `apt`:
 
 | Package | Provides |
 |---|---|
-| `ffmpeg` | `ffprobe` — audio validation and metadata extraction |
+| `ffmpeg` | `ffprobe` + `ffmpeg` — audio validation, metadata extraction, and audio decode for cue analysis |
 | `aubio-tools` | `aubiobpm` — BPM detection |
 | `rmlint` | `rmlint` — duplicate file detection |
 | `inotify-tools` | `inotifywait` — inbox file watcher |
@@ -237,9 +275,12 @@ And these Python packages via `pip`:
 | Package | Used for |
 |---|---|
 | `mutagen` | Tag reading and writing |
+| `numpy` | Audio feature extraction for cue-suggest (RMS, spectral flux, LF energy) |
 | `beets` | Organizer integration (optional) |
 | `requests` | Label Intelligence HTTP scraping |
 | `beautifulsoup4` | Label Intelligence HTML parsing |
+
+**Optional:** `librosa` — improves beat tracking for cue-suggest when installed (`pip install librosa`). Not required; the tool falls back to ffmpeg+numpy automatically.
 
 **keyfinder-cli** is not in apt. The installer will prompt for manual installation or an AppImage path.
 
@@ -270,12 +311,11 @@ All paths, thresholds, and binary names are defined in `config.py`. Override any
 MUSIC_ROOT = Path("/mnt/ssd/music")
 WINDOWS_DRIVE_LETTER = "D"
 LABEL_CLEAN_THRESHOLD = 0.75
-GENERATE_ENERGY_PLAYLISTS = False   # disable energy playlists if not needed
+GENERATE_KEY_PLAYLISTS = False    # disable Camelot key playlists if not needed
+GENERATE_ROUTE_PLAYLISTS = False  # disable route playlists if not needed
 ```
 
 ### Environment Variables
-
-All key paths can also be set via environment variables, which take priority:
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -287,23 +327,21 @@ All key paths can also be set via environment variables, which take priority:
 | `AUBIO_BIN` | _(auto)_ | aubio binary — probes `aubio` then `aubiotrack` |
 | `AUBIOBPM_BIN` | `aubiobpm` | Legacy aubio BPM binary |
 | `KEYFINDER_BIN` | `keyfinder-cli` | Key detection binary |
-| `FFPROBE_BIN` | `ffprobe` | ffprobe binary |
+| `FFPROBE_BIN` | `ffprobe` | ffprobe binary (ffmpeg derived from same path) |
 | `BEET_BIN` | `beet` | Beets CLI binary |
 
 ### Directory Layout
 
-After `setup.sh` runs, the music directory tree looks like this:
-
 ```
 $DJ_MUSIC_ROOT/                     (default: /music)
-│
 ├── inbox/                          Drop new tracks here
 ├── processing/                     Temporary staging (pipeline use only)
 │
 ├── library/
 │   ├── sorted/                     Clean, organized library
 │   │   ├── _unsorted/              Tracks Beets could not identify
-│   │   └── _compilations/          Multi-artist albums
+│   │   ├── _compilations/          Multi-artist albums
+│   │   └── _duplicates/            Quarantined duplicates (library dedupe)
 │   ├── acapella/
 │   ├── instrumental/
 │   ├── dj_tools/
@@ -312,7 +350,7 @@ $DJ_MUSIC_ROOT/                     (default: /music)
 │   ├── live/
 │   └── unknown/                    Tracks with insufficient metadata
 │
-├── duplicates/                     Quarantined duplicate files
+├── duplicates/                     Quarantined duplicate files (pipeline dedupe)
 ├── rejected/                       Failed QC (corrupt, too short, etc.)
 │
 ├── playlists/
@@ -321,19 +359,23 @@ $DJ_MUSIC_ROOT/                     (default: /music)
 │   │   ├── _all_tracks.m3u8       Master playlist (all tracks)
 │   │   ├── Genre/                 Per-genre playlists
 │   │   │   ├── Afro House.m3u8
-│   │   │   ├── Amapiano.m3u8
 │   │   │   └── ...
 │   │   ├── Energy/                Energy-tier playlists
 │   │   │   ├── Peak.m3u8
 │   │   │   ├── Mid.m3u8
 │   │   │   └── Chill.m3u8
-│   │   └── Combined/              Genre+energy combined playlists
-│   │       ├── Peak Afro House.m3u8
-│   │       ├── Chill Afro House.m3u8
-│   │       ├── Peak Amapiano.m3u8
-│   │       └── ...
+│   │   ├── Combined/              Genre+energy combined playlists
+│   │   │   ├── Peak Afro House.m3u8
+│   │   │   └── ...
+│   │   ├── Key/                   Camelot key playlists
+│   │   │   ├── 1A.m3u8 … 12B.m3u8
+│   │   │   └── ...
+│   │   └── Route/                 Route-type playlists
+│   │       ├── Acapella.m3u8
+│   │       ├── Tool.m3u8
+│   │       └── Vocal.m3u8
 │   └── xml/
-│       └── rekordbox_library.xml  Full Rekordbox import (all playlist types)
+│       └── rekordbox_library.xml  Full Rekordbox import (all playlist hierarchies)
 │
 ├── data/
 │   └── labels/
@@ -342,7 +384,7 @@ $DJ_MUSIC_ROOT/                     (default: /music)
 │       └── clean/                  label-clean reports
 │
 ├── .cache/
-│   └── label_intel/                HTTP cache for scraper (SHA256-keyed HTML files)
+│   └── label_intel/                HTTP cache for scraper
 │
 └── logs/
     ├── pipeline.log                Structured pipeline log (appended per run)
@@ -350,8 +392,16 @@ $DJ_MUSIC_ROOT/                     (default: /music)
     ├── beets_import.log            Beets import log
     ├── processed.db                SQLite database (all pipeline state)
     ├── README.md                   Auto-generated run summary (overwritten)
-    └── reports/
-        └── pipeline_<run_id>.txt   Per-run reports
+    ├── reports/                    Per-run pipeline reports
+    ├── cue_suggest/                Cue point suggestion outputs
+    │   ├── cue_suggestions.json    Master JSON (all tracks, latest DB state)
+    │   ├── cue_suggestions.csv     Master wide-format CSV (one row per track)
+    │   └── runs/                   Per-run detail logs (one row per cue point)
+    ├── set_builder/                Set builder outputs (M3U + CSV per generated set)
+    ├── harmonic_suggest/           Harmonic suggestion JSON exports
+    ├── metadata_clean/             metadata-clean reports
+    ├── artist_merge/               artist-merge reports
+    └── artist_folder_clean/        artist-folder-clean reports
 ```
 
 ### Quality Thresholds
@@ -367,11 +417,41 @@ BPM_MAX = 200
 ### Playlist Generation Toggles
 
 ```python
+GENERATE_GENRE_PLAYLISTS    = True   # per-genre playlists
 GENERATE_ENERGY_PLAYLISTS   = True   # Peak / Mid / Chill playlists
 GENERATE_COMBINED_PLAYLISTS = True   # Genre+Energy combined playlists
+GENERATE_KEY_PLAYLISTS      = True   # Camelot key playlists (1A–12B)
+GENERATE_ROUTE_PLAYLISTS    = True   # route playlists (Acapella, Tool, Vocal)
+PLAYLIST_MIN_TRACKS         = 2      # minimum tracks to write a playlist
 ```
 
-Set either to `False` in `config_local.py` to skip those playlist types. The Rekordbox XML omits the corresponding folder nodes automatically.
+Set any to `False` in `config_local.py` to skip those playlist types.
+
+### Cue Suggest Configuration
+
+```python
+CUE_SUGGEST_OUTPUT_DIR      = LOGS_DIR / "cue_suggest"
+CUE_SUGGEST_WRITE_SIDECARS  = False   # write .cues.json next to audio files
+CUE_SUGGEST_MIN_CONFIDENCE  = 0.4    # ignore cues below this when writing to DB
+```
+
+### Set Builder Configuration
+
+```python
+SET_BUILDER_OUTPUT_DIR = LOGS_DIR / "set_builder"
+```
+
+### Harmonic Suggest Configuration
+
+```python
+HARMONIC_SUGGEST_OUTPUT_DIR = LOGS_DIR / "harmonic_suggest"
+```
+
+### Dedupe Configuration
+
+```python
+DEDUPE_QUARANTINE_DIR = SORTED / "_duplicates"
+```
 
 ### Label Intelligence Paths
 
@@ -380,33 +460,9 @@ LABEL_INTEL_SEEDS   = MUSIC_ROOT / "data/labels/seeds.txt"
 LABEL_INTEL_OUTPUT  = MUSIC_ROOT / "data/labels/output"
 LABEL_INTEL_CACHE   = MUSIC_ROOT / ".cache/label_intel"
 LABEL_INTEL_SOURCES = ["beatport", "traxsource"]
-LABEL_INTEL_DELAY   = 2.0         # seconds between requests per host
-```
-
-### Label Clean Paths
-
-```python
+LABEL_INTEL_DELAY   = 2.0
 LABEL_CLEAN_OUTPUT    = MUSIC_ROOT / "data/labels/clean"
-LABEL_CLEAN_THRESHOLD = 0.85     # minimum confidence for automatic write-back
-```
-
-### Known Labels File
-
-`known_labels.txt` at the project root is a plain text blocklist loaded by the parser to classify names as labels rather than artist names. One name per line, `#` comments supported.
-
-```text
-# known_labels.txt
-drumcode
-hot creations
-elrow music
-fabric
-```
-
-Override the path in `config_local.py`:
-
-```python
-from modules.parser import _DEFAULT_KNOWN_LABELS_PATH
-KNOWN_LABELS_FILE = Path("/custom/path/known_labels.txt")
+LABEL_CLEAN_THRESHOLD = 0.85
 ```
 
 ---
@@ -446,16 +502,322 @@ python3 pipeline.py --verbose
 [3/8]  Organize                 Beets (MusicBrainz) → Python parser fallback
 [4/8]  Sanitize tags            Strip URL watermarks, promo phrases, symbols,
                                 Camelot key prefixes, DJ-pool watermarks
-                                Fields cleaned: title, artist, album, genre,
-                                comment, organization (label/TPUB)
-[5/8]  BPM + key analysis       aubiobpm → Camelot key via keyfinder-cli
+[5/8]  BPM + key analysis       aubio → Camelot key via keyfinder-cli
 [6/8]  Write tags               mutagen: ID3v2.3 / FLAC / M4A
-[7/8]  Playlist generation      Letter + Genre + Energy + Combined M3U
-                                Rekordbox XML (all four playlist hierarchies)
+[7/8]  Playlist generation      Letter + Genre + Energy + Combined + Key + Route M3U
+                                Rekordbox XML (all six playlist hierarchies)
 [8/8]  Report                   Text report + auto-update README in logs/
 ```
 
 All steps are idempotent. Tracks with `status='ok'` in the database are skipped.
+
+---
+
+### Standalone Playlist Generation
+
+Regenerate all playlists and Rekordbox XML from the current library database without running the full inbox pipeline. Useful after manual library edits, after running `dedupe`, or any time you want a fresh export.
+
+```bash
+# Preview all outputs (no files written)
+python3 pipeline.py playlists --dry-run
+
+# Write all M3U playlists and Rekordbox XML
+python3 pipeline.py playlists
+
+# M3U only — skip XML
+python3 pipeline.py playlists --no-xml
+
+# Skip specific playlist types
+python3 pipeline.py playlists --no-key --no-route
+python3 pipeline.py playlists --no-genre --no-energy --no-combined
+
+# Use a custom library root
+python3 pipeline.py playlists --path /mnt/music_ssd/KKDJ/
+```
+
+**Available flags:**
+
+| Flag | Effect |
+|---|---|
+| `--dry-run` | Show what would be written, create no files |
+| `--no-genre` | Skip Genre/ playlists |
+| `--no-energy` | Skip Energy/ playlists |
+| `--no-combined` | Skip Combined/ playlists |
+| `--no-key` | Skip Key/ (Camelot) playlists |
+| `--no-route` | Skip Route/ playlists |
+| `--no-xml` | Skip Rekordbox XML export |
+| `--path DIR` | Override music root directory |
+
+---
+
+### Duplicate Detection and Cleanup (`dedupe`)
+
+Scan the sorted library for duplicate audio files and move them to a quarantine folder. Files are **moved, never deleted** — always recoverable.
+
+```bash
+# Preview duplicate groups, no files moved
+python3 pipeline.py dedupe --dry-run
+
+# Quarantine detected duplicates
+python3 pipeline.py dedupe
+
+# Scan a custom directory
+python3 pipeline.py dedupe --path /mnt/music_ssd/KKDJ/
+
+# Quarantine to a custom directory
+python3 pipeline.py dedupe --quarantine-dir /music/review/
+```
+
+**Detection cases:**
+
+| Case | Condition | Action |
+|---|---|---|
+| **Case A — Exact duplicate** | Same SHA-256 hash | Keep one, quarantine the rest |
+| **Case B — Quality duplicate** | Same track, different format/bitrate | Keep best quality, quarantine rest |
+| **Case C — Different versions** | "Extended Mix" vs "Radio Edit" etc. | Report only — never auto-removed |
+
+**Quality priority (highest first):** WAV / AIFF > FLAC > MP3 320 > MP3 256 > M4A > MP3 192 > OGG/OPUS > MP3 128 > MP3 <128
+
+**Safety rules:**
+- Duration mismatch guard: if two tracks with similar titles differ by more than 5 seconds in duration, Case B is skipped (different songs, not quality variants)
+- Ambiguous quality ties are skipped (manual review)
+- Case C is never auto-removed
+
+---
+
+### Cue Point Suggestion (`cue-suggest`)
+
+Analyse audio to detect natural cue point positions. Outputs suggested positions for review — **not native Rekordbox hot-cues**. All positions should be reviewed and confirmed in Rekordbox before use in a live set.
+
+```bash
+# Analyse full library (dry run — no DB writes)
+python3 pipeline.py cue-suggest --dry-run
+
+# Analyse full library and store results in DB + master output files
+python3 pipeline.py cue-suggest
+
+# Analyse first 20 tracks only (useful for testing)
+python3 pipeline.py cue-suggest --limit 20
+
+# Analyse only tracks matching an artist or title
+python3 pipeline.py cue-suggest --track "Black Coffee"
+python3 pipeline.py cue-suggest --track "Enoo Napa"
+
+# Write only JSON output (skip CSV)
+python3 pipeline.py cue-suggest --export-format json
+
+# Analyse a custom directory
+python3 pipeline.py cue-suggest --path /music/sorted/Afro\ House/
+
+# Lower minimum confidence stored to DB (include more uncertain cues)
+python3 pipeline.py cue-suggest --min-confidence 0.30
+```
+
+**Cue types detected:**
+
+| Cue | Description | Confidence (typical) |
+|---|---|---|
+| `intro_start` | Bar 1 — always present | 1.00 |
+| `mix_in` | First stable beat-phrase for DJ entry | 0.55–0.85 |
+| `groove_start` | First sustained full-arrangement section | 0.60–0.85 |
+| `drop` | Main energy arrival / impact | 0.65–0.90 |
+| `breakdown` | Significant energy/density reduction after peak | 0.60–0.82 |
+| `outro_start` | Start of mix-out section | 0.68–0.82 |
+
+**Signal features used:**
+
+| Feature | Method | Purpose |
+|---|---|---|
+| RMS energy | `sqrt(mean(frame²))` | Overall loudness / section energy |
+| Low-frequency energy | FFT bins 1–250 Hz | Bass/kick presence proxy |
+| Spectral flux | Sum of positive spectral differences | Onset strength / novelty |
+
+All features are smoothed with a 4-second moving average and aggregated to bar resolution (bar grid derived from BPM). When audio decode fails, a BPM-only structural heuristic is used as a fallback (all cues marked `source=bpm_estimate`, confidence ≤ 0.50).
+
+**Confidence scoring:** Each cue starts from a type-specific base value and earns bonuses for feature agreement (e.g. LF energy also crosses threshold), distinctiveness (deep valley vs shallow), and position within the track. Cues with confidence < 0.50 include a "LOW CONFIDENCE — verify in Rekordbox" note in the output.
+
+**Output files:**
+
+| File | Description |
+|---|---|
+| `logs/cue_suggest/cue_suggestions.json` | Master JSON — all tracks in DB, rebuilt each run |
+| `logs/cue_suggest/cue_suggestions.csv` | Wide CSV — one row per track, columns per cue type |
+| `logs/cue_suggest/runs/cues_TIMESTAMP.csv` | Per-run detail log — one row per cue point |
+| `<audio>.cues.json` | Sidecar per track (opt-in via `CUE_SUGGEST_WRITE_SIDECARS = True`) |
+
+---
+
+### Set Builder (`set-builder`)
+
+Automatically build an energy-curve DJ set from the library database, arranging tracks across phases with harmonic transition scoring.
+
+```bash
+# Preview set (no files written)
+python3 pipeline.py set-builder --dry-run
+
+# Build a 60-minute peak-energy set (default)
+python3 pipeline.py set-builder
+
+# Build a 90-minute deep/organic set
+python3 pipeline.py set-builder --vibe deep --duration 90
+
+# Build a warm intro set filtered to one genre
+python3 pipeline.py set-builder --vibe warm --genre "afro house"
+
+# Build with a specific harmonic transition strategy
+python3 pipeline.py set-builder --strategy energy_lift --duration 75
+
+# Name the output files
+python3 pipeline.py set-builder --name friday_night_peak --vibe peak --duration 120
+```
+
+**Phase structure:**
+
+| Phase | Energy | BPM range | Purpose |
+|---|---|---|---|
+| `warmup` | Chill / Mid | 100–125 | Gentle intro |
+| `build` | Mid / Peak | 118–130 | Rising energy |
+| `peak` | Peak | 124–150 | Main high-energy section |
+| `release` | Mid / Chill | 110–128 | Brief drop after peak |
+| `outro` | Chill / Mid | 95–125 | Wind-down / closing |
+
+**Vibe presets** control how much time each phase gets:
+
+| Vibe | warmup | build | peak | release | outro |
+|---|---|---|---|---|---|
+| `warm` | 30% | 30% | 15% | 15% | 10% |
+| `peak` | 12% | 20% | 40% | 18% | 10% |
+| `deep` | 25% | 30% | 15% | 20% | 10% |
+| `driving` | 15% | 25% | 35% | 15% | 10% |
+
+**Transition strategies:** `safest` (default) · `energy_lift` · `smooth_blend` · `best_warmup` · `best_late_set`
+
+**Output files** (per generated set):
+
+| File | Description |
+|---|---|
+| `logs/set_builder/<name>.m3u8` | Playable M3U playlist with phase annotations |
+| `logs/set_builder/<name>.csv` | Full metadata + transition notes per track |
+| DB: `set_playlists` + `set_playlist_tracks` | Persistent record queryable by other tools |
+
+---
+
+### Harmonic Mixing Suggestions (`harmonic-suggest`)
+
+Score every track in the library against a reference track (or a key+BPM pair) and print the best transition candidates.
+
+```bash
+# Suggest from a specific track in your library
+python3 pipeline.py harmonic-suggest --track "/music/library/sorted/Black Coffee/track.mp3"
+
+# Suggest from a key + BPM (useful mid-set without a specific track path)
+python3 pipeline.py harmonic-suggest --key 8A --bpm 124
+
+# Use a different ranking strategy
+python3 pipeline.py harmonic-suggest --track "..." --strategy energy_lift
+
+# Get more suggestions
+python3 pipeline.py harmonic-suggest --key 5B --bpm 128 --top-n 20
+
+# Export results to JSON
+python3 pipeline.py harmonic-suggest --key 8A --bpm 126 --json
+
+# Include current track's energy/genre for better scoring
+python3 pipeline.py harmonic-suggest --key 10A --bpm 122 --energy Mid --genre "afro house"
+```
+
+**Scoring factors:**
+
+| Factor | Weight | Method |
+|---|---|---|
+| Camelot compatibility | 35% | Wheel distance (same/±1/mode-switch/±2/far) |
+| BPM compatibility | 30% | Halftime/doubletime-aware delta % |
+| Energy compatibility | 20% | Peak / Mid / Chill tier match |
+| Genre compatibility | 15% | Exact / related / different |
+
+**Camelot scoring:**
+
+| Relationship | Score |
+|---|---|
+| Same key | 1.00 |
+| ±1 position (same mode) | 0.90 |
+| Mode switch (A↔B, same root) | 0.85 |
+| ±1 + mode switch (diagonal) | 0.80 |
+| ±2 same mode | 0.55 |
+| ±3 or more | 0.15 |
+
+**Ranking strategies:** `safest` (default) · `energy_lift` · `smooth_blend` · `best_warmup` · `best_late_set`
+
+**Output:** Terminal table with score, BPM delta, key, energy, and a plain-English explanation per suggestion. Optional JSON file in `logs/harmonic_suggest/` with `--json`.
+
+---
+
+### Artist Folder Clean Subcommand
+
+Retroactively fix artist folder names that were created before parsing fixes were in place.
+
+```bash
+# Scan and report only (no file moves)
+python3 pipeline.py artist-folder-clean --dry-run
+
+# Apply recoverable renames and merges
+python3 pipeline.py artist-folder-clean --apply
+
+# Scan a custom directory
+python3 pipeline.py artist-folder-clean --path /mnt/music_ssd/KKDJ/ --dry-run
+```
+
+**Detection rules:**
+
+| Rule | Example | Outcome |
+|---|---|---|
+| `camelot_prefix` | `1A - Afrikan Roots/` | Renamed to `Afrikan Roots/` |
+| `pure_camelot` | `10B/` | Review only |
+| `bracket_junk` | `[HouseGrooveSA]/` | Review only |
+| `url_junk` | `djcity.com/` | Review only |
+| `symbol_heavy` | < 40% alphanumeric characters | Review only |
+
+Reports written to `logs/artist_folder_clean/`.
+
+---
+
+### Artist Merge Subcommand
+
+Scan the sorted library for artist folders that represent the same base artist (capitalisation / feat / collaborator suffix differences) and merge them into a single canonical folder.
+
+```bash
+# Scan and report only (no file moves)
+python3 pipeline.py artist-merge --dry-run
+
+# Apply safe merges; uncertain cases go to report only
+python3 pipeline.py artist-merge --apply
+
+# Scan a custom directory
+python3 pipeline.py artist-merge --path /mnt/music_ssd/KKDJ/
+```
+
+Reports written to `logs/artist_merge/`.
+
+---
+
+### Metadata Clean Subcommand
+
+Remove URL/promo junk from all metadata fields retroactively across the entire library. Useful after adding new junk patterns or after importing tracks that bypassed sanitization.
+
+```bash
+# Preview all changes (no file writes)
+python3 pipeline.py metadata-clean --dry-run
+
+# Apply changes
+python3 pipeline.py metadata-clean
+
+# Scan a custom directory
+python3 pipeline.py metadata-clean --path /mnt/music_ssd/
+```
+
+**Fields cleaned:** `title`, `artist`, `album`, `albumartist`, `genre`, `comment`, `organization` (label/TPUB), `grouping`, catalog number.
+
+Reports written to `logs/metadata_clean/`.
 
 ---
 
@@ -464,7 +826,7 @@ All steps are idempotent. Tracks with `status='ok'` in the database are skipped.
 Scrape label metadata from Beatport and Traxsource for a list of seed labels.
 
 ```bash
-# Scrape with default seeds file ($DJ_MUSIC_ROOT/data/labels/seeds.txt)
+# Scrape with default seeds file
 python3 pipeline.py label-intel
 
 # Custom seeds file
@@ -481,7 +843,7 @@ python3 pipeline.py label-intel \
     --label-output /tmp/labels/out \
     --label-cache  /tmp/labels/cache
 
-# Slower rate limiting (increase delay if getting throttled)
+# Slower rate limiting
 python3 pipeline.py label-intel --label-delay 5.0
 ```
 
@@ -491,7 +853,6 @@ python3 pipeline.py label-intel --label-delay 5.0
 MoBlack Records
 Defected Records
 Drumcode
-Kerri Chandler
 ```
 
 **Outputs written to `$DJ_MUSIC_ROOT/data/labels/output/`:**
@@ -510,11 +871,8 @@ Kerri Chandler
 Scan your processed library for label metadata — detect, normalize, and optionally write back the `organization/TPUB` tag.
 
 ```bash
-# Scan and report only — no file changes (default / safe mode)
+# Scan and report only (default / safe mode)
 python3 pipeline.py label-clean
-
-# Explicit dry run (same as above)
-python3 pipeline.py label-clean --dry-run
 
 # Write high-confidence labels (≥ 0.85) back to TPUB tag
 python3 pipeline.py label-clean --write-tags
@@ -522,11 +880,11 @@ python3 pipeline.py label-clean --write-tags
 # Export only unresolved tracks for manual review
 python3 pipeline.py label-clean --review-only
 
-# Lower threshold to include grouping-tag fallbacks (0.75)
+# Lower threshold to include grouping-tag fallbacks
 python3 pipeline.py label-clean --write-tags --confidence-threshold 0.75
 
-# Verbose debug output (shows per-field junk rejection reasons)
-python3 pipeline.py label-clean --verbose
+# Scan a custom directory
+python3 pipeline.py label-clean --path /mnt/music_ssd/
 ```
 
 **Detection order and confidence:**
@@ -534,20 +892,11 @@ python3 pipeline.py label-clean --verbose
 | Source | Confidence | Written at default threshold? |
 |---|---|---|
 | Embedded `organization/TPUB` tag (valid) | **0.95** | ✅ Yes |
-| `grouping` tag fallback | 0.75 | No (lower `--confidence-threshold`) |
+| `grouping` tag fallback | 0.75 | No |
 | `comment` tag fallback | 0.60 | No |
-| `albumartist` with label-indicator word | 0.50 | No |
 | Filename: `[Label] Artist - Title` | 0.70 | No |
 | Filename: `Artist - Title (Label Records)` | 0.65 | No |
 | Unresolved | 0.00 | No |
-
-**Junk values are rejected before scoring.** These are always counted as unresolved:
-- Camelot / musical keys: `8A`, `11B`, `3A -`, `10B -`
-- URLs and domain names: `www.musicafresca.com`, `TraxCrate.com`
-- DJ-pool watermarks: `traxcrate`, `fordjonly`, `djcity`, `zipdj`, `musicafresca`
-- Source phrases: `downloaded from`, `promo only`
-
-Add `--verbose` to see `Junk label rejected — field=X value=Y reason=Z` log lines for every rejected candidate.
 
 **Outputs written to `$DJ_MUSIC_ROOT/data/labels/clean/`:**
 
@@ -565,30 +914,8 @@ Add `--verbose` to see `Junk label rejected — field=X value=Y reason=Z` log li
 Enrich the label database using BPM and genre data from your local library without re-analyzing files.
 
 ```bash
-# Read label (TPUB) + genre + BPM from all OK tracks; update labels.json
 python3 pipeline.py --label-enrich-from-library
-
-# With verbose logging
 python3 pipeline.py --label-enrich-from-library --verbose
-```
-
-This reads the `organization` tag from each processed audio file (no re-analysis of BPM or key), then:
-- Creates new label records for labels not yet in the database (score `0.1`)
-- Enriches existing records with `bpm_min`, `bpm_max`, `genres`, `subgenres`, `energy_profile`
-- Never overwrites scraped metadata (Beatport/Traxsource IDs, URLs, higher verification scores)
-
-**Typical workflow:**
-
-```bash
-# 1. Scrape web sources for known labels
-python3 pipeline.py label-intel
-
-# 2. Enrich with your actual library data
-python3 pipeline.py --label-enrich-from-library
-
-# 3. Inspect the result
-sqlite3 /music/data/labels/output/labels.db \
-    "SELECT label_name, bpm_min, bpm_max, energy_profile FROM labels ORDER BY label_name"
 ```
 
 ---
@@ -598,66 +925,49 @@ sqlite3 /music/data/labels/output/labels.db \
 Restore original metadata tags (and optionally original file paths) for any previously processed track.
 
 ```bash
-# List all rollback-eligible records
 python3 scripts/rollback.py list
-
-# Include already-rolled-back records
-python3 scripts/rollback.py list --all
-
-# Inspect a specific history record
 python3 scripts/rollback.py info 42
-
-# Dry-run rollback (preview only)
 python3 scripts/rollback.py rollback 42 --dry-run
-
-# Restore original tags
 python3 scripts/rollback.py rollback 42
-
-# Restore original tags AND move file back to original inbox path
 python3 scripts/rollback.py rollback 42 --restore-path
 ```
 
-Rollback **never deletes files**. It only overwrites tags or moves files. All rollback actions are logged to `processing_log.txt`.
+Rollback **never deletes files**. All rollback actions are logged to `processing_log.txt`.
 
 ---
 
 ### Transfer to DJ Drive
 
 ```bash
-# Mount your drive first, then:
 ./scripts/transfer.sh /mnt/djdrive
-
-# Dry run (shows what would be transferred)
 ./scripts/transfer.sh /mnt/djdrive --dry-run
 ```
 
-Transfers `library/sorted/` and `playlists/` to the drive using `rsync --checksum` (reliable on exFAT). Subsequent runs only transfer new or changed files.
+Transfers `library/sorted/` and `playlists/` using `rsync --checksum`. Subsequent runs only transfer new or changed files.
 
 **After transfer — Rekordbox import on Windows:**
 
 1. Open Rekordbox
 2. **File → Import Library** → select `<drive>:\music\playlists\xml\rekordbox_library.xml`
 3. Select all new tracks → right-click → **Analyze**
-4. Set cue points as needed
+4. Set cue points as needed (use `cue-suggest` output as a reference)
 5. **File → Export to USB**
 
 ---
 
 ## Playlist Types
 
-TrackIQ generates four complementary playlist types, all from the same library in a single pipeline run.
+TrackIQ generates six complementary playlist types from the same library database.
 
 ### Letter playlists
 
-One playlist per first-letter folder (`A.m3u8` through `Z.m3u8`) plus `_all_tracks.m3u8`. These mirror the library's physical folder structure and are useful for quick browsing in Rekordbox.
+One playlist per first-letter folder (`A.m3u8` through `Z.m3u8`) plus `_all_tracks.m3u8`.
 
 ### Genre playlists (`Genre/`)
 
-One playlist per normalized primary genre. Genre strings are normalized before grouping so `"Afro-House"`, `"afro house"`, and `"AFRO HOUSE"` all map to `"Afro House"`. Only the first segment of multi-value genre fields is used.
+One playlist per normalized primary genre. Genre strings are normalized so `"Afro-House"`, `"afro house"`, and `"AFRO HOUSE"` all map to `"Afro House"`.
 
 ### Energy playlists (`Energy/`)
-
-Three playlists based on the energy classification of each track:
 
 | Playlist | Typical BPM | Genre signal |
 |---|---|---|
@@ -665,36 +975,32 @@ Three playlists based on the energy classification of each track:
 | `Mid.m3u8` | 118–125 BPM | Afro House, Amapiano at moderate BPM |
 | `Chill.m3u8` | < 118 BPM | Deep House, Organic House, Melodic House always Chill |
 
-Genre classification takes priority over BPM. A track tagged "Afro Tech" at 122 BPM is placed in Peak. A track tagged "Deep House" at 128 BPM is placed in Chill. Tracks with no BPM and no genre signal default to Mid.
-
-Disable with `GENERATE_ENERGY_PLAYLISTS = False` in `config_local.py`.
+Genre classification takes priority over BPM. Disable with `GENERATE_ENERGY_PLAYLISTS = False`.
 
 ### Combined playlists (`Combined/`)
 
-Genre+energy intersection playlists for the four primary target genres. Up to twelve playlists are produced (three energy tiers × four genres); only playlists with at least one track are written.
+Genre+energy intersection playlists (e.g. `Peak Afro House.m3u8`, `Chill Deep House.m3u8`). Only playlists with at least `PLAYLIST_MIN_TRACKS` tracks are written. Disable with `GENERATE_COMBINED_PLAYLISTS = False`.
 
-| Examples produced |
-|---|
-| `Peak Afro House.m3u8` |
-| `Mid Afro House.m3u8` |
-| `Chill Afro House.m3u8` |
-| `Peak Amapiano.m3u8` |
-| `Mid Amapiano.m3u8` |
-| `Peak Deep House.m3u8` |
-| `Chill Deep House.m3u8` |
-| `Peak Afro Tech.m3u8` |
-| _(and so on)_ |
+### Key playlists (`Key/`)
 
-These playlists are views only — no files are moved. All four types are also embedded as folder nodes in `rekordbox_library.xml` so the same hierarchy appears inside Rekordbox after import.
+One playlist per Camelot key position: `1A.m3u8`, `1B.m3u8`, `2A.m3u8` … `12A.m3u8`, `12B.m3u8`. Sorted in Camelot wheel order (1A, 1B, 2A, 2B, …). Only tracks with a detected Camelot key are included. Disable with `GENERATE_KEY_PLAYLISTS = False`.
 
-Disable with `GENERATE_COMBINED_PLAYLISTS = False` in `config_local.py`.
+### Route playlists (`Route/`)
+
+| Playlist | Detection method |
+|---|---|
+| `Acapella.m3u8` | Filepath in `library/acapella/` OR title keyword: acapella, acap, vocal only |
+| `Tool.m3u8` | Filepath in `library/dj_tools/` OR title keyword: dj tool, drum loop, fx, loop, intro tool |
+| `Vocal.m3u8` | Title keyword: vocal mix, vox mix, vocal version (not acapella) |
+
+Disable with `GENERATE_ROUTE_PLAYLISTS = False`.
 
 ### Rekordbox XML hierarchy
 
 ```
 ROOT
 ├── All Tracks
-├── A … Z          (letter nodes)
+├── A … Z              (letter nodes)
 ├── Genre/
 │   ├── Afro House
 │   ├── Amapiano
@@ -703,20 +1009,26 @@ ROOT
 │   ├── Peak
 │   ├── Mid
 │   └── Chill
-└── Combined/
-    ├── Peak Afro House
-    ├── Chill Afro House
-    ├── Peak Amapiano
-    └── …
+├── Combined/
+│   ├── Peak Afro House
+│   └── …
+├── Key/
+│   ├── 1A
+│   ├── 1B
+│   └── … 12B
+└── Route/
+    ├── Acapella
+    ├── Tool
+    └── Vocal
 ```
 
-Each track's `Label` attribute is populated from the file's cleaned `organization/TPUB` tag. URL or domain watermarks in the label field are silently suppressed from the XML even if the tag was not fully cleared on disk.
+Each track's `Label` attribute is populated from the cleaned `organization/TPUB` tag. URL or domain watermarks are suppressed from the XML even if the tag was not fully cleared on disk.
 
 ---
 
 ## Tag Cleaning — What Gets Removed
 
-The sanitizer (`modules/sanitizer.py`) runs in step 4 of every pipeline pass. It processes six fields: `title`, `artist`, `album`, `genre`, `comment`, and `organization` (label/TPUB).
+The sanitizer (`modules/sanitizer.py`) runs in step 4 of every pipeline pass and in the `metadata-clean` standalone command. It processes: `title`, `artist`, `album`, `genre`, `comment`, and `organization` (label/TPUB).
 
 ### Removed from all fields
 
@@ -724,8 +1036,6 @@ The sanitizer (`modules/sanitizer.py`) runs in step 4 of every pipeline pass. It
 |---|---|
 | Full URLs | `https://fordjonly.com/track` |
 | `www.` URLs | `www.djcity.com` |
-| Underscore-encoded URLs | `https___electronicfresh.com` |
-| Bracketed domains | `[fordjonly.com]`, `(djcity.com)` |
 | Plain domain names (known TLDs) | `fordjonly.com`, `beatsource.net` |
 | Trademark and currency symbols | `™ ® © ℗ $ € £` |
 | "for DJ only" / "for DJs only" | standard promo watermark |
@@ -738,23 +1048,17 @@ The sanitizer (`modules/sanitizer.py`) runs in step 4 of every pipeline pass. It
 | "official audio / video" | YouTube auto-tag |
 | "free download" | promotional label |
 | "buy on beatport/traxsource" | sales call-to-action |
-| "beatport" standalone | source watermark |
-| "out now on …" | release announcement |
-| "exclusive" (not followed by mix/remix/edit) | promo watermark |
 | Camelot/key prefix at field start | `8A - My Song` → `My Song` |
 
-### Preserved (not removed)
+### Preserved
 
 - Version info: `Original Mix`, `Extended Mix`, `Dub Mix`, `VIP`
 - Remix credits: `(Boddhi Satva Remix)`, `(Kerri Chandler Edit)`
 - Exclusive version names: `Exclusive Mix`, `Exclusive Dub`
-- Any content not matching the patterns above
 
-### Label field (organization/TPUB) — additional behavior
+### Label field — additional behavior
 
-If the entire label field is a URL or watermark (e.g. `"TraxCrate.com"`), the tag is explicitly **deleted** from the file — not left as an empty string. This prevents junk from appearing in the Rekordbox XML `Label` attribute or in label-clean reports.
-
-Legitimate label names (`"Defected Records"`, `"Nervous Records"`) pass through unchanged.
+If the entire label field is a URL or watermark (e.g. `"TraxCrate.com"`), the tag is **deleted** from the file — not left as an empty string.
 
 ---
 
@@ -764,49 +1068,19 @@ Legitimate label names (`"Defected Records"`, `"Nervous Records"`) pass through 
 
 The label intelligence system is built around a **name-first identity model**. A label's canonical identity is its `normalized_name` (lowercased, punctuation-stripped, noise-suffix-removed). Beatport and Traxsource IDs are optional enrichment fields — never the primary key.
 
-This means `"Defected"`, `"Defected Records"`, and `"Defected Recordings"` all resolve to the same canonical identity (`"defected"`) and are merged automatically.
+`"Defected"`, `"Defected Records"`, and `"Defected Recordings"` all resolve to the same canonical identity (`"defected"`) and are merged automatically.
 
 ### `LabelRecord` Fields
 
 ```python
-label_name       str      # best display name
-normalized_name  str      # deduplication key
-aliases          list     # all observed spellings
-countries        list     # e.g. ["UK"]
-genres           list     # e.g. ["Tech House", "Deep House"]
-subgenres        list
-bpm_min          int      # BPM range hint
-bpm_max          int
-energy_profile   str      # "warmup" | "groove" | "peak" | "closing"
-beatport_id      str?     # nullable — from web scraping
-traxsource_id    str?     # nullable — from web scraping
-beatport_url     str?
-traxsource_url   str?
-verification_score float  # 0.0 – 1.0 (seed=0.2, scrape=0.7, full enrich=0.95)
-notes            list
-discovered_from  list     # ["seed", "beatport", "library"]
-last_seen_utc    str
+label_name, normalized_name, aliases, countries, genres, subgenres,
+bpm_min, bpm_max, energy_profile,
+beatport_id, traxsource_id, beatport_url, traxsource_url,
+verification_score,  # 0.0–1.0 (seed=0.2, scrape=0.7, full enrich=0.95)
+notes, discovered_from, last_seen_utc
 ```
 
-### Scraper Behavior
-
-1. Seeds are loaded from the seeds file and inserted into the store at score `0.2`
-2. For each seed, each configured source (Beatport, Traxsource) is searched
-3. Candidate label pages that fuzzy-match the seed name are enriched
-4. The `HttpClient` in `sources/base.py` enforces:
-   - robots.txt compliance (per host, with graceful fallback)
-   - Per-host rate limiting (configurable delay, default 2 seconds)
-   - SHA256-keyed disk cache (re-running does not re-fetch already-cached pages)
-
-### HTML Selector Fragility
-
-⚠️ **Important:** The Beatport and Traxsource scrapers use BeautifulSoup CSS selectors to extract label links from search result pages. These selectors target `a[href*='/label/']` elements. If either site redesigns its HTML structure, scraping will silently return fewer or no results. The `notes` field on affected records will contain `search_failed` or `enrich_failed` entries.
-
-Monitor `labels.json` for records with low `verification_score` and non-empty `notes` to detect scraper drift.
-
 ### Energy Profile Heuristics
-
-BPM ranges are used to assign a rough energy label:
 
 | Profile | Approximate BPM | Genres |
 |---|---|---|
@@ -815,7 +1089,11 @@ BPM ranges are used to assign a rough energy label:
 | `peak` | ≥ 126 avg | Tech House, Afro Tech |
 | `closing` | < 122 avg | General catch-all |
 
-These are genre-aware heuristics, not authoritative. They provide a quick sorting hint for set planning.
+### Scraper Behavior
+
+The `HttpClient` enforces robots.txt compliance, per-host rate limiting (default 2 seconds), and SHA256-keyed disk cache (re-running does not re-fetch already-cached pages).
+
+⚠️ **Note:** Beatport and Traxsource scrapers target `a[href*='/label/']` CSS selectors. If either site redesigns its HTML structure, scraping will silently return fewer results. Monitor `labels.json` for records with low `verification_score` and `search_failed` / `enrich_failed` notes.
 
 ---
 
@@ -827,22 +1105,45 @@ These are genre-aware heuristics, not authoritative. They provide a quick sortin
 |---|---|---|
 | `logs/pipeline.log` | Text | Structured pipeline log (appended per run) |
 | `logs/processing_log.txt` | Text | Human-readable audit log (appended per run) |
-| `logs/processed.db` | SQLite | All track state, history, run metadata |
+| `logs/processed.db` | SQLite | All track state, history, cue points, set playlists |
 | `logs/reports/pipeline_<id>.txt` | Text | Per-run summary statistics |
-| `logs/README.md` | Markdown | Latest run summary (overwritten) |
 | `playlists/m3u/*.m3u8` | M3U | Per-letter playlists |
 | `playlists/m3u/Genre/*.m3u8` | M3U | Per-genre playlists |
 | `playlists/m3u/Energy/*.m3u8` | M3U | Peak / Mid / Chill energy playlists |
 | `playlists/m3u/Combined/*.m3u8` | M3U | Genre+energy combined playlists |
-| `playlists/xml/rekordbox_library.xml` | XML | Full Rekordbox import (all playlist types) |
+| `playlists/m3u/Key/*.m3u8` | M3U | Camelot key playlists (1A–12B) |
+| `playlists/m3u/Route/*.m3u8` | M3U | Route playlists (Acapella, Tool, Vocal) |
+| `playlists/xml/rekordbox_library.xml` | XML | Full Rekordbox import (all six hierarchies) |
+
+### Cue Suggest Outputs
+
+| Path | Type | Contents |
+|---|---|---|
+| `logs/cue_suggest/cue_suggestions.json` | JSON | Master — all tracks in DB, latest cues |
+| `logs/cue_suggest/cue_suggestions.csv` | CSV | Wide format — one row per track, one column per cue type |
+| `logs/cue_suggest/runs/cues_TIMESTAMP.csv` | CSV | Per-run detail log — one row per cue point |
+| `<audio>.cues.json` | JSON | Sidecar per track (opt-in) |
+
+### Set Builder Outputs
+
+| Path | Type | Contents |
+|---|---|---|
+| `logs/set_builder/<name>.m3u8` | M3U | Playable playlist with phase annotations |
+| `logs/set_builder/<name>.csv` | CSV | Full metadata + transition notes per track |
+
+### Harmonic Suggest Outputs
+
+| Path | Type | Contents |
+|---|---|---|
+| `logs/harmonic_suggest/<timestamp>.json` | JSON | Suggestion results with scores + explanations |
 
 ### Label Intelligence Outputs
 
 | Path | Type | Contents |
 |---|---|---|
-| `data/labels/output/labels.json` | JSON | Full `LabelRecord` data, all fields |
+| `data/labels/output/labels.json` | JSON | Full `LabelRecord` data |
 | `data/labels/output/labels.csv` | CSV | Flat spreadsheet export |
-| `data/labels/output/labels.txt` | TXT | One label name per line (blocklist-ready) |
+| `data/labels/output/labels.txt` | TXT | One label name per line |
 | `data/labels/output/labels.db` | SQLite | Queryable label database |
 
 ### Label Clean Outputs
@@ -851,7 +1152,7 @@ These are genre-aware heuristics, not authoritative. They provide a quick sortin
 |---|---|---|
 | `data/labels/clean/label_clean_report.json` | JSON | Per-track detection results |
 | `data/labels/clean/label_clean_report.csv` | CSV | Spreadsheet-friendly |
-| `data/labels/clean/label_clean_review.json` | JSON | Unresolved / low-confidence tracks only |
+| `data/labels/clean/label_clean_review.json` | JSON | Unresolved / low-confidence only |
 | `data/labels/clean/label_clean_summary.txt` | TXT | Stats + top labels |
 
 ### SQLite Schema (`processed.db`)
@@ -862,7 +1163,7 @@ tracks (filepath, filename, artist, title, genre, bpm, key_musical,
         key_camelot, duration_sec, bitrate_kbps, filesize_bytes,
         status, error_msg, processed_at, pipeline_ver)
 
--- Rollback snapshots (original + cleaned metadata as JSON)
+-- Rollback snapshots
 track_history (filepath, original_path, original_meta, cleaned_meta,
                actions, created_at, rolled_back, rollback_note)
 
@@ -872,6 +1173,14 @@ pipeline_runs (run_at, dry_run, inbox_count, processed, rejected,
 
 -- Duplicate detection records
 duplicate_groups (run_id, original, duplicate, reason, resolved)
+
+-- Cue point suggestions (from cue-suggest)
+cue_points (filepath, cue_type, time_sec, bar, beat_in_bar,
+            confidence, source, analyzed_at)
+
+-- Generated sets (from set-builder)
+set_playlists (name, created_at, config_json, duration_sec, track_count)
+set_playlist_tracks (set_id, position, filepath, phase, transition_note)
 ```
 
 ---
@@ -881,33 +1190,20 @@ duplicate_groups (run_id, original, duplicate, reason, resolved)
 ### systemd Timer (runs every 30 minutes)
 
 ```bash
-# Install and enable
 systemctl --user enable --now djtoolkit.timer
-
-# Check status
 systemctl --user status djtoolkit.timer
 journalctl --user -u djtoolkit.service -n 50
 ```
 
-The timer fires 5 minutes after boot, then every 30 minutes (±2 min jitter). If the inbox is empty, the pipeline exits immediately without doing any work.
-
 ### Inbox Watcher (real-time trigger)
 
 ```bash
-# Enable the file watcher service
 systemctl --user enable --now djtoolkit-watch.service
 ```
 
-`watch_inbox.sh` uses `inotifywait` to monitor `/music/inbox/`. When new audio files are detected, it waits 15 seconds for the transfer to settle, then triggers `pipeline.sh`. The service auto-restarts on failure with a 10-second delay.
+`watch_inbox.sh` uses `inotifywait` to monitor `/music/inbox/`. When new audio files are detected, it waits 15 seconds for the transfer to settle, then triggers `pipeline.sh`.
 
 ### Manual Bash Wrapper
-
-`pipeline.sh` is the recommended way to run the pipeline manually:
-- Prevents concurrent runs with a file lock
-- Activates virtualenv if `DJ_VENV` is set
-- Checks that required binaries exist
-- Skips early if inbox is empty
-- Logs timing and exit code
 
 ```bash
 ./pipeline.sh
@@ -928,30 +1224,30 @@ systemctl --user enable --now djtoolkit-watch.service
 | Sanitize junk from tags (incl. label/TPUB) | `SANITIZE_TAGS = True` (default) |
 | Delete junk-only label tag from file | Organization field is entirely a URL or watermark |
 | Write label tag (`label-clean --write-tags`) | Confidence ≥ threshold (default 0.85) |
+| Store cue points to DB | `cue-suggest` run (not dry-run), confidence ≥ `CUE_SUGGEST_MIN_CONFIDENCE` |
+| Store set playlist to DB | `set-builder` run (not dry-run) |
 
 ### What is never written automatically
 
-- Rollback-only tag restoration (always requires explicit command)
+- Native Rekordbox hot-cues — cue-suggest outputs suggested positions for review only
+- Rollback-only tag restoration (requires explicit command)
 - Any external provider data (Discogs, Beatport IDs) — not yet implemented
-- Labels found via fallback fields or filename patterns — these appear in reports only (unless `--write-tags` with a lowered `--confidence-threshold`)
 
-### Conservative metadata behavior
+### Cue suggest limitations
 
-- Tags are only written when confidence is high or the source is authoritative (embedded tag, BPM analysis, key analysis)
-- The pipeline stores original metadata snapshots before any write — the rollback tool can restore them at any time
-- `--dry-run` on every command simulates the full run without modifying files or writing to the database
-- Junk label detection explicitly rejects: empty strings, single characters, `unknown`, `n/a`, catalog codes (e.g., `ABC001`), genre words masquerading as labels, Camelot keys, URLs, domains, and DJ-pool watermarks
+- Suggestions are positions to review, not authoritative hot-cues
+- RMS + LF + spectral flux work best for kick-driven music (house, afro house, amapiano); less reliable for very slow or ambient tracks
+- Cue `note` field not persisted to DB (no DB column) — present in JSON/CSV outputs only
+- When ffmpeg decode fails, BPM-estimate fallback is used (all confidence values ≤ 0.50)
 
 ### Scraper limitations
 
-- Beatport and Traxsource scrapers parse live HTML. Site layout changes will break extraction silently. Check `notes` fields in `labels.json` for `search_failed` or `enrich_failed` markers.
-- The scraper respects `robots.txt` and enforces a per-host delay (default 2 seconds). Aggressive rate reduction or IP-level throttling by either site is possible.
-- HTML cache on disk means stale pages may be served on re-runs. Clear `$DJ_MUSIC_ROOT/.cache/label_intel/` to force fresh fetches.
-- Beatport search results may include false-positive label matches (similar names). The scraper uses a fuzzy substring match (`seed_norm in cand_norm or cand_norm in seed_norm`) which may over-match for short or common label names.
+- Beatport and Traxsource scrapers parse live HTML. Site layout changes will break extraction silently.
+- HTML cache means stale pages may be served on re-runs. Clear `$DJ_MUSIC_ROOT/.cache/label_intel/` to force fresh fetches.
 
 ### Beets dependency
 
-Beets is optional but recommended. If `beet` is not installed or fails for a specific track, the pure-Python organizer fallback is used. The fallback relies on filename parsing and existing tags, so metadata quality for unidentified tracks will be lower.
+Beets is optional but recommended. If `beet` is not installed or fails for a specific track, the pure-Python organizer fallback is used.
 
 ---
 
@@ -960,132 +1256,88 @@ Beets is optional but recommended. If `beet` is not installed or fails for a spe
 ### Running tests
 
 ```bash
-# Run all tests
 python3 -m pytest tests/ -v
-
-# Run specific test file
 python3 -m pytest tests/test_parser.py -v
 python3 -m pytest tests/test_sanitizer.py -v
-
-# With coverage (if pytest-cov is installed)
 python3 -m pytest tests/ --cov=modules --cov-report=term-missing
 ```
 
-Current test coverage focuses on `modules/parser.py` (prefix removal, separator normalization, artist validation, `classify_name_candidate`) and `modules/sanitizer.py` (URL removal, promo phrase detection, symbol removal).
-
 ### Adding a new pipeline stage
 
-1. Create `modules/newstage.py` following the existing module pattern
-2. Add a `run(files, run_id, dry_run) -> list` function
-3. Import and call it in the appropriate position in `pipeline.py`'s `run_pipeline()` function
-4. Add any new config values to `config.py`
-
-### Adding a new label source
-
-1. Create `label_intel/sources/newsource.py` implementing `search_url()`, `extract_candidates()`, and `enrich_label_page()`
-2. Register it in `label_intel/scraper.py`'s `_sources()` function
-3. Add the source name to `config.LABEL_INTEL_SOURCES` if it should be default-on
-4. Add it as a valid choice in the `--label-sources` argparse argument in `pipeline.py`
-
-### Implementing a Phase 2 provider (Discogs / Beatport clean)
-
-The stubs in `label_intel/providers/discogs.py` and `label_intel/providers/beatport.py` define the expected interface: a `match(label_name: str) -> dict | None` method. The `run_label_clean()` function in `pipeline.py` already checks for `--use-discogs` and `--use-beatport` flags and will call these providers once implemented.
+1. Create `modules/newstage.py` with `run(files, run_id, dry_run) -> list`
+2. Import and call it in `run_pipeline()` in `pipeline.py`
+3. Add any new config values to `config.py`
 
 ### Extension points
 
 | What to extend | Where |
 |---|---|
-| New routing rules (acapella, etc.) | `modules/organizer.py` route patterns |
-| New junk phrases | `modules/sanitizer.py` `_PROMO_PHRASES` list |
+| New routing rules | `modules/organizer.py` route patterns |
+| New junk phrases | `config/junk_patterns.json` `promo_phrases` list |
 | New label-indicator keywords | `modules/parser.py` `_LABEL_SIGNALS` |
 | New filename label patterns | `label_intel/filename_parser.py` `_PATTERNS` |
-| New genre → BPM hint mappings | `label_intel/utils.py` `soft_bpm_hint()` |
 | Energy BPM thresholds | `modules/playlists.py` `_BPM_PEAK`, `_BPM_MID` |
 | Target genres for combined playlists | `modules/playlists.py` `_COMBINED_TARGET_GENRES` |
+| Camelot scoring weights | `modules/harmonic.py` `_DEFAULT_WEIGHTS` |
+| Cue detection thresholds | `modules/cue_suggest.py` threshold constants |
+| Set builder vibe presets | `modules/set_builder.py` `_VIBE_WEIGHTS` |
 | Additional known labels | `known_labels.txt` (one per line) |
 
 ### Planned / Future
 
-The following directions are suggested by the current codebase but not yet implemented:
-
-- **Phase 2 providers** — Discogs and Beatport single-label lookup for the `label-clean` flow (stubs exist in `label_intel/providers/`)
-- **Persistent `LabelStore` load/save** — `LabelStore` is currently in-memory only; deserialization from `labels.json` is handled inline in `pipeline.py`. A `LabelStore.load(path)` / `LabelStore.save(path)` class method would clean this up.
-- **Post-organize enrichment hook** — a comment in `run_pipeline()` marks the point where `enrich_store_from_tracks()` could be called automatically after each pipeline run, once a persistent store is available.
-- **More audio formats** — the tag writer currently handles MP3/FLAC/M4A. WAV/AIFF tagging support is partial (format-dependent mutagen behavior).
+- **Phase 2 providers** — Discogs and Beatport single-label lookup (stubs in `label_intel/providers/`)
+- **More audio formats** — WAV/AIFF tag writing support is partial
+- **Rekordbox XML hot-cue writing** — safe specification for embedding cue points in XML needs confirmation across Rekordbox versions before implementation
 
 ---
 
 ## Troubleshooting
 
 ### `ffprobe: command not found`
-Install ffmpeg: `sudo apt install ffmpeg`
+```bash
+sudo apt install ffmpeg
+```
 
 ### `aubiobpm: command not found`
-Install aubio tools: `sudo apt install aubio-tools`
-Or override the binary path in `config_local.py`: `AUBIOBPM_BIN = "/path/to/aubiobpm"`
+```bash
+sudo apt install aubio-tools
+# Or override in config_local.py:
+# AUBIOBPM_BIN = "/path/to/aubiobpm"
+```
 
 ### `keyfinder-cli: command not found`
 keyfinder-cli is not in apt. Install from the project's AppImage or source.
 Override in `config_local.py`: `KEYFINDER_BIN = "/path/to/keyfinder-cli"`
 
-### BPM analysis returns nothing / all tracks skipped
-Check that `aubiobpm` or `aubio` is on `$PATH`. Run `which aubiobpm` to verify.
-The analyzer probes for `aubio` and `aubiobpm` — if neither is found, the analysis step is skipped and logged as a warning.
+### cue-suggest produces no output / all BPM-estimate
 
-### Tracks end up in `library/unknown/` instead of `library/sorted/`
-The track had insufficient metadata for the organizer to determine an artist and title. Inspect tags with `kid3 <file>` or `mutagen-inspect <file>`. Either fix the tags manually and re-drop into inbox, or check `logs/processing_log.txt` for the rejection reason.
+Audio decode requires `ffmpeg` to be installed and `numpy` to be available. Check:
+```bash
+which ffmpeg
+python3 -c "import numpy; print(numpy.__version__)"
+```
+If ffmpeg is missing, install it. If numpy is missing: `pip install numpy`. Tracks with no BPM in the DB will also fall back to estimate mode — run `python3 pipeline.py --reanalyze` first.
+
+### set-builder produces 0 tracks
+
+The set builder reads from `status='ok'` tracks in the DB. If the DB is empty, run the full pipeline first. If tracks are present but have no BPM or Camelot key, they are excluded from harmonic scoring — run `python3 pipeline.py --reanalyze`.
+
+### harmonic-suggest returns no results
+
+`--track PATH` requires the track to exist in the DB with `status='ok'`. Use `python3 pipeline.py --reanalyze` to populate BPM + key if missing. `--key` + `--bpm` mode does not require a DB entry for the reference track.
 
 ### Energy playlists are empty or missing
-Energy classification requires BPM data. Run `python3 pipeline.py --reanalyze` to fill in BPM for library tracks that were processed before analysis was enabled. Tracks with no BPM and no genre signal default to Mid.
 
-### Combined playlists are missing specific combinations
-Only combinations with at least one track are written. If `"Peak Afro House.m3u8"` is absent, no track in your library currently has both genre "Afro House" and a BPM ≥ 126 (or an Afro Tech/Techno genre override). Check `playlists/m3u/Genre/Afro House.m3u8` and `playlists/m3u/Energy/Peak.m3u8` to verify.
+Energy classification requires BPM data. Run `python3 pipeline.py --reanalyze` to fill in BPM for library tracks. Tracks with no BPM and no genre signal default to Mid.
+
+### Key playlists are empty or missing
+
+Camelot key playlists require `key_camelot` data in the DB. Run `python3 pipeline.py --reanalyze` to re-run key detection on library tracks that are missing this value.
 
 ### Label tag was junk but is still in the file
-The sanitizer deletes the label tag when the cleaned value is empty. If the tag persists, the value was not matched by any junk pattern. Run `python3 pipeline.py label-clean --verbose` to see the exact rejection reason (or confirmation that the value passed as valid). Add the specific phrase to `_PROMO_PHRASES` in `modules/sanitizer.py` if it should be removed.
 
-### Label detection misses / everything is "unresolved"
-- Run `python3 pipeline.py label-clean --verbose` to see per-track debug output
-- Most unresolved tracks are genuinely missing a label tag. Check with `kid3 <file>` what TPUB/organization contains.
-- Add known labels to `known_labels.txt` to improve `classify_name_candidate()` accuracy in the organizer.
-- If the label is in a non-standard field, lower `--confidence-threshold` to 0.60–0.70 to include comment/grouping fallbacks.
+Run `python3 pipeline.py metadata-clean --dry-run` to preview what would be cleaned. If the tag persists, the value was not matched by any junk pattern — add the specific phrase to `config/junk_patterns.json`.
 
-### Web scraper returns empty results
-- Verify the seeds file has one label name per line and no BOM encoding issues
-- Check `labels.json` for records with `notes` containing `search_failed`
-- The HTML cache may contain stale (empty) pages from a previous failed run. Clear it: `rm -rf $DJ_MUSIC_ROOT/.cache/label_intel/`
-- Beatport and Traxsource may have updated their HTML structure. Inspect `label_intel/sources/beatport.py` and `traxsource.py` selectors against the live site.
+### Tracks end up in `library/unknown/` instead of `library/sorted/`
 
-### `PermissionError: Blocked by robots.txt`
-The target site's robots.txt disallows the scraper's user-agent for the requested URL. The scraper honors this by design. There is no workaround within the current implementation.
-
-### Pipeline runs again immediately after completing (timer)
-Check `systemctl --user status djtoolkit.timer`. If `Persistent=true` causes immediate re-runs after a long suspension, set `Persistent=false` in the timer file and reload: `systemctl --user daemon-reload`.
-
-### `config_local.py` changes not taking effect
-`config_local.py` is imported at the **end** of `config.py`. Make sure you are not referencing a symbol that is defined after the import in `config.py` — the override will work but earlier symbols derived from the overridden value will not be updated. To override a derived path (e.g., `LABEL_INTEL_OUTPUT`), override it explicitly:
-
-```python
-# config_local.py
-from pathlib import Path
-MUSIC_ROOT = Path("/mnt/ssd/music")
-LABEL_INTEL_OUTPUT = MUSIC_ROOT / "data/labels/output"   # re-derive manually
-```
-
-### `duplicate_groups` table grows indefinitely
-`duplicate_groups` records are never auto-deleted. After reviewing duplicates in `$DJ_MUSIC_ROOT/duplicates/`, manually mark them resolved:
-
-```sql
-sqlite3 /music/logs/processed.db \
-    "UPDATE duplicate_groups SET resolved=1 WHERE resolved=0"
-```
-
----
-
-## License
-
-_Not yet specified. Add a LICENSE file to clarify distribution terms._
-
----
-
-*TrackIQ — built for DJs, by a DJ.*
+The track had insufficient metadata. Inspect tags with `kid3 <file>` or `mutagen-inspect <file>`. Fix tags manually, re-drop into inbox, or check `logs/processing_log.txt` for the rejection reason.

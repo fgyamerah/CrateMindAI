@@ -37,6 +37,7 @@ def _row_dict(r: TrackLabelResult) -> dict:
         "confidence":      round(r.confidence, 3),
         "action_taken":    r.action_taken,
         "writable":        r.writable,
+        "junk_count":      r.junk_count,
         "notes":           " | ".join(r.notes),
     }
 
@@ -44,7 +45,7 @@ def _row_dict(r: TrackLabelResult) -> dict:
 _FIELDNAMES = [
     "filepath", "artist", "title",
     "raw_label", "cleaned_label", "canonical_label",
-    "source", "confidence", "action_taken", "writable", "notes",
+    "source", "confidence", "action_taken", "writable", "junk_count", "notes",
 ]
 
 
@@ -80,11 +81,13 @@ def export_review_json(results: list[TrackLabelResult], path: Path) -> None:
 
 
 def _summary_text(results: list[TrackLabelResult], written: int) -> str:
-    total      = len(results)
-    good       = sum(1 for r in results if r.source == "embedded_tag")
-    filled     = sum(1 for r in results if r.source in ("fallback_tag", "filename"))
-    unresolved = sum(1 for r in results if r.source == "unresolved")
-    high_conf  = sum(1 for r in results if r.writable)
+    total          = len(results)
+    good           = sum(1 for r in results if r.source == "embedded_tag")
+    filled         = sum(1 for r in results if r.source in ("fallback_tag", "filename"))
+    unresolved     = sum(1 for r in results if r.source == "unresolved")
+    high_conf      = sum(1 for r in results if r.writable)
+    junk_total     = sum(r.junk_count for r in results)
+    junk_tracks    = sum(1 for r in results if r.junk_count > 0)
 
     label_counter = Counter(
         r.canonical_label for r in results if r.canonical_label
@@ -101,6 +104,7 @@ def _summary_text(results: list[TrackLabelResult], written: int) -> str:
         f"  Good embedded label tags    : {good}",
         f"  Filled from fallback fields : {filled}",
         f"  Unresolved (no label found) : {unresolved}",
+        f"  Junk labels rejected        : {junk_total}  (across {junk_tracks} tracks)",
         f"  High-confidence (>= 0.85)  : {high_conf}",
         f"  Tags written this run       : {written}",
         "",

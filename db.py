@@ -73,6 +73,40 @@ CREATE TABLE IF NOT EXISTS duplicate_groups (
 CREATE INDEX IF NOT EXISTS idx_tracks_status   ON tracks(status);
 CREATE INDEX IF NOT EXISTS idx_tracks_filepath ON tracks(filepath);
 CREATE INDEX IF NOT EXISTS idx_dupes_run       ON duplicate_groups(run_id);
+
+CREATE TABLE IF NOT EXISTS cue_points (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    filepath     TEXT    NOT NULL,
+    cue_type     TEXT    NOT NULL,
+    time_sec     REAL    NOT NULL,
+    bar          INTEGER,
+    beat_in_bar  INTEGER DEFAULT 1,
+    confidence   REAL    DEFAULT 0.5,
+    source       TEXT    DEFAULT 'auto',
+    analyzed_at  TEXT    NOT NULL,
+    UNIQUE(filepath, cue_type)
+);
+
+CREATE INDEX IF NOT EXISTS idx_cues_filepath ON cue_points(filepath);
+
+CREATE TABLE IF NOT EXISTS set_playlists (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    name         TEXT    NOT NULL,
+    created_at   TEXT    NOT NULL,
+    config_json  TEXT,
+    duration_sec REAL    DEFAULT 0,
+    track_count  INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS set_playlist_tracks (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    set_id          INTEGER NOT NULL REFERENCES set_playlists(id),
+    position        INTEGER NOT NULL,
+    filepath        TEXT    NOT NULL,
+    phase           TEXT,
+    transition_note TEXT,
+    UNIQUE(set_id, position)
+);
 """
 
 
@@ -289,6 +323,114 @@ def mark_rolled_back(history_id: int, note: str = "") -> None:
             "UPDATE track_history SET rolled_back=1, rolled_back_at=?, rollback_note=? WHERE id=?",
             (_now(), note, history_id),
         )
+
+
+# ---------------------------------------------------------------------------
+# Cue point operations
+# ---------------------------------------------------------------------------
+
+def save_cue_points(filepath: str, cues: list) -> None:
+    """
+    Upsert cue points for a track.
+    Each item in cues must be a dict with keys:
+      cue_type, time_sec, bar, beat_in_bar, confidence, source
+    Existing cues for the same filepath+cue_type are replaced.
+    """
+    now = _now()
+    with get_conn() as conn:
+        for cue in cues:
+            conn.execute(
+                """INSERT INTO cue_points
+                   (filepath, cue_type, time_sec, bar, beat_in_bar, confidence, source, analyzed_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                   ON CONFLICT(filepath, cue_type) DO UPDATE SET
+                     time_sec=excluded.time_sec,
+                     bar=excluded.bar,
+                     beat_in_bar=excluded.beat_in_bar,
+                     confidence=excluded.confidence,
+                     source=excluded.source,
+                     analyzed_at=excluded.analyzed_at""",
+                (
+                    filepath,
+                    cue["cue_type"],
+                    cue["time_sec"],
+                    cue.get("bar"),
+                    cue.get("beat_in_bar", 1),
+                    cue.get("confidence", 0.5),
+                    cue.get("source", "auto"),
+                    now,
+                ),
+            )
+
+
+def get_cue_points(filepath: str) -> list:
+    """Return all cue points for a track, ordered by time."""
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT * FROM cue_points WHERE filepath=? ORDER BY time_sec",
+            (filepath,),
+        ).fetchall()
+
+
+def get_tracks_with_cues() -> list:
+    """Return all filepaths that have at least one cue point stored."""
+    with get_conn() as conn:
+        return [
+            row[0] for row in conn.execute(
+                "SELECT DISTINCT filepath FROM cue_points ORDER BY filepath"
+            ).fetchall()
+        ]
+
+
+# ---------------------------------------------------------------------------
+# Set playlist operations
+# ---------------------------------------------------------------------------
+
+def save_set_playlist(name: str, tracks: list, config_json: str = "",
+                      duration_sec: float = 0.0) -> int:
+    """
+    Persist a generated set playlist.
+    tracks: list of dicts with keys filepath, phase, transition_note.
+    Returns the new set_id.
+    """
+    now = _now()
+    with get_conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO set_playlists (name, created_at, config_json, duration_sec, track_count)"
+            " VALUES (?, ?, ?, ?, ?)",
+            (name, now, config_json, duration_sec, len(tracks)),
+        )
+        set_id = cur.lastrowid
+        for pos, t in enumerate(tracks, start=1):
+            conn.execute(
+                "INSERT INTO set_playlist_tracks (set_id, position, filepath, phase, transition_note)"
+                " VALUES (?, ?, ?, ?, ?)",
+                (set_id, pos, t["filepath"], t.get("phase", ""), t.get("transition_note", "")),
+            )
+    return set_id
+
+
+def get_set_playlist(set_id: int) -> Optional[sqlite3.Row]:
+    """Return a set playlist header row."""
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT * FROM set_playlists WHERE id=?", (set_id,)
+        ).fetchone()
+
+
+def get_set_playlist_tracks(set_id: int) -> list:
+    """Return tracks for a set playlist joined with track metadata."""
+    with get_conn() as conn:
+        return conn.execute(
+            """SELECT spt.position, spt.phase, spt.transition_note,
+                      t.filepath, t.artist, t.title, t.bpm, t.key_camelot,
+                      t.key_musical, t.genre, t.duration_sec
+               FROM set_playlist_tracks spt
+               LEFT JOIN tracks t ON t.filepath = spt.filepath
+               WHERE spt.set_id = ?
+               ORDER BY spt.position""",
+            (set_id,),
+        ).fetchall()
 
 
 # ---------------------------------------------------------------------------
