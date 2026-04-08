@@ -255,6 +255,51 @@ def _normalize_genre_for_export(genre: Optional[str]) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Current-library path resolution (stale DB path remapping)
+# ---------------------------------------------------------------------------
+
+def _build_lib_index(lib_root: Path) -> Dict[str, Path]:
+    """
+    Scan lib_root recursively and build a {filename_lower: Path} index.
+
+    Only the first occurrence of each filename is kept (duplicates are rare
+    for a well-organised library).  Used by recovery to remap stale DB paths
+    (e.g. /music/library/sorted/…) to current filesystem paths under
+    RB_LINUX_ROOT (e.g. /mnt/music_ssd/KKDJ/…).
+    """
+    index: Dict[str, Path] = {}
+    for ext in config.AUDIO_EXTENSIONS:
+        for p in lib_root.rglob(f"*{ext}"):
+            key = p.name.lower()
+            if key not in index:
+                index[key] = p
+    return index
+
+
+def _remap_filepath(
+    db_path: str,
+    lib_index: Dict[str, Path],
+) -> Tuple[Optional[str], str]:
+    """
+    Resolve a DB filepath to a current-filesystem path.
+
+    Returns (resolved_path, status) where status is one of:
+      "ok"         — file exists at the DB path, no remap needed
+      "recovered"  — DB path stale; matched by filename in lib_index
+      "unresolved" — file absent at DB path and not found in lib_index
+    """
+    if Path(db_path).exists():
+        return db_path, "ok"
+    if not lib_index:
+        return None, "unresolved"
+    key = Path(db_path).name.lower()
+    match = lib_index.get(key)
+    if match is not None:
+        return str(match), "recovered"
+    return None, "unresolved"
+
+
+# ---------------------------------------------------------------------------
 # Analysis fallback helpers (BPM + key)
 # ---------------------------------------------------------------------------
 
@@ -328,6 +373,45 @@ _UNKNOWN_ARTISTS_LOWER: frozenset = frozenset({
 
 _RE_VALID_CAM = re.compile(r'^(1[0-2]|[1-9])[AB]$', re.IGNORECASE)
 
+# Filenames that are obviously placeholder / junk imports
+_RE_JUNK_PLACEHOLDER = re.compile(
+    r'^unknown(\s*\(\d+\))?'           # "unknown", "unknown (1)", …
+    r'\.(mp3|flac|wav|aiff?|m4a|ogg|opus)$',
+    re.IGNORECASE,
+)
+
+
+def _is_junk_placeholder(fp: str) -> bool:
+    """Return True if the filename looks like a junk/placeholder import."""
+    name = Path(fp).name
+    if not name or name.startswith("."):
+        return True
+    return bool(_RE_JUNK_PLACEHOLDER.match(name))
+
+
+def _categorize_exclusion_reasons(reasons: List[str]) -> List[str]:
+    """
+    Prefix raw exclusion reason strings with a [CATEGORY] tag.
+
+    Categories (in order of precedence):
+      [MISSING_ANALYSIS]  — missing BPM or Camelot key
+      [MISSING_METADATA]  — missing artist, title, or junk genre
+      [CORRUPT]           — unreadable / corrupt file
+      [BAD_PATH]          — everything else
+    """
+    result = []
+    for r in reasons:
+        rl = r.lower()
+        if "missing bpm" in rl or "missing/invalid camelot" in rl or "non-numeric bpm" in rl:
+            result.append(f"[MISSING_ANALYSIS] {r}")
+        elif "missing" in rl or "unknown artist" in rl or "junk" in rl:
+            result.append(f"[MISSING_METADATA] {r}")
+        elif "corrupt" in rl or "unreadable" in rl:
+            result.append(f"[CORRUPT] {r}")
+        else:
+            result.append(f"[BAD_PATH] {r}")
+    return result or [f"[BAD_PATH] {reasons[0]}"] if reasons else ["[BAD_PATH] unknown reason"]
+
 
 def _is_missing_analysis(row) -> bool:
     """Return True if this row is missing BPM or Camelot key in the DB.
@@ -344,6 +428,10 @@ def _resolve_row_for_export(row, recover: bool = False) -> Optional[dict]:
     """
     Validate and resolve one DB row for export.
 
+    The row's filepath is assumed to already be a current, live path on disk —
+    _resolve_tracks() handles stale-path remapping and junk filtering before
+    calling this function.
+
     Always applied:
       artist/title  → filename parse fallback
       genre         → canonical alias / fuzzy map / "Other"
@@ -351,9 +439,6 @@ def _resolve_row_for_export(row, recover: bool = False) -> Optional[dict]:
     Only applied when recover=True:
       BPM           → aubio analysis (result written back to DB)
       key           → keyfinder-cli analysis (result written back to DB)
-
-    When recover=False (default) a track with missing BPM or key returns None
-    immediately — no subprocess is spawned.
 
     Returns a plain dict with resolved values + internal flags:
       _norm_genre    — pre-computed canonical genre
@@ -495,7 +580,7 @@ def _resolve_tracks(
     recover: bool = False,
     recover_limit: Optional[int] = None,
     recover_timeout_sec: Optional[float] = None,
-) -> Tuple[List[dict], List[Tuple[str, List[str]]], int, int, int]:
+) -> Tuple[List[dict], List[Tuple[str, List[str]]], dict]:
     """
     Resolve all DB rows for export in a single pass.
 
@@ -508,28 +593,86 @@ def _resolve_tracks(
     Returns:
         valid               — resolved dicts ready for XML/M3U generation
         invalid             — list of (filepath, [reason, ...]) for excluded tracks
-        recovered_bpm       — tracks where BPM was filled in by analysis
-        recovered_key       — tracks where key was filled in by analysis
-        needs_analysis      — tracks skipped only because BPM/key missing
-                              (0 when recover=True, since we attempted them all)
+        stats               — dict with keys:
+            recovered_bpm   — tracks where BPM was recovered inline
+            recovered_key   — tracks where key was recovered inline
+            needs_analysis  — excluded only because BPM/key missing (recover=False)
+            stale_db        — DB rows pointing to files not on current filesystem
+            junk            — junk/placeholder filenames skipped
     """
-    valid:   List[dict]                   = []
+    valid:   List[dict]                  = []
     invalid: List[Tuple[str, List[str]]] = []
-    recovered_bpm    = 0
-    recovered_key    = 0
-    needs_analysis   = 0
+    stats: dict = {
+        "recovered_bpm":  0,
+        "recovered_key":  0,
+        "needs_analysis": 0,
+        "stale_db":       0,
+        "junk":           0,
+    }
+
+    # Always build a filename index over the current SSD library so we can:
+    #   (a) detect stale DB paths for ALL tracks (not just missing-analysis ones)
+    #   (b) remap stale paths to their current location when the file still exists
+    lib_index: Dict[str, Path] = {}
+    lib_root = Path(getattr(config, "RB_LINUX_ROOT", "/mnt/music_ssd"))
+    if lib_root.exists():
+        log.info("rekordbox-export: indexing current library under %s …", lib_root)
+        lib_index = _build_lib_index(lib_root)
+        log.info("rekordbox-export: lib index ready — %d audio files", len(lib_index))
+    else:
+        log.warning(
+            "rekordbox-export: RB_LINUX_ROOT %s not found — "
+            "stale DB paths cannot be detected or remapped",
+            lib_root,
+        )
 
     # Analysis budget tracking (only meaningful when recover=True)
-    budget_remaining = recover_limit          # None = unlimited
+    budget_remaining = recover_limit
     deadline         = (time.monotonic() + recover_timeout_sec
                         if recover and recover_timeout_sec
                         else None)
 
     for row in all_tracks:
-        fp              = str(row["filepath"])
-        missing_now     = _is_missing_analysis(row)
+        fp = str(row["filepath"])
 
-        # Decide whether to attempt analysis for this specific row
+        # ------------------------------------------------------------------
+        # 1. Junk / placeholder filter
+        # ------------------------------------------------------------------
+        if _is_junk_placeholder(fp):
+            log.debug("rekordbox-export: [JUNK_PLACEHOLDER] %s", Path(fp).name)
+            invalid.append((fp, ["[JUNK_PLACEHOLDER] filename matches known junk pattern"]))
+            stats["junk"] += 1
+            continue
+
+        # ------------------------------------------------------------------
+        # 2. Stale DB / current-path resolution
+        #    Check whether the DB filepath still exists on the current SSD.
+        #    If not, try to find the file by filename in the lib index.
+        # ------------------------------------------------------------------
+        current_fp, remap_status = _remap_filepath(fp, lib_index)
+        if remap_status == "recovered":
+            log.info(
+                "rekordbox-export: [STALE_DB → RECOVERED] %s  DB: %s → SSD: %s",
+                Path(fp).name, fp, current_fp,
+            )
+            # sqlite3.Row is read-only — convert to plain dict with new path
+            row = dict(row)
+            row["filepath"] = current_fp
+            fp = current_fp
+        elif remap_status == "unresolved":
+            log.info(
+                "rekordbox-export: [STALE_DB] %s — not found on current filesystem, skipping",
+                Path(fp).name,
+            )
+            invalid.append((fp, ["[STALE_DB] file not found at DB path or in current SSD library"]))
+            stats["stale_db"] += 1
+            continue
+        # "ok": file exists at DB path — row and fp unchanged
+
+        # ------------------------------------------------------------------
+        # 3. Analysis budget / recovery decision
+        # ------------------------------------------------------------------
+        missing_now    = _is_missing_analysis(row)
         should_recover = recover and missing_now
         if should_recover:
             if budget_remaining is not None and budget_remaining <= 0:
@@ -539,7 +682,6 @@ def _resolve_tracks(
                     "remaining tracks with missing analysis will be excluded",
                     recover_limit,
                 )
-                # Avoid repeating this message; set budget to sentinel
                 budget_remaining = -1
             elif deadline is not None and time.monotonic() >= deadline:
                 should_recover = False
@@ -548,29 +690,35 @@ def _resolve_tracks(
                     "remaining tracks with missing analysis will be excluded",
                     recover_timeout_sec,
                 )
-                deadline = None   # suppress further timeout messages
+                deadline = None
 
+        # ------------------------------------------------------------------
+        # 4. Full resolution (metadata, BPM, key, genre)
+        # ------------------------------------------------------------------
         resolved = _resolve_row_for_export(row, recover=should_recover)
 
         if resolved is not None:
             if resolved.pop("_recovered_bpm", False):
-                recovered_bpm += 1
+                stats["recovered_bpm"] += 1
             if resolved.pop("_recovered_key", False):
-                recovered_key += 1
-            # Consume one analysis slot if we actually ran analysis
+                stats["recovered_key"] += 1
             if should_recover and budget_remaining is not None and budget_remaining > 0:
                 budget_remaining -= 1
             valid.append(resolved)
         else:
-            # Track whether this exclusion was purely due to missing analysis
             if missing_now and not should_recover:
-                needs_analysis += 1
-            invalid.append((
-                fp,
-                _get_exclusion_reasons(row, recover_attempted=should_recover),
-            ))
+                stats["needs_analysis"] += 1
+                reasons = [
+                    f"[MISSING_ANALYSIS] {r}"
+                    for r in _get_exclusion_reasons(row, recover_attempted=False)
+                ]
+            else:
+                reasons = _categorize_exclusion_reasons(
+                    _get_exclusion_reasons(row, recover_attempted=should_recover)
+                )
+            invalid.append((fp, reasons))
 
-    return valid, invalid, recovered_bpm, recovered_key, needs_analysis
+    return valid, invalid, stats
 
 
 def _write_invalid_log(
@@ -579,13 +727,25 @@ def _write_invalid_log(
     total_scanned: int,
     dry_run: bool = False,
 ) -> None:
-    """Write the invalid-tracks exclusion log to disk."""
+    """Write the invalid-tracks exclusion log to disk, grouped by category."""
     if not invalid:
         return
 
+    # Build per-category counts from the prefixed reason strings
+    _CAT_RE = re.compile(r'^\[([A-Z_]+)\]')
+    cat_counts: Dict[str, int] = {}
+    for _, reasons in invalid:
+        tag = "OTHER"
+        for r in reasons:
+            m = _CAT_RE.match(r)
+            if m:
+                tag = m.group(1)
+                break
+        cat_counts[tag] = cat_counts.get(tag, 0) + 1
+
     if dry_run:
         for fp, reasons in invalid[:20]:
-            log.info("  [EXCLUDED] %s: %s", Path(fp).name, "; ".join(reasons))
+            log.info("  %s: %s", Path(fp).name, "; ".join(reasons))
         if len(invalid) > 20:
             log.info("  ... and %d more excluded (run without --dry-run for full log)",
                      len(invalid) - 20)
@@ -600,14 +760,19 @@ def _write_invalid_log(
         f"Excluded  : {len(invalid)}",
         f"Exported  : {total_scanned - len(invalid)}",
         "",
+        "By category:",
     ]
+    for cat, cnt in sorted(cat_counts.items()):
+        lines.append(f"  [{cat}]  {cnt}")
+    lines.append("")
     for fp, reasons in invalid:
         lines.append(f"  {Path(fp).name}")
         for r in reasons:
             lines.append(f"    - {r}")
     lines.append("")
     path.write_text("\n".join(lines), encoding="utf-8")
-    log.info("rekordbox-export: %d tracks excluded → %s", len(invalid), path.name)
+    cat_summary = "  ".join(f"[{c}]:{n}" for c, n in sorted(cat_counts.items()))
+    log.info("rekordbox-export: %d tracks excluded → %s  (%s)", len(invalid), path.name, cat_summary)
 
 
 # ---------------------------------------------------------------------------
@@ -1055,10 +1220,12 @@ def run(
     """
     drive      = getattr(config, "RB_WINDOWS_DRIVE", "M")
     linux_root = getattr(config, "RB_LINUX_ROOT", "/mnt/music_ssd")
+    export_root = config.REKORDBOX_XML_EXPORT_DIR.parent
     log.info(
         "rekordbox-export: mapping %s → %s:\\ (dry_run=%s)",
         linux_root, drive, dry_run,
     )
+    log.info("Export root: %s", export_root)
     log_action(
         f"REKORDBOX-EXPORT {'DRY-RUN' if dry_run else 'START'}: "
         f"Linux root={linux_root}  Windows drive={drive}:"
@@ -1089,16 +1256,19 @@ def run(
     }
 
     # --- Resolve: validate, apply fallbacks, filter ---
-    valid_tracks, invalid_tracks, recovered_bpm, recovered_key, needs_analysis = (
-        _resolve_tracks(
-            all_tracks,
-            recover=recover_missing,
-            recover_limit=recover_limit,
-            recover_timeout_sec=recover_timeout_sec,
-        )
+    valid_tracks, invalid_tracks, stats = _resolve_tracks(
+        all_tracks,
+        recover=recover_missing,
+        recover_limit=recover_limit,
+        recover_timeout_sec=recover_timeout_sec,
     )
-    valid_count   = len(valid_tracks)
-    invalid_count = len(invalid_tracks)
+    recovered_bpm  = stats["recovered_bpm"]
+    recovered_key  = stats["recovered_key"]
+    needs_analysis = stats["needs_analysis"]
+    stale_count    = stats["stale_db"]
+    junk_count     = stats["junk"]
+    valid_count    = len(valid_tracks)
+    invalid_count  = len(invalid_tracks)
 
     # Count genre distribution after normalization
     export_genre_counts: Dict[str, int] = {}
@@ -1129,13 +1299,21 @@ def run(
     print()
     print(f"=== Rekordbox Export {'(DRY-RUN) ' if dry_run else ''}===")
     print(f"  Drive mapping   : {linux_root}  →  {drive}:\\")
-    print(f"  Tracks scanned  : {total_scanned}")
+    print(f"  Tracks in DB    : {total_scanned}")
+    print(f"  Stale DB rows   : {stale_count}"
+          + (" (file not on current SSD — skipped)" if stale_count else ""))
+    print(f"  Junk placeholders: {junk_count}"
+          + (" (unknown.mp3 / empty — skipped)" if junk_count else ""))
     print(f"  Valid exported  : {valid_count}")
     print(f"  Excluded        : {invalid_count}  ({excl_pct:.1f}%)"
           + ("" if dry_run else "  → logs/rekordbox_export/invalid_tracks.txt"))
 
+    if stale_count:
+        print( "  ⚠  Stale DB rows detected — run to clean up:")
+        print( "       python3 pipeline.py db-prune-stale --path /mnt/music_ssd/KKDJ/")
+
     if needs_analysis:
-        print(f"  Needs analysis  : {needs_analysis} tracks excluded due to missing BPM/key")
+        print(f"  Missing analysis: {needs_analysis} tracks excluded (no BPM/key in SSD library)")
         print( "                    → run analyze-missing first:")
         print( "                      python3 pipeline.py analyze-missing "
                "--path /mnt/music_ssd/KKDJ/")
@@ -1173,7 +1351,8 @@ def run(
     log_action(
         f"REKORDBOX-EXPORT {'DRY-RUN' if dry_run else 'DONE'}: "
         f"{valid_count}/{total_scanned} exported, {invalid_count} excluded "
-        f"({excl_pct:.1f}%), {needs_analysis} need analysis, "
+        f"({excl_pct:.1f}%), stale={stale_count} junk={junk_count} "
+        f"needs_analysis={needs_analysis}, "
         f"{len(export_genre_counts)} genres, "
         f"BPM+key recovered inline: {recovered_bpm}+{recovered_key}"
     )

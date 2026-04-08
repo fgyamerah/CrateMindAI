@@ -39,6 +39,7 @@ from modules.harmonic import (
     _dedupe_candidates,
     _normalize_artist,
     _bpm_step_multiplier,
+    _camelot_distance,
 )
 from modules.textlog import log_action
 
@@ -79,6 +80,14 @@ _PHASE_CONFIG: Dict[str, Dict] = {
 
 # Phase order is always the same; vibe presets control time allocation.
 _PHASE_ORDER = ["warmup", "build", "peak", "release", "outro"]
+
+# Structure presets — which phases are included.
+# Vibe weights for the active phases are renormalized to sum to 1.0.
+_STRUCTURE_PHASES: Dict[str, List[str]] = {
+    "full":      ["warmup", "build", "peak", "release", "outro"],
+    "simple":    ["build", "peak", "outro"],
+    "peak_only": ["peak"],
+}
 
 # ---------------------------------------------------------------------------
 # Vibe presets — fraction of total set duration allocated to each phase
@@ -189,6 +198,76 @@ def _genre_matches_deep(genre: str) -> bool:
     return any(d in g for d in _DEEP_GENRES)
 
 
+def _normalize_track_identity(artist: str, title: str) -> str:
+    """
+    Produce a normalized key for set-level duplicate detection.
+    Strips trailing variant suffixes like " (1)", " (2)" before comparing,
+    so the same track with slightly different filenames is caught.
+    """
+    a = re.sub(r'\s*\(\d+\)\s*$', '', (artist or "").strip()).lower()
+    t = re.sub(r'\s*\(\d+\)\s*$', '', (title  or "").strip()).lower()
+    return f"{a}||{t}"
+
+
+def _is_valid_transition(
+    last_row,
+    candidate,
+    used_paths:           set,
+    used_identities:      set,
+    recent_artists:       list,
+    last_bpm:             float,
+    max_bpm_jump:         float,
+    strict_harmonic:      bool,
+    artist_repeat_window: int,
+) -> Tuple[bool, str]:
+    """
+    Hard validation gate for a candidate transition.
+
+    Returns (True, "") when the candidate is acceptable, or
+    (False, TAG) where TAG is one of:
+      DUPLICATE       — filepath or title+artist already in set
+      BPM             — absolute BPM jump exceeds max_bpm_jump
+      KEY             — key incompatible under strict harmonic rules
+      ARTIST_REPEAT   — same artist appeared within recent window
+    """
+    fp = str(candidate["filepath"])
+
+    # --- Duplicate: filepath ---
+    if fp in used_paths:
+        return False, "DUPLICATE"
+
+    # --- Duplicate: title+artist identity (handles (1)/(2) variants) ---
+    identity = _normalize_track_identity(candidate["artist"] or "", candidate["title"] or "")
+    if identity in used_identities:
+        return False, "DUPLICATE"
+
+    # --- BPM jump ---
+    cand_bpm = float(candidate["bpm"] or 0)
+    if last_bpm > 0 and cand_bpm > 0 and max_bpm_jump > 0:
+        if abs(cand_bpm - last_bpm) > max_bpm_jump:
+            return False, "BPM"
+
+    # --- Key compatibility (strict harmonic mode) ---
+    # Allowed: same key (0, any), adjacent same mode (1, no switch),
+    #          relative major/minor at same position (0, switched).
+    if strict_harmonic and last_row is not None:
+        last_key = (last_row["key_camelot"] or "").strip()
+        cand_key = (candidate["key_camelot"] or "").strip()
+        if last_key and cand_key:
+            dist, mode_switched = _camelot_distance(last_key, cand_key)
+            allowed = (dist == 0) or (dist == 1 and not mode_switched)
+            if not allowed:
+                return False, "KEY"
+
+    # --- Artist repeat within window ---
+    if artist_repeat_window > 0 and recent_artists:
+        primary = _normalize_artist(candidate["artist"] or "")
+        if primary and primary in recent_artists[-artist_repeat_window:]:
+            return False, "ARTIST_REPEAT"
+
+    return True, ""
+
+
 def _filter_for_phase(
     rows:         list,
     phase:        str,
@@ -232,55 +311,127 @@ def _filter_for_phase(
 
 def _pick_next(
     last_row,
-    pool:          list,
-    strategy:      str,
-    used:          set,
-    phase:         str,
-    last_bpm:      float = 0.0,
-    used_artists:  Optional[set] = None,
+    pool:                 list,
+    strategy:             str,
+    used:                 set,
+    phase:                str,
+    last_bpm:             float          = 0.0,
+    used_artists:         Optional[set]  = None,
+    used_identities:      Optional[set]  = None,
+    recent_artists:       Optional[list] = None,
+    max_bpm_jump:         float          = 0.0,
+    strict_harmonic:      bool           = True,
+    artist_repeat_window: int            = 3,
 ) -> Optional[object]:
     """
-    Greedy pick: choose the highest-scored transition from pool.
+    Greedy pick: choose the highest-scored valid transition from pool.
 
-    Applies two additional constraints:
-    - BPM step penalty: large absolute BPM jumps are penalised via
-      _bpm_step_multiplier, preventing 122→150 type leaps.
-    - Artist repeat penalty: tracks by an artist already used in this set
-      receive a 0.35× multiplier so the same artist doesn't spam the set.
+    Hard constraints are applied first via _is_valid_transition:
+      DUPLICATE      — filepath or title+artist already used in set
+      BPM            — |delta| > max_bpm_jump
+      KEY            — strict_harmonic: only same / ±1 same-mode / relative (A↔B same pos)
+      ARTIST_REPEAT  — same artist within last artist_repeat_window tracks
+
+    Each rejected candidate is logged at DEBUG with the reason tag.
+    If all candidates fail hard constraints, progressively relaxes them
+    (artist window → BPM+key → duplicates-only) to keep phases populated.
+
+    Remaining scoring (soft):
+      - transition score via score_transition / chosen strategy
+      - _bpm_step_multiplier penalty for large BPM deltas
+      - 0.35× artist-repeat penalty for artists already in the full set
     """
     if not pool:
         return None
 
     if last_row is None:
-        return pool[0]  # first track of the set
+        return pool[0]  # first track — no transition constraints apply
 
-    scored = []
-    for row in pool:
-        if row["filepath"] in used:
-            continue
+    _used_ids   = used_identities or set()
+    _recent_art = recent_artists  or []
+
+    def _score(row) -> float:
         try:
             ts = score_transition(last_row, row)
             s  = ts.strategies.get(strategy, ts.total_score)
-
-            # BPM step constraint
             if last_bpm > 0:
-                s = s * _bpm_step_multiplier(last_bpm, float(row["bpm"] or last_bpm))
-
-            # Artist repeat penalty (soft — does not hard-exclude)
+                s *= _bpm_step_multiplier(last_bpm, float(row["bpm"] or last_bpm))
             if used_artists:
                 primary = _normalize_artist(row["artist"] or "")
                 if primary and primary in used_artists:
                     s *= 0.35
-
-            scored.append((s, row))
+            return s
         except Exception:
-            scored.append((0.0, row))
+            return 0.0
 
-    if not scored:
+    def _run_pass(candidates, mbj, sh, arw, recent):
+        """Filter + score a candidate list with the given constraint settings."""
+        passed = []
+        reject_counts: Dict[str, int] = {}
+        for row in candidates:
+            if row["filepath"] in used:
+                continue
+            valid, tag = _is_valid_transition(
+                last_row, row, used, _used_ids, recent,
+                last_bpm, mbj, sh, arw,
+            )
+            if valid:
+                passed.append(row)
+            else:
+                reject_counts[tag] = reject_counts.get(tag, 0) + 1
+                log.debug(
+                    "[REJECTED %s] %s - %s  %.0fbpm %s",
+                    tag,
+                    row["artist"] or "?", row["title"] or "?",
+                    float(row["bpm"] or 0), row["key_camelot"] or "?",
+                )
+        return passed, reject_counts
+
+    # --- Pass 1: all hard constraints active ---
+    passed, r_counts = _run_pass(pool, max_bpm_jump, strict_harmonic, artist_repeat_window, _recent_art)
+    if r_counts:
+        log.debug(
+            "set-builder phase=%s pass-1 rejections: %s",
+            phase, "  ".join(f"{t}×{n}" for t, n in sorted(r_counts.items())),
+        )
+
+    # --- Fallback passes to prevent empty phases ---
+    if not passed:
+        log.debug("[FALLBACK] phase=%s — relaxing artist window", phase)
+        passed, _ = _run_pass(pool, max_bpm_jump, strict_harmonic, 0, [])
+
+    if not passed:
+        log.debug("[FALLBACK] phase=%s — relaxing BPM and harmonic constraints", phase)
+        passed, _ = _run_pass(pool, 0.0, False, 0, [])
+
+    if not passed:
+        # Last resort: anyone not filepath-used and not a title+artist duplicate
+        passed = [
+            r for r in pool
+            if r["filepath"] not in used
+            and _normalize_track_identity(r["artist"] or "", r["title"] or "") not in _used_ids
+        ]
+        if passed:
+            log.debug("[FALLBACK] phase=%s — duplicate-filter only", phase)
+
+    if not passed:
         return None
 
+    # Score remaining candidates and pick best
+    scored = []
+    for row in passed:
+        scored.append((_score(row), row))
     scored.sort(key=lambda x: x[0], reverse=True)
-    return scored[0][1]
+
+    best_score, best_row = scored[0]
+    log.debug(
+        "[CHOSEN] phase=%s  %s - %s  %.0fbpm %s  score=%.3f",
+        phase,
+        best_row["artist"] or "?", best_row["title"] or "?",
+        float(best_row["bpm"] or 0), best_row["key_camelot"] or "?",
+        best_score,
+    )
+    return best_row
 
 
 # ---------------------------------------------------------------------------
@@ -288,12 +439,16 @@ def _pick_next(
 # ---------------------------------------------------------------------------
 
 def build_set(
-    target_duration_min: int           = 60,
-    genre_filter:        Optional[str] = None,
-    vibe:                str           = "peak",
-    start_energy:        Optional[str] = None,
-    end_energy:          Optional[str] = None,
-    strategy:            str           = "safest",
+    target_duration_min:  int           = 60,
+    genre_filter:         Optional[str] = None,
+    vibe:                 str           = "peak",
+    start_energy:         Optional[str] = None,
+    end_energy:           Optional[str] = None,
+    strategy:             str           = "safest",
+    structure:            str           = "full",
+    max_bpm_jump:         float         = 3.0,
+    strict_harmonic:      bool          = True,
+    artist_repeat_window: int           = 3,
 ) -> List[SetTrack]:
     """
     Build a set from the library DB.
@@ -325,18 +480,28 @@ def build_set(
     rows = _dedupe_candidates(rows)
 
     vibe = vibe if vibe in _VIBE_WEIGHTS else "peak"
-    phase_weights = _VIBE_WEIGHTS[vibe]
-    target_sec    = target_duration_min * 60.0
-    avg_dur       = _avg_track_duration(rows)
+    structure = structure if structure in _STRUCTURE_PHASES else "full"
 
-    set_tracks:   List[SetTrack] = []
-    used_paths:   set            = set()
-    used_artists: set            = set()   # normalized primary artists already in set
-    last_row                     = None
-    last_bpm:     float          = 0.0
-    position                     = 1
+    # Restrict to the active phases for this structure and renormalize weights
+    # so they still sum to 1.0 — preserving vibe proportions within the active set.
+    active_phases = _STRUCTURE_PHASES[structure]
+    raw_weights   = _VIBE_WEIGHTS[vibe]
+    weight_sum    = sum(raw_weights[p] for p in active_phases)
+    phase_weights = {p: raw_weights[p] / weight_sum for p in active_phases}
 
-    for phase in _PHASE_ORDER:
+    target_sec = target_duration_min * 60.0
+    avg_dur    = _avg_track_duration(rows)
+
+    set_tracks:      List[SetTrack] = []
+    used_paths:      set            = set()
+    used_identities: set            = set()   # title+artist identity keys
+    used_artists:    set            = set()   # all normalized primary artists in set (global)
+    recent_artists:  list           = []      # rolling list for window check
+    last_row                        = None
+    last_bpm:        float          = 0.0
+    position                        = 1
+
+    for phase in active_phases:
         phase_target_sec = target_sec * phase_weights[phase]
         phase_sec_used   = 0.0
 
@@ -353,7 +518,13 @@ def build_set(
         while phase_sec_used < phase_target_sec:
             next_row = _pick_next(
                 last_row, pool, strategy, used_paths, phase,
-                last_bpm=last_bpm, used_artists=used_artists,
+                last_bpm             = last_bpm,
+                used_artists         = used_artists,
+                used_identities      = used_identities,
+                recent_artists       = recent_artists,
+                max_bpm_jump         = max_bpm_jump,
+                strict_harmonic      = strict_harmonic,
+                artist_repeat_window = artist_repeat_window,
             )
             if next_row is None:
                 break
@@ -387,13 +558,19 @@ def build_set(
                 transition_note = note,
             )
             set_tracks.append(st)
+
+            # --- Update tracking state ---
             used_paths.add(filepath)
+            identity = _normalize_track_identity(next_row["artist"] or "", next_row["title"] or "")
+            used_identities.add(identity)
             primary = _normalize_artist(next_row["artist"] or "")
             if primary:
                 used_artists.add(primary)
-            pool      = [r for r in pool if r["filepath"] not in used_paths]
-            last_row  = next_row
-            last_bpm  = bpm if bpm > 0 else last_bpm
+                recent_artists.append(primary)
+
+            pool           = [r for r in pool if r["filepath"] not in used_paths]
+            last_row       = next_row
+            last_bpm       = bpm if bpm > 0 else last_bpm
             phase_sec_used += dur
             position       += 1
 
@@ -476,14 +653,18 @@ def _print_summary(tracks: List[SetTrack], name: str) -> None:
 # ---------------------------------------------------------------------------
 
 def run(
-    target_duration_min: int           = 60,
-    genre_filter:        Optional[str] = None,
-    vibe:                str           = "peak",
-    start_energy:        Optional[str] = None,
-    end_energy:          Optional[str] = None,
-    strategy:            str           = "safest",
-    name:                Optional[str] = None,
-    dry_run:             bool          = False,
+    target_duration_min:  int           = 60,
+    genre_filter:         Optional[str] = None,
+    vibe:                 str           = "peak",
+    start_energy:         Optional[str] = None,
+    end_energy:           Optional[str] = None,
+    strategy:             str           = "safest",
+    structure:            str           = "full",
+    max_bpm_jump:         float         = 3.0,
+    strict_harmonic:      bool          = True,
+    artist_repeat_window: int           = 3,
+    name:                 Optional[str] = None,
+    dry_run:              bool          = False,
 ) -> Tuple[int, Optional[Path]]:
     """
     Build a set and write all outputs.
@@ -493,31 +674,53 @@ def run(
     """
     if not name:
         ts   = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-        name = f"set_{ts}_{vibe}_{target_duration_min}min"
+        struct_tag = f"_{structure}" if structure != "full" else ""
+        name = f"set_{ts}_{vibe}{struct_tag}_{target_duration_min}min"
 
     log.info(
-        "set-builder: vibe=%s  duration=%dmin  genre=%s  strategy=%s",
-        vibe, target_duration_min, genre_filter or "any", strategy,
+        "set-builder: vibe=%s  structure=%s  duration=%dmin  genre=%s  strategy=%s  "
+        "max_bpm_jump=%s  strict_harmonic=%s  artist_repeat_window=%d",
+        vibe, structure, target_duration_min, genre_filter or "any", strategy,
+        max_bpm_jump, strict_harmonic, artist_repeat_window,
     )
     log_action(
-        f"SET-BUILDER START: vibe={vibe} duration={target_duration_min}min "
-        f"genre={genre_filter or 'any'} strategy={strategy}"
+        f"SET-BUILDER START: vibe={vibe} structure={structure} duration={target_duration_min}min "
+        f"genre={genre_filter or 'any'} strategy={strategy} "
+        f"max_bpm_jump={max_bpm_jump} strict_harmonic={strict_harmonic} "
+        f"artist_repeat_window={artist_repeat_window}"
     )
 
     tracks = build_set(
-        target_duration_min = target_duration_min,
-        genre_filter        = genre_filter,
-        vibe                = vibe,
-        start_energy        = start_energy,
-        end_energy          = end_energy,
-        strategy            = strategy,
+        target_duration_min  = target_duration_min,
+        genre_filter         = genre_filter,
+        vibe                 = vibe,
+        start_energy         = start_energy,
+        end_energy           = end_energy,
+        strategy             = strategy,
+        structure            = structure,
+        max_bpm_jump         = max_bpm_jump,
+        strict_harmonic      = strict_harmonic,
+        artist_repeat_window = artist_repeat_window,
     )
 
     if not tracks:
         log.warning("set-builder: no tracks selected — check your library DB")
         return 0, None
 
-    out_dir   = config.SET_BUILDER_OUTPUT_DIR
+    # Route into a vibe-named subfolder; genre takes precedence for known cases.
+    _VIBE_SUBDIR = {
+        "warm":    "warmup",
+        "peak":    "peak",
+        "deep":    "deep",
+        "driving": "driving",
+    }
+    subdir = _VIBE_SUBDIR.get(vibe, vibe)
+    if genre_filter and "afro" in genre_filter.lower():
+        subdir = "afro_house"
+
+    out_dir  = config.SET_BUILDER_OUTPUT_DIR / subdir
+    out_dir.mkdir(parents=True, exist_ok=True)
+
     m3u_path  = out_dir / f"{name}.m3u8"
     csv_path  = out_dir / f"{name}.csv"
 

@@ -199,6 +199,60 @@ def get_all_ok_tracks():
         ).fetchall()
 
 
+def prune_stale_tracks(
+    lib_root: "Path",
+    dry_run: bool = False,
+) -> tuple:
+    """
+    Mark DB rows as 'stale' when their filepath no longer exists on disk AND
+    the file cannot be found anywhere under lib_root by filename.
+
+    Files are NEVER deleted from the database — they are marked status='stale'
+    so they are excluded from future exports and can be reviewed.
+
+    Args:
+        lib_root: root directory to search for files (e.g. /mnt/music_ssd/KKDJ/)
+        dry_run:  if True, report but do not write any changes
+
+    Returns:
+        (checked, pruned) — number of ok rows checked, number marked stale
+    """
+    from pathlib import Path as _Path
+    import config as _config
+
+    rows = get_all_ok_tracks()
+    checked = len(rows)
+
+    # Build filename index over lib_root so we can detect moved files
+    lib_index: dict = {}
+    lr = _Path(lib_root)
+    if lr.exists():
+        for ext in _config.AUDIO_EXTENSIONS:
+            for p in lr.rglob(f"*{ext}"):
+                key = p.name.lower()
+                if key not in lib_index:
+                    lib_index[key] = p
+
+    pruned = 0
+    with get_conn() as conn:
+        for row in rows:
+            fp = str(row["filepath"])
+            if _Path(fp).exists():
+                continue
+            # Not at DB path — check if findable in lib_root by filename
+            key = _Path(fp).name.lower()
+            if key in lib_index:
+                continue   # file exists elsewhere in current library — keep row
+            # Genuinely stale: not on disk and not remappable
+            pruned += 1
+            if not dry_run:
+                conn.execute(
+                    "UPDATE tracks SET status='stale', error_msg=? WHERE filepath=?",
+                    ("path not found on current filesystem", fp),
+                )
+    return checked, pruned
+
+
 # ---------------------------------------------------------------------------
 # Pipeline run operations
 # ---------------------------------------------------------------------------

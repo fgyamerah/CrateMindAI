@@ -10,5 +10,17 @@
       "Bash(__NEW_LINE_e8a204fba657b8b1__ done:*)",
       "Bash(grep -rn \"\\\\.post\\\\|\\\\.get\\\\|\\\\.put\\\\|\\\\.delete\\\\|requests\\\\.\" /home/koolkatdj/code/apps/djtoolkit --include=*.py)"
     ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"systemMessage\": \"Reminder: if code changed this session, update CHANGELOG.txt, NEXT_TASKS.txt, and DJToolkit_CONTEXT.txt before closing.\"}'"
+          }
+        ]
+      }
+    ]
   }
 }

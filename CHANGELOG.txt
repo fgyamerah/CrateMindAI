@@ -1,0 +1,140 @@
+======================================================================
+DJTOOLKIT — CHANGELOG
+======================================================================
+
+Rules:
+- Most recent entries at the top
+- Always include: TYPE, SUMMARY, DETAILS, FILES, IMPACT, NOTES
+- Focus on WHY, not just WHAT
+
+
+----------------------------------------------------------------------
+[2026-04-07] v1.2.0 — Add convert-audio subcommand (.m4a → .aiff)
+----------------------------------------------------------------------
+
+TYPE: feature
+
+SUMMARY:
+- New subcommand: python3 pipeline.py convert-audio --src ... --dst ... --archive ...
+- Converts .m4a files to .aiff in parallel with ffmpeg
+- Preserves metadata (-map_metadata 0), relative folder structure, and originals
+- Full verification pipeline: ffprobe source check + duration delta check on output
+
+DETAILS:
+- modules/convert_audio.py  — new module with full conversion logic
+  - _probe()                — ffprobe JSON parse for readability + duration
+  - _build_dst / _build_archive — path helpers preserving relative structure
+  - _collision_free()       — safe archive rename on filename collision
+  - _convert_one()          — single-file worker: probe → convert → verify → archive
+  - run()                   — top-level entry: scan, pool, log, summary
+- pipeline.py
+  - run_convert_audio()     — arg parsing and delegation to module
+  - convert-audio subparser — --src, --dst, --archive, --workers, --overwrite,
+                              --verify-tolerance-sec, --dry-run, --no-progress, --verbose
+- config.py
+  - FFMPEG_BIN = os.environ.get("FFMPEG_BIN", "ffmpeg")  — new, mirrors FFPROBE_BIN
+  - PIPELINE_VERSION = "1.2.0"
+
+IMPACT:
+- No existing commands affected
+- All existing module imports unchanged
+- New dependency: tqdm (optional, graceful fallback if not installed)
+
+NOTES:
+- Output codec: pcm_s16be (16-bit big-endian PCM) — standard AIFF for DJ software
+- Archives originals by MOVING, never deleting
+- Archive move is only attempted after conversion + verification pass
+- Version bump: 1.1.0 → 1.2.0 (minor: additive new subcommand)
+
+
+----------------------------------------------------------------------
+[2026-04-07] v1.1.0 — MIK-first refactor: preserve BPM/key/cue data from Mixed In Key
+----------------------------------------------------------------------
+
+TYPE: feature / policy change
+
+SUMMARY:
+- Made Mixed In Key (MIK) the authoritative source for BPM, key, and cue data
+- Analyzer now skips detection for values that already exist (in DB or file tags)
+- Cue suggest disabled by default (opt-in via --force-cue-suggest)
+- Rekordbox XML export disabled by default (opt-in via --force-xml with warning)
+
+DETAILS:
+- Added _read_existing_analysis() to analyzer.py: reads BPM from TBPM/tmpo and
+  Camelot key from TKEY/INITIALKEY/©key tags before running aubio/keyfinder-cli.
+  This preserves data written by MIK without requiring an explicit --skip-* flag.
+- analyzer.run() is now MIK-first: only fills genuinely missing values; never
+  overwrites existing BPM or Camelot key from either DB or file tags.
+- run_pipeline() default changed: skip_cue_suggest=True (was False). Cue suggest
+  no longer runs automatically. Use --force-cue-suggest to enable.
+- --skip-cue-suggest is now a deprecated no-op (cue suggest is off by default).
+- --skip-analysis marked as [legacy]; no longer needed for normal MIK workflows.
+- rekordbox-export subcommand: XML disabled by default. --force-xml enables it
+  with a visible warning. M3U generation is unchanged (always safe).
+- CLAUDE.md updated with hard MIK-first rule for future sessions.
+
+FILES:
+- modules/analyzer.py  — MIK-first logic, _read_existing_analysis()
+- pipeline.py          — cue suggest default, --force-cue-suggest, --force-xml,
+                         updated argparser help texts, updated rekordbox description
+- CLAUDE.md            — MIK hard rule added, commands updated
+- CHANGELOG.txt        — this entry
+- NEXT_TASKS.txt       — updated
+- DJToolkit_CONTEXT.txt — updated
+
+IMPACT:
+- No pipeline steps removed; all subcommands still work
+- Tracks that MIK has already analyzed are never re-analyzed
+- Tracks MIK has not yet touched still get analysis from aubio/keyfinder-cli
+- No DB schema changes; no migration needed
+
+NOTES:
+- Version bump: 1.0.0 → 1.1.0 (minor: new behavior, backwards-compatible CLI)
+- --force-cue-suggest and --force-xml are new; old flags deprecated but not removed
+
+
+----------------------------------------------------------------------
+[2026-04-07] v1.0.0 — Initial stable release / context snapshot
+----------------------------------------------------------------------
+
+TYPE: release
+
+SUMMARY:
+- Full end-to-end DJ pipeline implemented and stabilized
+- Establishes baseline architecture and CLI feature set
+
+DETAILS:
+- Full pipeline operational: QC → dedupe → organize → sanitize → analyze → tag → cue-suggest → playlists → report
+- All subcommands implemented (label-intel, playlists, rekordbox-export, analyze-missing, dedupe, cue-suggest, set-builder, harmonic-suggest, etc.)
+- label_intel package with Beatport + Traxsource scraping and multiple export formats
+- SQLite schema implemented: tracks, track_history, pipeline_runs, duplicate_groups, cue_points
+- Idempotency system: TXXX:PROCESSED=1 + DB status='ok'
+- Corrupt-file isolation with timeout protection
+- Rekordbox export with Linux→Windows path mapping and fallback analysis
+- Tag normalization: ID3v2.4 → ID3v2.3, ID3v1 removal
+- Project state files introduced: CLAUDE.md, DJToolkit_CONTEXT.txt, CHANGELOG.txt, NEXT_TASKS.txt
+
+FILES:
+- pipeline.py
+- modules/*
+- label_intel/*
+- db.py
+- config.py
+- CLAUDE.md
+- DJToolkit_CONTEXT.txt
+- CHANGELOG.txt
+- NEXT_TASKS.txt
+
+IMPACT:
+- CLI: stable baseline interface established
+- Data: schema initialized and in active use
+- Compatibility: non-breaking (initial release)
+
+NOTES:
+- BPM accuracy depends on aubio + genre correction and requires improvement
+- Rekordbox compatibility is functional but not yet validated for high accuracy
+
+
+======================================================================
+END OF CHANGELOG
+======================================================================

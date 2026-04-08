@@ -1,6 +1,12 @@
 """
 Audio analysis — BPM detection (aubio) + key detection (keyfinder-cli).
 
+MIK-first policy:
+    Mixed In Key (or Rekordbox) is the authoritative source for BPM, key, and
+    cue data.  The analyzer NEVER overwrites values that already exist — either
+    in the pipeline DB or embedded in the file's own tags.  Analysis only runs
+    as a fallback for values that are genuinely absent.
+
 BPM notes:
     aubiobpm outputs one BPM value per analysis window. We collect all values
     and return the median, which is more robust than the mean.
@@ -77,6 +83,9 @@ CAMELOT_TO_MUSICAL: dict = {
 
 # Genres where 170+ BPM is expected — don't halve these
 _HIGH_BPM_GENRES = {"drum and bass", "dnb", "jungle", "hardcore", "gabber", "speedcore"}
+
+# Camelot key pattern — matches "8A", "12B", etc.
+_RE_CAMELOT = re.compile(r"^(1[0-2]|[1-9])[AB]$", re.IGNORECASE)
 
 
 # ---------------------------------------------------------------------------
@@ -360,40 +369,172 @@ def detect_key(path: Path) -> Tuple[Optional[str], Optional[str]]:
 
 
 # ---------------------------------------------------------------------------
+# MIK-first helpers: read existing analysis from audio file tags
+# ---------------------------------------------------------------------------
+
+def _read_existing_analysis(path: Path) -> Tuple[Optional[float], Optional[str]]:
+    """
+    Read BPM and Camelot key that are already embedded in the audio file's tags.
+
+    Mixed In Key (and Rekordbox) write these values directly to the file.  We
+    read them here so the pipeline can skip re-analysis and preserve MIK data.
+
+    Priority:
+      MP3  : TBPM → BPM,  TKEY → Camelot / musical key
+      FLAC : BPM / TBPM tag,  INITIALKEY / KEY tag
+      M4A  : tmpo atom → BPM,  ©key atom → key
+
+    Returns (bpm, camelot) — either may be None if absent or unreadable.
+    """
+    bpm:     Optional[float] = None
+    camelot: Optional[str]   = None
+
+    try:
+        suffix = path.suffix.lower()
+
+        if suffix == ".mp3":
+            from mutagen.id3 import ID3, ID3NoHeaderError  # type: ignore
+            try:
+                tags = ID3(str(path))
+            except ID3NoHeaderError:
+                return None, None
+            tbpm = tags.get("TBPM")
+            if tbpm and getattr(tbpm, "text", None):
+                try:
+                    bpm = float(tbpm.text[0])
+                except (ValueError, IndexError):
+                    pass
+            tkey = tags.get("TKEY")
+            if tkey and getattr(tkey, "text", None):
+                raw = tkey.text[0].strip()
+                if _RE_CAMELOT.match(raw):
+                    camelot = raw.upper()
+                else:
+                    camelot = CAMELOT_MAP.get(raw) or CAMELOT_MAP.get(raw.strip())
+
+        elif suffix == ".flac":
+            from mutagen.flac import FLAC  # type: ignore
+            tags = FLAC(str(path))
+            for bk in ("BPM", "TBPM", "bpm"):
+                vals = tags.get(bk)
+                if vals:
+                    try:
+                        bpm = float(vals[0])
+                        break
+                    except (ValueError, IndexError):
+                        pass
+            for kk in ("INITIALKEY", "KEY", "key"):
+                vals = tags.get(kk)
+                if vals:
+                    raw = vals[0].strip()
+                    if _RE_CAMELOT.match(raw):
+                        camelot = raw.upper()
+                    else:
+                        camelot = CAMELOT_MAP.get(raw)
+                    if camelot:
+                        break
+
+        elif suffix in (".m4a", ".mp4", ".aac"):
+            from mutagen.mp4 import MP4  # type: ignore
+            tags = MP4(str(path))
+            tmpo = tags.get("tmpo")
+            if tmpo:
+                try:
+                    bpm = float(tmpo[0])
+                except (ValueError, TypeError):
+                    pass
+            key_val = tags.get("©key")
+            if key_val:
+                raw = key_val[0].strip() if isinstance(key_val[0], str) else ""
+                if raw:
+                    if _RE_CAMELOT.match(raw):
+                        camelot = raw.upper()
+                    else:
+                        camelot = CAMELOT_MAP.get(raw)
+
+    except Exception as exc:
+        log.debug("MIK tag read failed for %s: %s", path.name, exc)
+
+    return bpm, camelot
+
+
+# ---------------------------------------------------------------------------
 # Combined run
 # ---------------------------------------------------------------------------
 def run(files: List[Path], run_id: int, dry_run: bool = False) -> List[Path]:
     """
-    Detect BPM + key for each file. Updates DB with results.
-    Returns the same file list (analysis doesn't reject files).
+    Fill in missing BPM + key for each file. Updates DB with results.
+    Returns the same file list (analysis never rejects files).
+
+    MIK-first: if BPM or Camelot key already exist — either in the DB (from a
+    previous run or from Mixed In Key via tagger write-back) or directly in the
+    audio file's tags — those values are preserved unchanged.  aubio /
+    keyfinder-cli only run when values are genuinely absent.
     """
     for path in files:
         if not path.exists():
             continue
 
-        row = db.get_track(str(path))
+        row   = db.get_track(str(path))
         genre = row["genre"] if row and row["genre"] else ""
 
-        bpm               = detect_bpm(path, genre)
-        musical_key, camelot = detect_key(path)
+        # Existing values from DB (highest trust — previously verified/tagged)
+        db_bpm     = row["bpm"]         if row else None
+        db_camelot = row["key_camelot"] if row else None
 
+        # Read from file tags when DB has gaps (MIK may have written here directly)
+        tag_bpm:     Optional[float] = None
+        tag_camelot: Optional[str]   = None
+        if not db_bpm or not db_camelot:
+            tag_bpm, tag_camelot = _read_existing_analysis(path)
+
+        # Resolve best available existing values
+        existing_bpm     = db_bpm     or tag_bpm
+        existing_camelot = db_camelot or tag_camelot
+
+        # --- Analysis: only runs for missing values ---
+        new_bpm:     Optional[float] = None
+        new_musical: Optional[str]   = None
+        new_camelot: Optional[str]   = None
+
+        if existing_bpm:
+            log.debug(
+                "BPM: preserving existing %.1f for %s (MIK-first)",
+                float(existing_bpm), path.name,
+            )
+        else:
+            new_bpm = detect_bpm(path, genre)
+
+        if existing_camelot:
+            log.debug(
+                "KEY: preserving existing %s for %s (MIK-first)",
+                existing_camelot, path.name,
+            )
+        else:
+            new_musical, new_camelot = detect_key(path)
+
+        # --- DB update: promote tag values and store new detections ---
         update: dict = {}
-        if bpm is not None:
-            update["bpm"] = bpm
-        if musical_key is not None:
-            update["key_musical"] = musical_key
-        if camelot is not None:
-            update["key_camelot"] = camelot
+        if tag_bpm is not None and not db_bpm:
+            update["bpm"] = tag_bpm          # promote MIK file-tag value to DB
+        elif new_bpm is not None:
+            update["bpm"] = new_bpm          # freshly detected (was missing)
+
+        if tag_camelot is not None and not db_camelot:
+            update["key_camelot"] = tag_camelot   # promote MIK file-tag value to DB
+        if new_musical is not None:
+            update["key_musical"] = new_musical
+        if new_camelot is not None:
+            update["key_camelot"] = new_camelot
 
         if update and not dry_run:
             db.upsert_track(str(path), **update)
 
         log.info(
-            "ANALYZED %s  BPM=%.1f  Key=%s (%s)",
+            "ANALYZED %s  BPM=%.1f  Key=%s",
             path.name,
-            bpm or 0.0,
-            camelot or "?",
-            musical_key or "?",
+            float(existing_bpm or new_bpm or 0.0),
+            existing_camelot or new_camelot or "?",
         )
 
     return files

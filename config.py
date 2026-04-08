@@ -82,9 +82,12 @@ RB_LINUX_ROOT    = Path(os.environ.get("RB_LINUX_ROOT",  "/mnt/music_ssd"))
 # Windows drive letter assigned to the SSD in Windows Disk Management
 RB_WINDOWS_DRIVE = os.environ.get("RB_WIN_DRIVE", "M")
 
-# Output directories — written to the SSD so they're visible on Windows too
-REKORDBOX_XML_EXPORT_DIR = MUSIC_ROOT / "_REKORDBOX_XML_EXPORT"
-REKORDBOX_M3U_EXPORT_DIR = MUSIC_ROOT / "_PLAYLISTS_M3U_EXPORT"
+# Output directories — written directly to the SSD so they are immediately
+# visible on Windows/Rekordbox.  Override via --export-root, config_local.py,
+# or the SSD_KKDJ_ROOT constant below.
+SSD_KKDJ_ROOT            = Path("/mnt/music_ssd/KKDJ")
+REKORDBOX_XML_EXPORT_DIR = SSD_KKDJ_ROOT / "_REKORDBOX_XML_EXPORT"
+REKORDBOX_M3U_EXPORT_DIR = SSD_KKDJ_ROOT / "_PLAYLISTS_M3U_EXPORT"
 
 # ---------------------------------------------------------------------------
 # Quality thresholds
@@ -132,7 +135,8 @@ CUE_SUGGEST_WRITE_SIDECARS = False    # write .cues.json sidecar next to each au
 CUE_SUGGEST_MIN_CONFIDENCE = 0.4      # ignore cues below this confidence when writing to DB
 
 # set-builder subcommand
-SET_BUILDER_OUTPUT_DIR     = LOGS_DIR / "set_builder"
+# Sets are saved directly to the SSD DJ library so they're visible on Windows/Rekordbox.
+SET_BUILDER_OUTPUT_DIR     = Path("/mnt/music_ssd/KKDJ/_SETS")
 
 # harmonic-suggest subcommand
 HARMONIC_SUGGEST_OUTPUT_DIR = LOGS_DIR / "harmonic_suggest"
@@ -167,7 +171,7 @@ PLAYLIST_MIN_TRACKS = 2
 # ---------------------------------------------------------------------------
 # Pipeline metadata
 # ---------------------------------------------------------------------------
-PIPELINE_VERSION = "1.0.0"
+PIPELINE_VERSION = "1.2.0"
 
 # ---------------------------------------------------------------------------
 # rmlint binary (override if not in PATH)
@@ -182,6 +186,7 @@ AUBIO_BIN      = os.environ.get("AUBIO_BIN", "")
 AUBIOBPM_BIN   = os.environ.get("AUBIOBPM_BIN", "aubiobpm")
 KEYFINDER_BIN  = os.environ.get("KEYFINDER_BIN", "keyfinder-cli")
 FFPROBE_BIN    = os.environ.get("FFPROBE_BIN", "ffprobe")
+FFMPEG_BIN     = os.environ.get("FFMPEG_BIN",  "ffmpeg")
 BEET_BIN       = os.environ.get("BEET_BIN", "beet")
 
 # ---------------------------------------------------------------------------

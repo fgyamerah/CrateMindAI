@@ -221,7 +221,7 @@ def _collect_inbox() -> list:
 # ---------------------------------------------------------------------------
 def run_pipeline(dry_run: bool, skip_beets: bool, skip_analysis: bool, verbose: bool,
                  reanalyze: bool = False, custom_path: Path | None = None,
-                 skip_cue_suggest: bool = False) -> int:
+                 skip_cue_suggest: bool = True) -> int:
     """
     Execute the full pipeline.
     Returns exit code: 0 = success, 1 = some files failed, 2 = fatal error.
@@ -308,7 +308,9 @@ def run_pipeline(dry_run: bool, skip_beets: bool, skip_analysis: bool, verbose: 
         elif row and row["status"] == "error":
             error_count += 1
 
-    # --- Step 8b: Cue point suggestion (optional, skippable) ---
+    # --- Step 8b: Cue point suggestion (disabled by default; use --force-cue-suggest) ---
+    # MIK-first policy: cue data is owned by Mixed In Key / Rekordbox.
+    # The toolkit will not generate or overwrite cues unless explicitly forced.
     if not skip_cue_suggest and not skip_analysis and files:
         log.info("[7/8] Cue point suggestion ...")
         try:
@@ -322,10 +324,11 @@ def run_pipeline(dry_run: bool, skip_beets: bool, skip_analysis: bool, verbose: 
             log.info("Cue suggest: %d analysed, %d stored", _analysed, _stored)
         except Exception as exc:
             log.warning("Cue suggest step failed (non-fatal): %s", exc)
-    elif skip_cue_suggest:
-        log.info("[7/8] Skipping cue suggestion (--skip-cue-suggest)")
-    elif skip_analysis:
-        log.info("[7/8] Skipping cue suggestion (analysis was skipped)")
+    else:
+        log.info(
+            "[7/8] Cue point suggestion skipped "
+            "(disabled by default — use --force-cue-suggest to enable)"
+        )
 
     # --- Step 8c: Playlist generation ---
     log.info("[8/8] Generating playlists ...")
@@ -939,29 +942,39 @@ def run_set_builder(args) -> int:
     _setup_logging(getattr(args, "verbose", False))
     db.init_db()
 
-    dry_run  = getattr(args, "dry_run",              False)
-    vibe     = getattr(args, "vibe",                 "peak")
-    duration = getattr(args, "duration",             60)
-    genre    = getattr(args, "genre",                None)
-    strategy = getattr(args, "strategy",             "safest")
-    name     = getattr(args, "name",                 None)
-    start_e  = getattr(args, "start_energy",         None)
-    end_e    = getattr(args, "end_energy",            None)
+    dry_run              = getattr(args, "dry_run",               False)
+    vibe                 = getattr(args, "vibe",                  "peak")
+    duration             = getattr(args, "duration",              60)
+    genre                = getattr(args, "genre",                 None)
+    strategy             = getattr(args, "strategy",              "safest")
+    structure            = getattr(args, "structure",              "full")
+    max_bpm_jump         = getattr(args, "max_bpm_jump",          3.0)
+    strict_harmonic      = getattr(args, "strict_harmonic",       True)
+    artist_repeat_window = getattr(args, "artist_repeat_window",  3)
+    name                 = getattr(args, "name",                  None)
+    start_e              = getattr(args, "start_energy",          None)
+    end_e                = getattr(args, "end_energy",             None)
 
     log.info(
-        "set-builder: vibe=%s  duration=%dmin  genre=%s  strategy=%s  dry_run=%s",
-        vibe, duration, genre or "any", strategy, dry_run,
+        "set-builder: vibe=%s  structure=%s  duration=%dmin  genre=%s  strategy=%s  "
+        "max_bpm_jump=%s  strict_harmonic=%s  artist_repeat_window=%d  dry_run=%s",
+        vibe, structure, duration, genre or "any", strategy,
+        max_bpm_jump, strict_harmonic, artist_repeat_window, dry_run,
     )
 
     count, m3u_path = set_builder.run(
-        target_duration_min = duration,
-        genre_filter        = genre,
-        vibe                = vibe,
-        start_energy        = start_e,
-        end_energy          = end_e,
-        strategy            = strategy,
-        name                = name,
-        dry_run             = dry_run,
+        target_duration_min  = duration,
+        genre_filter         = genre,
+        vibe                 = vibe,
+        start_energy         = start_e,
+        end_energy           = end_e,
+        strategy             = strategy,
+        structure            = structure,
+        max_bpm_jump         = max_bpm_jump,
+        strict_harmonic      = strict_harmonic,
+        artist_repeat_window = artist_repeat_window,
+        name                 = name,
+        dry_run              = dry_run,
     )
 
     if count == 0:
@@ -1119,20 +1132,37 @@ def run_rekordbox_export(args) -> int:
     db.init_db()
 
     dry_run              = getattr(args, "dry_run",                 False)
-    skip_xml             = getattr(args, "no_xml",                  False)
     skip_m3u             = getattr(args, "no_m3u",                  False)
     recover_missing      = getattr(args, "recover_missing_analysis", False)
+
+    # MIK-first: Rekordbox XML is owned by Rekordbox + Mixed In Key.
+    # XML export is DISABLED by default to prevent accidental data loss.
+    # Use --force-xml to override.
+    force_xml = getattr(args, "force_xml", False)
+    skip_xml  = not force_xml
+    if not skip_xml:
+        log.warning(
+            "WARNING: Rekordbox XML is managed by Rekordbox + Mixed In Key. "
+            "Toolkit export is disabled by default to prevent data loss. "
+            "Proceeding because --force-xml was explicitly requested."
+        )
     recover_limit        = getattr(args, "recover_limit",            None)
     recover_timeout_sec  = getattr(args, "recover_timeout_sec",      None)
 
-    # Allow per-run overrides of drive letter and Linux root
-    win_drive  = getattr(args, "win_drive",  None)
-    linux_root = getattr(args, "linux_root", None)
+    # Allow per-run overrides of drive letter, Linux root, and export root
+    win_drive   = getattr(args, "win_drive",   None)
+    linux_root  = getattr(args, "linux_root",  None)
+    export_root = getattr(args, "export_root", None)
     if win_drive:
         config.RB_WINDOWS_DRIVE = win_drive.rstrip(":\\")
     if linux_root:
         from pathlib import Path as _Path
         config.RB_LINUX_ROOT = _Path(linux_root)
+    if export_root:
+        from pathlib import Path as _Path
+        _root = _Path(export_root)
+        config.REKORDBOX_XML_EXPORT_DIR = _root / "_REKORDBOX_XML_EXPORT"
+        config.REKORDBOX_M3U_EXPORT_DIR = _root / "_PLAYLISTS_M3U_EXPORT"
 
     return rekordbox_export.run(
         dry_run             = dry_run,
@@ -1264,6 +1294,138 @@ def run_tag_normalize(args) -> int:
 
 
 # ---------------------------------------------------------------------------
+# DB Prune Stale
+# ---------------------------------------------------------------------------
+def run_db_prune_stale(args) -> int:
+    """
+    Mark DB rows as 'stale' when the file no longer exists on the current
+    SSD library and cannot be located by filename anywhere under --path.
+    Rows are marked, never deleted, so you can always review what was pruned.
+    """
+    _setup_logging(getattr(args, "verbose", False))
+    db.init_db()
+
+    raw_path = getattr(args, "path", None)
+    lib_root = _resolve_path(raw_path) if raw_path else Path(config.RB_LINUX_ROOT)
+
+    if lib_root is None or not lib_root.exists():
+        log.error("db-prune-stale: path not found: %s", lib_root or raw_path)
+        return 1
+
+    dry_run = getattr(args, "dry_run", False)
+    mode    = "DRY-RUN" if dry_run else "APPLY"
+    log.info("db-prune-stale %s: scanning DB against %s", mode, lib_root)
+
+    checked, pruned = db.prune_stale_tracks(lib_root, dry_run=dry_run)
+
+    print(f"\n=== db-prune-stale {'(DRY-RUN) ' if dry_run else ''}===")
+    print(f"  Library root    : {lib_root}")
+    print(f"  DB rows checked : {checked}")
+    print(f"  Stale rows      : {pruned}"
+          + (" (would mark stale)" if dry_run else " (marked status='stale')"))
+    if pruned and dry_run:
+        print( "  Run without --dry-run to apply.")
+    if pruned and not dry_run:
+        print( "  These rows are now excluded from rekordbox-export.")
+        print( "  They are NOT deleted — query the DB to review them:")
+        print( "    SELECT filepath FROM tracks WHERE status='stale';")
+    print()
+
+    log_action(
+        f"DB-PRUNE-STALE {mode}: {checked} checked, {pruned} marked stale, "
+        f"lib_root={lib_root}"
+    )
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Convert Audio
+# ---------------------------------------------------------------------------
+def run_convert_audio(args) -> int:
+    """
+    Convert .m4a files to .aiff, preserve metadata, archive originals.
+
+    Requires:
+      --src   root directory containing .m4a files (scanned recursively)
+      --dst   root directory for .aiff output files (relative structure preserved)
+      --archive  root directory where original .m4a files are moved after conversion
+
+    On success: original .m4a is moved to --archive (never deleted outright).
+    On failure: original is left in place; failed output file is removed.
+    """
+    from modules import convert_audio
+
+    _setup_logging(getattr(args, "verbose", False))
+
+    src_raw     = getattr(args, "src",     None)
+    dst_raw     = getattr(args, "dst",     None)
+    archive_raw = getattr(args, "archive", None)
+
+    if not src_raw:
+        print("ERROR: --src is required", file=sys.stderr)
+        return 2
+    if not dst_raw:
+        print("ERROR: --dst is required", file=sys.stderr)
+        return 2
+    if not archive_raw:
+        print("ERROR: --archive is required", file=sys.stderr)
+        return 2
+
+    src_path     = Path(src_raw).expanduser().resolve()
+    dst_path     = Path(dst_raw).expanduser().resolve()
+    archive_path = Path(archive_raw).expanduser().resolve()
+
+    if not src_path.is_dir():
+        print(f"ERROR: --src does not exist or is not a directory: {src_path}", file=sys.stderr)
+        return 2
+
+    # Safety guard: make sure archive is not inside src or dst
+    if str(archive_path).startswith(str(src_path) + "/"):
+        print("ERROR: --archive must not be inside --src", file=sys.stderr)
+        return 2
+    if str(archive_path).startswith(str(dst_path) + "/"):
+        print("ERROR: --archive must not be inside --dst", file=sys.stderr)
+        return 2
+
+    workers   = getattr(args, "workers",              4)
+    overwrite = getattr(args, "overwrite",             False)
+    tolerance = getattr(args, "verify_tolerance_sec",  1.0)
+    dry_run   = getattr(args, "dry_run",               False)
+    verbose   = getattr(args, "verbose",               False)
+    no_prog   = getattr(args, "no_progress",           False)
+
+    ffmpeg_bin  = getattr(config, "FFMPEG_BIN",  "ffmpeg")
+    ffprobe_bin = getattr(config, "FFPROBE_BIN", "ffprobe")
+
+    log.info(
+        "convert-audio: src=%s  dst=%s  archive=%s  workers=%d  overwrite=%s  "
+        "tolerance=%.2fs  dry_run=%s",
+        src_path, dst_path, archive_path, workers, overwrite, tolerance, dry_run,
+    )
+    log_action(
+        f"CONVERT-AUDIO {'DRY-RUN' if dry_run else 'START'}: "
+        f"src={src_path}  dst={dst_path}  archive={archive_path}"
+    )
+
+    rc = convert_audio.run(
+        src           = src_path,
+        dst           = dst_path,
+        archive       = archive_path,
+        workers       = workers,
+        overwrite     = overwrite,
+        tolerance     = tolerance,
+        dry_run       = dry_run,
+        verbose       = verbose,
+        show_progress = not no_prog,
+        ffmpeg_bin    = ffmpeg_bin,
+        ffprobe_bin   = ffprobe_bin,
+    )
+
+    log_action(f"CONVERT-AUDIO {'DRY-RUN' if dry_run else 'DONE'}: rc={rc}")
+    return rc
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 def main() -> None:
@@ -1324,7 +1486,10 @@ def main() -> None:
     )
     parser.add_argument(
         "--skip-analysis", action="store_true",
-        help="Skip BPM and key detection (useful for re-tagging only)"
+        help=(
+            "[legacy] Force-skip all BPM/key analysis, even for tracks missing those values. "
+            "Normally not needed — the pipeline is MIK-first and only fills gaps by default."
+        ),
     )
     parser.add_argument(
         "--reanalyze", action="store_true",
@@ -1333,9 +1498,16 @@ def main() -> None:
     parser.add_argument(
         "--skip-cue-suggest", action="store_true",
         help=(
-            "Skip automatic cue point suggestion after tag writing. "
-            "Cue suggest runs by default on each newly processed batch; "
-            "use this flag to skip it (e.g. for faster re-runs)."
+            "[deprecated — no-op] Cue suggest is now disabled by default. "
+            "Use --force-cue-suggest to enable it."
+        ),
+    )
+    parser.add_argument(
+        "--force-cue-suggest", action="store_true",
+        help=(
+            "Enable cue point suggestion after tag writing. "
+            "Disabled by default (MIK-first policy: cues are owned by Mixed In Key). "
+            "Only use this if you are not using Mixed In Key."
         ),
     )
     parser.add_argument(
@@ -1615,6 +1787,107 @@ def main() -> None:
         help="Scan this directory instead of the default sorted library",
     )
 
+    # ----- db-prune-stale subcommand -----
+    p_dps = subparsers.add_parser(
+        "db-prune-stale",
+        help="Mark DB rows stale when the file no longer exists on the current SSD library",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Scan the database for rows whose filepath no longer exists on disk\n"
+            "and cannot be located by filename anywhere under the library root.\n\n"
+            "Stale rows are marked status='stale' — they are NEVER deleted.\n"
+            "After pruning, rekordbox-export will no longer warn about them.\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py db-prune-stale --dry-run\n"
+            "  python3 pipeline.py db-prune-stale --path /mnt/music_ssd/KKDJ/\n"
+        ),
+    )
+    p_dps.add_argument(
+        "--dry-run", action="store_true",
+        help="Report stale rows without marking them",
+    )
+    p_dps.add_argument(
+        "--path", metavar="DIR",
+        help=(
+            "Library root to search for files "
+            "(default: RB_LINUX_ROOT from config, typically /mnt/music_ssd)"
+        ),
+    )
+    p_dps.add_argument(
+        "--verbose", action="store_true",
+        help="Enable debug logging",
+    )
+
+    # ----- convert-audio subcommand -----
+    p_ca = subparsers.add_parser(
+        "convert-audio",
+        help="Convert .m4a files to .aiff, preserve metadata, archive originals",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Convert all .m4a files under --src to .aiff under --dst.\n"
+            "Relative folder structure is preserved in both --dst and --archive.\n\n"
+            "Workflow per file:\n"
+            "  1. ffprobe validates source — corrupt files are skipped\n"
+            "  2. ffmpeg converts: pcm_s16be AIFF with metadata copied (-map_metadata 0)\n"
+            "  3. Output is verified: ffprobe check + duration delta <= --verify-tolerance-sec\n"
+            "  4. On success: original .m4a moved to --archive (relative path preserved)\n"
+            "  5. On failure: original left untouched; broken output removed\n\n"
+            "Output codec: pcm_s16be (16-bit big-endian PCM AIFF).\n"
+            "Override ffmpeg/ffprobe paths via FFMPEG_BIN / FFPROBE_BIN env vars\n"
+            "or config_local.py.\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py convert-audio \\\n"
+            "      --src /downloads/m4a \\\n"
+            "      --dst /mnt/music_ssd/KKDJ/inbox \\\n"
+            "      --archive /mnt/music_ssd/originals_m4a\n\n"
+            "  python3 pipeline.py convert-audio --src /downloads --dst /music --archive /archive \\\n"
+            "      --workers 8 --verify-tolerance-sec 2.0 --dry-run\n"
+        ),
+    )
+    p_ca.add_argument(
+        "--src", metavar="PATH", required=True,
+        help="Root directory containing .m4a files to convert (scanned recursively)",
+    )
+    p_ca.add_argument(
+        "--dst", metavar="PATH", required=True,
+        help="Root directory for output .aiff files (relative folder structure preserved)",
+    )
+    p_ca.add_argument(
+        "--archive", metavar="PATH", required=True,
+        help=(
+            "Root directory where original .m4a files are moved after successful conversion. "
+            "Relative folder structure from --src is preserved. Files are MOVED, never deleted."
+        ),
+    )
+    p_ca.add_argument(
+        "--workers", metavar="N", type=int, default=4,
+        help="Number of parallel ffmpeg workers (default: 4)",
+    )
+    p_ca.add_argument(
+        "--overwrite", action="store_true",
+        help="Re-convert files that already have a .aiff output in --dst",
+    )
+    p_ca.add_argument(
+        "--verify-tolerance-sec", metavar="SECS", type=float, default=1.0,
+        dest="verify_tolerance_sec",
+        help=(
+            "Maximum allowed duration difference (seconds) between source and output. "
+            "Conversions outside this tolerance are treated as failures (default: 1.0)"
+        ),
+    )
+    p_ca.add_argument(
+        "--dry-run", action="store_true",
+        help="Probe sources and show what would be converted — write no files",
+    )
+    p_ca.add_argument(
+        "--no-progress", action="store_true",
+        help="Disable the tqdm progress bar even when tqdm is installed",
+    )
+    p_ca.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Enable debug logging",
+    )
+
     # ----- dedupe subcommand -----
     p_dd = subparsers.add_parser(
         "dedupe",
@@ -1735,22 +2008,26 @@ def main() -> None:
     # ----- rekordbox-export subcommand -----
     p_rb = subparsers.add_parser(
         "rekordbox-export",
-        help="Export library as Rekordbox-ready XML + M3U playlists for Windows (M: drive)",
+        help="Export library as Rekordbox-ready M3U playlists for Windows (M: drive)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=(
-            "Generate a plug-and-play Rekordbox export package.\n\n"
-            "Converts all Linux paths to Windows M: drive paths and exports:\n"
-            "  _REKORDBOX_XML_EXPORT/rekordbox_library.xml  — import into Rekordbox\n"
+            "Generate M3U playlists for Windows with Linux→M: drive path mapping.\n\n"
+            "MIK-FIRST POLICY:\n"
+            "  Rekordbox XML is owned by Rekordbox + Mixed In Key.\n"
+            "  XML export is DISABLED by default to prevent data loss.\n"
+            "  Use --force-xml only if you are not using Mixed In Key.\n\n"
+            "Default outputs:\n"
             "  _PLAYLISTS_M3U_EXPORT/Genre/*.m3u8\n"
             "  _PLAYLISTS_M3U_EXPORT/Energy/*.m3u8\n"
             "  _PLAYLISTS_M3U_EXPORT/Combined/*.m3u8\n"
             "  _PLAYLISTS_M3U_EXPORT/Key/*.m3u8\n"
             "  _PLAYLISTS_M3U_EXPORT/Route/*.m3u8\n\n"
-            "Default behaviour:\n"
-            "  Tracks missing BPM or Camelot key are EXCLUDED (fast, predictable).\n"
-            "  To recover them inline use --recover-missing-analysis.\n"
-            "  For large libraries, run analysis separately first:\n"
-            "    python3 pipeline.py analyze-missing --path /mnt/music_ssd/KKDJ/\n\n"
+            "With --force-xml also outputs:\n"
+            "  _REKORDBOX_XML_EXPORT/rekordbox_library.xml\n\n"
+            "Tracks missing BPM or Camelot key are EXCLUDED (fast, predictable).\n"
+            "To recover them inline use --recover-missing-analysis.\n"
+            "For large libraries, run analysis separately first:\n"
+            "  python3 pipeline.py analyze-missing --path /mnt/music_ssd/KKDJ/\n\n"
             "Path mapping (defaults):\n"
             "  Linux root : /mnt/music_ssd   (= root of M: drive on Windows)\n"
             "  Windows    : M:\\\n\n"
@@ -1762,6 +2039,7 @@ def main() -> None:
             "  python3 pipeline.py rekordbox-export --dry-run\n"
             "  python3 pipeline.py rekordbox-export\n"
             "  python3 pipeline.py rekordbox-export --no-m3u\n"
+            "  python3 pipeline.py rekordbox-export --force-xml  # NOT recommended with MIK\n"
             "  python3 pipeline.py rekordbox-export --recover-missing-analysis\n"
             "  python3 pipeline.py rekordbox-export --recover-missing-analysis "
             "--recover-limit 50 --recover-timeout-sec 300\n"
@@ -1773,7 +2051,15 @@ def main() -> None:
     )
     p_rb.add_argument(
         "--no-xml", action="store_true",
-        help="Skip Rekordbox XML generation",
+        help="[no-op] Rekordbox XML is now disabled by default. Use --force-xml to enable it.",
+    )
+    p_rb.add_argument(
+        "--force-xml", action="store_true", dest="force_xml",
+        help=(
+            "Enable Rekordbox XML generation. NOT RECOMMENDED when using Mixed In Key — "
+            "the toolkit XML will overwrite MIK cue data on next Rekordbox import. "
+            "Use only if you are not using Mixed In Key."
+        ),
     )
     p_rb.add_argument(
         "--no-m3u", action="store_true",
@@ -1786,6 +2072,14 @@ def main() -> None:
     p_rb.add_argument(
         "--linux-root", metavar="PATH", default=None,
         help="Linux path that is the root of the Windows drive (default: /mnt/music_ssd)",
+    )
+    p_rb.add_argument(
+        "--export-root", metavar="PATH", default=None,
+        help=(
+            "Override the export output root (default: /mnt/music_ssd/KKDJ/). "
+            "XML lands in <root>/_REKORDBOX_XML_EXPORT/ and M3U in "
+            "<root>/_PLAYLISTS_M3U_EXPORT/"
+        ),
     )
     p_rb.add_argument(
         "--recover-missing-analysis",
@@ -2034,6 +2328,42 @@ def main() -> None:
         help="Harmonic transition ranking strategy. Default: safest",
     )
     p_sb.add_argument(
+        "--structure", metavar="STRUCTURE",
+        default="full",
+        choices=["full", "simple", "peak_only"],
+        help=(
+            "Phase structure of the set. "
+            "full=warmup→build→peak→release→outro (default), "
+            "simple=build→peak→outro, "
+            "peak_only=peak only"
+        ),
+    )
+    p_sb.add_argument(
+        "--max-bpm-jump", metavar="BPM", type=float, default=3.0,
+        dest="max_bpm_jump",
+        help=(
+            "Maximum allowed absolute BPM difference between consecutive tracks. "
+            "Candidates exceeding this are hard-rejected. Default: 3. "
+            "Set to 0 to disable."
+        ),
+    )
+    p_sb.add_argument(
+        "--no-strict-harmonic", action="store_false", dest="strict_harmonic",
+        help=(
+            "Disable strict harmonic key validation. By default only same key, "
+            "±1 same mode, and relative major/minor (A↔B) transitions are allowed; "
+            "this flag falls back to scoring-only."
+        ),
+    )
+    p_sb.add_argument(
+        "--artist-repeat-window", metavar="N", type=int, default=3,
+        dest="artist_repeat_window",
+        help=(
+            "Hard-reject any candidate whose primary artist appeared within the "
+            "last N tracks. Default: 3. Set to 0 to disable."
+        ),
+    )
+    p_sb.add_argument(
         "--start-energy", metavar="TIER",
         default=None,
         choices=["Chill", "Mid", "Peak"],
@@ -2149,6 +2479,12 @@ def main() -> None:
     if args.command == "tag-normalize":
         sys.exit(run_tag_normalize(args))
 
+    if args.command == "db-prune-stale":
+        sys.exit(run_db_prune_stale(args))
+
+    if args.command == "convert-audio":
+        sys.exit(run_convert_audio(args))
+
     if args.command == "dedupe":
         sys.exit(run_dedupe(args))
 
@@ -2180,7 +2516,9 @@ def main() -> None:
         verbose          = args.verbose,
         reanalyze        = args.reanalyze,
         custom_path      = _resolve_path(getattr(args, "path", None)),
-        skip_cue_suggest = getattr(args, "skip_cue_suggest", False),
+        # MIK-first: cue suggest is OFF by default; --force-cue-suggest enables it.
+        # --skip-cue-suggest is a deprecated no-op (now the default).
+        skip_cue_suggest = not getattr(args, "force_cue_suggest", False),
     ))
 
 

@@ -1,0 +1,139 @@
+======================================================================
+DJTOOLKIT — NEXT TASKS / OPEN WORK
+======================================================================
+
+Legend:
+[ ] = open
+[~] = in progress
+[x] = done
+
+Priority:
+P0 = critical (affects core functionality)
+P1 = high
+P2 = medium
+P3 = low
+
+
+----------------------------------------------------------------------
+CURRENT FOCUS
+----------------------------------------------------------------------
+(nothing active — see DONE below)
+
+
+----------------------------------------------------------------------
+ANALYSIS / CORE PIPELINE
+----------------------------------------------------------------------
+[ ] (P1) Validate _read_existing_analysis() against real MIK-tagged files
+    Test with MP3, FLAC, M4A files that MIK has already processed.
+    Confirm TKEY / TBPM / INITIALKEY / tmpo are read correctly.
+    File: modules/analyzer.py
+
+[ ] (P1) Tagger: skip BPM/key writes when values came from MIK (no-op write prevention)
+    Currently tagger.py writes BPM/key from DB on every run.
+    If MIK values were promoted to DB by analyzer, tagger may re-write them
+    (harmless but noisy). Add a "source=mik" marker to DB to detect this.
+
+[ ] (P1) Energy tag write-back
+    Write energy tier (Peak/Mid/Chill) into tags:
+      - MP3: TXXX:ENERGY
+      - FLAC: ENERGY
+    Enables Rekordbox filtering and smart playlists.
+
+[ ] (P2) BPM normalization layer (lower priority now that MIK is authoritative)
+    For tracks MIK has not processed, BPM scaling issues still possible.
+    Implement normalization if/when needed as fallback only.
+    File: modules/analyzer.py
+
+
+----------------------------------------------------------------------
+CONVERT AUDIO
+----------------------------------------------------------------------
+[ ] (P2) Support 24-bit AIFF output for ALAC source M4A
+    Currently always uses pcm_s16be regardless of source bit depth.
+    Detect ALAC codec via ffprobe streams and use pcm_s24be for lossless M4A.
+    File: modules/convert_audio.py
+
+[ ] (P2) Post-convert MIK analysis trigger
+    After convert-audio completes, optionally queue the new .aiff files for
+    Mixed In Key (via a shell open or a file watch trigger).
+    Blocked on MIK offering a CLI interface.
+
+[ ] (P3) convert-audio: configurable output codec via --codec flag
+    Allow pcm_s16be / pcm_s24be / pcm_f32be for advanced use cases.
+    File: modules/convert_audio.py
+
+
+----------------------------------------------------------------------
+REKORDBOX / EXPORT
+----------------------------------------------------------------------
+[ ] (P2) Rekordbox hot-cue write-back (blocked by MIK-first policy)
+    MIK is now the authoritative cue source.
+    If/when implementing: must only write cues to tracks MIK has NOT touched.
+    Must never overwrite POSITION_MARK entries already in the XML.
+    Map:
+      intro_start → cue 1
+      drop → cue 2
+      outro_start → cue 3
+
+[ ] (P2) Route tracks in letter playlists
+    Decide:
+      - Exclude route folders OR
+      - Assign correct letter instead of '#'
+    Validate behaviour in Rekordbox UI first.
+
+[ ] (P2) Windows transfer automation
+    Automate sync of /music → SSD:
+      - rsync or dedicated subcommand
+      - Trigger rekordbox-export after sync
+
+
+----------------------------------------------------------------------
+LABEL INTELLIGENCE
+----------------------------------------------------------------------
+[ ] (P2) label-clean Phase 2: Discogs provider
+    Implement Discogs API lookup
+    File: label_intel/providers/discogs.py
+
+[ ] (P2) label-clean Phase 2: Beatport provider
+    Implement single-track label resolution
+    (separate from scraper)
+
+
+----------------------------------------------------------------------
+PIPELINE INFRASTRUCTURE
+----------------------------------------------------------------------
+[ ] (P2) Per-run config snapshots
+    Store config JSON in pipeline_runs table
+    Enables debugging of historical runs
+
+[ ] (P3) LLM metadata assist integration
+    Use Claude for:
+      - genre inference
+      - metadata disambiguation
+    File: utils/llm_client.py
+
+
+----------------------------------------------------------------------
+DISCOVERED DURING SESSION (2026-04-07)
+----------------------------------------------------------------------
+- MIK-first policy now enforced; analyzer _read_existing_analysis() needs
+  real-file validation before relying on it in production
+- convert-audio codec is hard-coded to pcm_s16be; ALAC M4A sources would
+  benefit from pcm_s24be to avoid lossy downsampling
+
+
+----------------------------------------------------------------------
+DONE
+----------------------------------------------------------------------
+[x] Initial pipeline implementation
+[x] CLI subcommands
+[x] SQLite schema
+[x] Label intelligence scraper
+[x] Rekordbox export
+[x] MIK-first refactor (v1.1.0)
+[x] convert-audio subcommand: .m4a → .aiff (v1.2.0)
+
+
+======================================================================
+END OF NEXT TASKS
+======================================================================

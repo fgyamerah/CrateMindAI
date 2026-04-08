@@ -1,0 +1,157 @@
+
+(.venv) koolkatdj@koolkatdj:~/code/apps/djtoolkit$ python3 pipeline.py rekordbox-export --dry-run
+20:33:42  INFO      modules.rekordbox_export — rekordbox-export: mapping /mnt/music_ssd → M:\ (dry_run=True)
+20:33:42  INFO      modules.rekordbox_export — rekordbox-export: analysis recovery DISABLED (pass --recover-missing-analysis to enable)
+20:33:43  INFO      modules.rekordbox_export —   [EXCLUDED] unknown.mp3: missing title (filename fallback failed); missing/unknown artist: '' (filename fallback failed); missing BPM — use --recover-missing-analysis or run analyze-missing; junk/missing genre: 'None'
+20:33:43  INFO      modules.rekordbox_export —   [EXCLUDED] unknown (1).mp3: missing title (filename fallback failed); missing/unknown artist: '' (filename fallback failed); missing BPM — use --recover-missing-analysis or run analyze-missing; junk/missing genre: 'None'
+20:33:43  INFO      modules.rekordbox_export —   [EXCLUDED] unknown.wav: missing title (filename fallback failed); missing/unknown artist: '' (filename fallback failed); missing BPM — use --recover-missing-analysis or run analyze-missing; junk/missing genre: 'None'
+20:33:43  INFO      modules.rekordbox_export —   [EXCLUDED] unknown (2).mp3: missing title (filename fallback failed); missing/unknown artist: '' (filename fallback failed); missing BPM — use --recover-missing-analysis or run analyze-missing; junk/missing genre: 'None'
+20:33:43  INFO      modules.rekordbox_export —   [EXCLUDED] unknown (3).mp3: missing title (filename fallback failed); missing/unknown artist: '' (filename fallback failed); missing BPM — use --recover-missing-analysis or run analyze-missing; junk/missing genre: 'None'
+20:33:43  INFO      modules.rekordbox_export —   [EXCLUDED] unknown (4).mp3: missing title (filename fallback failed); missing/unknown artist: '' (filename fallback failed); missing BPM — use --recover-missing-analysis or run analyze-missing; junk/missing genre: 'None'
+20:33:43  INFO      modules.rekordbox_export —   [EXCLUDED] DJ Kent - Summer Heartbreak.mp3: missing BPM — use --recover-missing-analysis or run analyze-missing; missing/invalid Camelot key: '' — use --recover-missing-analysis or run analyze-missing; junk/missing genre: 'None'
+20:33:43  INFO      modules.rekordbox_export —   [EXCLUDED] DJ Satelite Dj Gálio Lilly Randa Seres Producoes - Beautiful People.mp3: missing BPM — use --recover-missing-analysis or run analyze-missing; missing/invalid Camelot key: '' — use --recover-missing-analysis or run analyze-missing; junk/missing genre: 'None'
+20:33:43  INFO      modules.rekordbox_export —   [EXCLUDED] DJ Sneak - Chicago House music.mp3: missing BPM — use --recover-missing-analysis or run analyze-missing; missing/invalid Camelot key: '' — use --recover-missing-analysis or run analyze-missing; junk/missing genre: 'None'
+20:33:43  INFO      modules.rekordbox_export —   [EXCLUDED] Danny Tenaglia - Tonight.mp3: missing BPM — use --recover-missing-analysis or run analyze-missing; missing/invalid Camelot key: '' — use --recover-missing-analysis or run analyze-missing; junk/missing genre: 'None'
+20:33:43  INFO      modules.rekordbox_export —   [EXCLUDED] Dave Lee Maurissa Rose - Open Me Up.mp3: missing BPM — use --recover-missing-analysis or run analyze-missing; missing/invalid Camelot key: '' — use --recover-missing-analysis or run analyze-missing; junk/missing genre: 'None'
+20:33:43  INFO      modules.rekordbox_export —   [EXCLUDED] Demaya - You Are (Extended Mix).mp3: missing BPM — use --recover-missing-analysis or run analyze-missing; missing/invalid Camelot key: '' — use --recover-missing-analysis or run analyze-missing; junk/missing genre: 'None'
+20:33:43  INFO      modules.rekordbox_export —   [EXCLUDED] Dennis Ferrer - Hey Hey (Jack Back Extended Remix) - Hey Hey (Jack Back Extended Remix).mp3: missing BPM — use --recover-missing-analysis or run analyze-missing; missing/invalid Camelot key: '' — use --recover-missing-analysis or run analyze-missing; junk/missing genre: 'None'
+20:33:43  INFO      modules.rekordbox_export —   [EXCLUDED] 1K( Original Mix ).mp3: missing/unknown artist: '' (filename fallback failed); missing BPM — use --recover-missing-analysis or run analyze-missing
+20:33:43  INFO      modules.rekordbox_export —   [EXCLUDED] &ME Black Coffee Keinemusik - The Rapture Pt III.mp3: missing BPM — use --recover-missing-analysis or run analyze-missing
+20:33:43  INFO      modules.rekordbox_export —   [EXCLUDED] &ME Rampa Adam Port Keinemusik Chuala - Say What.mp3: missing BPM — use --recover-missing-analysis or run analyze-missing
+20:33:43  INFO      modules.rekordbox_export —   [EXCLUDED] &ME Rampa Adam Port Sofie - Discoteca.mp3: missing BPM — use --recover-missing-analysis or run analyze-missing
+20:33:43  INFO      modules.rekordbox_export —   [EXCLUDED] &friends Phina Asa - This Is What It Feels Like (Atmos Blaq Extended Remix).mp3: missing BPM — use --recover-missing-analysis or run analyze-missing
+20:33:43  INFO      modules.rekordbox_export —   [EXCLUDED] 10th Street Assembly - Free Me (Groove Assassin Extended Remix).mp3: missing BPM — use --recover-missing-analysis or run analyze-missing
+20:33:43  INFO      modules.rekordbox_export —   [EXCLUDED] 11. Alexander Wall, Aluku Rebels, Lmichael - Midnight (Original Mix).mp3: missing BPM — use --recover-missing-analysis or run analyze-missing
+20:33:43  INFO      modules.rekordbox_export —   ... and 1903 more excluded (run without --dry-run for full log)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Rekordbox XML with 6482 tracks → /music/_REKORDBOX_XML_EXPORT/rekordbox_library.xml
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Acapella.m3u8 (17 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Afro House.m3u8 (1990 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Afro Tech.m3u8 (46 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Amapiano.m3u8 (20 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Dance.m3u8 (395 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Deep House.m3u8 (1229 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Disco.m3u8 (9 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Funky House.m3u8 (145 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Garage House.m3u8 (49 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Hip Hop.m3u8 (4 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Melodic House.m3u8 (75 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Nu Disco.m3u8 (115 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Other.m3u8 (1414 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Progressive House.m3u8 (6 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write R&B.m3u8 (13 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Soulful House.m3u8 (499 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Tech House.m3u8 (393 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Techno.m3u8 (63 tracks)
+20:33:43  INFO      modules.rekordbox_export — rekordbox-export: Genre M3U — 6482 tracks across 18 playlists
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Peak.m3u8 (1420 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Mid.m3u8 (4003 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Chill.m3u8 (1059 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Mid Acapella.m3u8 (4 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Peak Acapella.m3u8 (12 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Chill Afro House.m3u8 (118 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Mid Afro House.m3u8 (1486 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Peak Afro House.m3u8 (386 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Peak Afro Tech.m3u8 (46 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Chill Amapiano.m3u8 (15 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Mid Amapiano.m3u8 (2 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Peak Amapiano.m3u8 (3 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Chill Dance.m3u8 (37 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Mid Dance.m3u8 (268 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Peak Dance.m3u8 (90 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Chill Deep House.m3u8 (430 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Mid Deep House.m3u8 (550 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Peak Deep House.m3u8 (249 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Mid Disco.m3u8 (7 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Chill Funky House.m3u8 (3 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Mid Funky House.m3u8 (117 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Peak Funky House.m3u8 (25 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Chill Garage House.m3u8 (2 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Mid Garage House.m3u8 (37 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Peak Garage House.m3u8 (10 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Chill Hip Hop.m3u8 (2 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Peak Hip Hop.m3u8 (2 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Chill Melodic House.m3u8 (16 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Peak Melodic House.m3u8 (59 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Chill Nu Disco.m3u8 (26 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Mid Nu Disco.m3u8 (82 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Peak Nu Disco.m3u8 (7 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Mid Progressive House.m3u8 (5 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Chill R&B.m3u8 (8 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Mid R&B.m3u8 (3 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Peak R&B.m3u8 (2 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Chill Soulful House.m3u8 (19 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Mid Soulful House.m3u8 (445 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Peak Soulful House.m3u8 (35 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Chill Tech House.m3u8 (3 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Mid Tech House.m3u8 (279 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Peak Tech House.m3u8 (111 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Peak Techno.m3u8 (63 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 1A.m3u8 (396 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 1B.m3u8 (59 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 2A.m3u8 (399 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 2B.m3u8 (29 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 3A.m3u8 (517 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 3B.m3u8 (23 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 4A.m3u8 (435 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 4B.m3u8 (28 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 5A.m3u8 (388 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 5B.m3u8 (48 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 6A.m3u8 (668 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 6B.m3u8 (93 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 7A.m3u8 (519 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 7B.m3u8 (19 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 8A.m3u8 (557 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 8B.m3u8 (38 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 9A.m3u8 (732 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 9B.m3u8 (53 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 10A.m3u8 (548 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 10B.m3u8 (60 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 11A.m3u8 (370 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 11B.m3u8 (75 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 12A.m3u8 (363 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write 12B.m3u8 (65 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Acapella.m3u8 (48 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Tool.m3u8 (78 tracks)
+20:33:43  INFO      modules.rekordbox_export — [DRY-RUN] Would write Vocal.m3u8 (121 tracks)
+20:33:43  INFO      modules.rekordbox_export — rekordbox-export: M3U — genre=6482 energy=6482 combined=5064 key=6482 route=247
+
+=== Rekordbox Export (DRY-RUN) ===
+  Drive mapping   : /mnt/music_ssd  →  M:\
+  Tracks scanned  : 8405
+  Valid exported  : 6482
+  Excluded        : 1923  (22.9%)
+  Needs analysis  : 1273 tracks excluded due to missing BPM/key
+                    → run analyze-missing first:
+                      python3 pipeline.py analyze-missing --path /mnt/music_ssd/KKDJ/
+                    → or add --recover-missing-analysis to this command
+
+  Genres (raw)    : 224 distinct values
+  Genres (export) : 18 after normalization
+  Genre breakdown :
+    Afro House            : 1990
+    Other                 : 1414
+    Deep House            : 1229
+    Soulful House         : 499
+    Dance                 : 395
+    Tech House            : 393
+    Funky House           : 145
+    Nu Disco              : 115
+    Melodic House         : 75
+    Techno                : 63
+    Garage House          : 49
+    Afro Tech             : 46
+    Amapiano              : 20
+    Acapella              : 17
+    R&B                   : 13
+    Disco                 : 9
+    Progressive House     : 6
+    Hip Hop               : 4
+
+  XML             : _REKORDBOX_XML_EXPORT/rekordbox_library.xml  (6482 tracks)
+  M3U playlists   : _PLAYLISTS_M3U_EXPORT/
+    genre         : 6482 tracks
+    energy        : 6482 tracks
+    combined      : 5064 tracks
+    key           : 6482 tracks
+    route         : 247 tracks
+  M3U total       : 24757 track entries

@@ -1,0 +1,18 @@
+20:30:05  INFO      modules.library_dedupe — SKIP (ambiguous quality): 1K.mp3 vs ['1K (1).mp3'] — manual review needed
+20:30:05  INFO      modules.library_dedupe — SKIP (ambiguous quality): Ashanti (1).mp3 vs ['Ashanti.mp3'] — manual review needed
+20:30:05  INFO      modules.library_dedupe — SKIP (ambiguous quality): Tudo Bem, Tudo Bom.mp3 vs ['Tudo Bem, Tudo Bom (1).mp3'] — manual review needed
+20:30:05  INFO      modules.library_dedupe — Dedupe: found 276 group(s) — 0 exact, 1 quality, 275 versions
+20:30:05  INFO      modules.library_dedupe — QUARANTINE [QUALITY]  Laolu - 2 Many Faces (Original Mix).mp3  (MP3 13.3 MB)  reason: same track, lower quality: Laolu - 2 Many Faces (Original Mix).mp3 (MP3 320kbps q=80) → keeping FLAC (q=90)
+20:30:05  INFO      modules.library_dedupe —   KEEP: Many Faces (original mix).flac
+
+=== dedupe complete ===
+  Files scanned            : 7253
+  Exact duplicate groups   : 0
+  Quality duplicate groups : 1
+  Version groups (kept)    : 275
+  Files quarantined        : 1
+  Space freed              : 13.3 MB
+  Quarantine location      : /music/library/sorted/_duplicates
+
+  theres no folder /music/library/sorted/_duplicates 
+  did claude create the folder

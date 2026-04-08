@@ -502,7 +502,7 @@ def run(
     _log_line(fh, f"  file limit : {per_file_timeout}s per file")
     _log_line(fh, f"  isolate    : {isolate_corrupt}")
     if isolate_corrupt:
-        _log_line(fh, f"  corrupt dir: {_corrupt_audio_dir(corrupt_base_dir)}")
+        _log_line(fh, f"  corrupt dir: {corrupt_base_dir}")
     if min_confidence > 0:
         _log_line(fh, f"  min_conf   : {min_confidence}")
     _log_line(fh, "")
@@ -655,7 +655,7 @@ def run(
         _log_line(fh, f"  Timeout (file)   : {skipped_file_to}  ({per_file_timeout:.0f}s limit)")
     if moved_corrupt:
         label = "would move" if dry_run else "moved"
-        _log_line(fh, f"  Corrupt {label}  : {moved_corrupt}  → {_corrupt_audio_dir(corrupt_base_dir)}")
+        _log_line(fh, f"  Corrupt {label}  : {moved_corrupt}  → {corrupt_base_dir}")
     if tag_errors:
         _log_line(fh, f"  Tag write errs   : {tag_errors}")
     if skipped_timeout:
