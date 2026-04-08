@@ -18,6 +18,9 @@ TrackIQ is a local-first, pipeline-based toolkit that takes audio files from an 
    - [Main Pipeline](#main-pipeline)
    - [Standalone Playlist Generation](#standalone-playlist-generation)
    - [Duplicate Detection and Cleanup](#duplicate-detection-and-cleanup-dedupe)
+   - [Rekordbox Export](#rekordbox-export-rekordbox-export)
+   - [Analyze Missing BPM/Key](#analyze-missing-bpmkey-analyze-missing)
+   - [Convert Audio](#convert-audio-convert-audio)
    - [Cue Point Suggestion](#cue-point-suggestion-cue-suggest)
    - [Set Builder](#set-builder-set-builder)
    - [Harmonic Mixing Suggestions](#harmonic-mixing-suggestions-harmonic-suggest)
@@ -50,10 +53,10 @@ TrackIQ solves this by running each file through a deterministic, idempotent pip
 2. **Deduplicates** against the existing library using rmlint
 3. **Organises** the file into a clean folder structure using Beets (MusicBrainz) or a pure-Python fallback parser
 4. **Sanitises tags globally** — strips URL watermarks, promo phrases, symbol junk, Camelot key prefixes, and DJ-pool watermarks from all text fields including the label (TPUB) field
-5. **Detects BPM** using aubio with windowed median averaging
-6. **Detects musical key** in Camelot notation using keyfinder-cli
+5. **Detects BPM** using aubio with windowed median averaging — skipped if Mixed In Key has already written a BPM value
+6. **Detects musical key** in Camelot notation using keyfinder-cli — skipped if Mixed In Key has already written a key value
 7. **Writes final tags** in ID3v2.3 (MP3), FLAC, or M4A format
-8. **Generates playlists** — per-letter, per-genre, energy-tier (Peak/Mid/Chill), combined genre+energy, Camelot key (1A–12B), and route-type (Acapella, Tool, Vocal) M3U playlists, plus a full Rekordbox XML with all playlist hierarchies
+8. **Generates playlists** — per-letter, per-genre, energy-tier (Peak/Mid/Chill), combined genre+energy, Camelot key (1A–12B), and route-type (Acapella, Tool, Vocal) M3U playlists. Rekordbox XML is disabled by default (MIK owns XML); use `--force-xml` to enable
 9. **Reports** on every run
 
 Standalone post-pipeline tools provide:
@@ -72,6 +75,7 @@ The result is a library that is ready to transfer to a DJ drive and import into 
 
 - **Local-first.** No mandatory cloud services. All analysis runs on-machine.
 - **Idempotent.** Re-running the pipeline on already-processed tracks is safe and fast. Each track carries a `PROCESSED` flag so it is skipped after its first successful pass.
+- **MIK-first.** Mixed In Key is the authoritative source of BPM, key, and cue data. The pipeline never overwrites values that MIK has already written — it only fills genuine gaps. Cue point suggestion and Rekordbox XML export are disabled by default so MIK owns those workflows.
 - **Conservative writes.** The pipeline never overwrites good existing metadata with a lower-confidence guess. Junk detection is explicit; safe pass-through is the default.
 - **Audit trail.** Every modification is stored in a SQLite database. Original metadata is snapshotted before any tag write. All changes can be rolled back.
 - **Composable modules.** Each pipeline stage (`qc`, `dedupe`, `organizer`, `sanitizer`, `analyzer`, `tagger`, `playlists`) is an independent Python module with no side effects between stages. They are individually testable and replaceable.
@@ -92,16 +96,18 @@ The result is a library that is ready to transfer to a DJ drive and import into 
 | Global junk removal from all tag fields (incl. label) | `modules/sanitizer.py` | ✅ |
 | DJ-pool watermark removal (traxcrate, musicafresca, etc.) | `modules/sanitizer.py` | ✅ |
 | Label-name detection in artist/album_artist fields | `modules/parser.py` → `classify_name_candidate()` | ✅ |
-| BPM detection with windowed median | `modules/analyzer.py` + aubio | ✅ |
-| Musical key detection (Camelot) | `modules/analyzer.py` + keyfinder-cli | ✅ |
+| BPM detection with windowed median (MIK-first: only fills missing values) | `modules/analyzer.py` + aubio | ✅ |
+| Musical key detection in Camelot notation (MIK-first: only fills missing values) | `modules/analyzer.py` + keyfinder-cli | ✅ |
 | ID3v2.3 / FLAC / M4A tag writing | `modules/tagger.py` + mutagen | ✅ |
+| Re-analyze tracks missing BPM/key without re-running full pipeline | `modules/analyze_missing.py` | ✅ |
+| .m4a → .aiff conversion with parallel ffmpeg workers and archive | `modules/convert_audio.py` | ✅ |
 | Per-letter M3U playlists | `modules/playlists.py` | ✅ |
 | Per-genre M3U playlists | `modules/playlists.py` | ✅ |
 | Energy-tier M3U playlists (Peak / Mid / Chill) | `modules/playlists.py` | ✅ |
 | Combined genre+energy M3U playlists | `modules/playlists.py` | ✅ |
 | **Camelot key playlists (1A–12B)** | `modules/playlists.py` | ✅ |
 | **Route playlists (Acapella / Tool / Vocal)** | `modules/playlists.py` | ✅ |
-| Rekordbox XML with all playlist hierarchies | `modules/playlists.py` | ✅ |
+| Rekordbox XML with all playlist hierarchies (disabled by default; `--force-xml` to enable) | `modules/playlists.py` | ✅ |
 | Run reports | `modules/reporter.py` | ✅ |
 | SQLite audit trail + rollback | `db.py` + `scripts/rollback.py` | ✅ |
 
@@ -110,6 +116,9 @@ The result is a library that is ready to transfer to a DJ drive and import into 
 | Subcommand | Purpose | Module |
 |---|---|---|
 | `playlists` | Regenerate all M3U playlists and Rekordbox XML without running inbox pipeline | `modules/playlists.py` |
+| `rekordbox-export` | Export M3U playlists (and optionally XML) for the SSD; XML requires `--force-xml` | `modules/rekordbox_export.py` |
+| `analyze-missing` | Find and re-analyze library tracks missing BPM or Camelot key (MIK-first) | `modules/analyze_missing.py` |
+| `convert-audio` | Convert .m4a files to .aiff in parallel using ffmpeg; archive originals | `modules/convert_audio.py` |
 | `dedupe` | Detect and quarantine exact/quality duplicates across the sorted library | `modules/library_dedupe.py` |
 | `cue-suggest` | Suggest intro/mix-in/drop/breakdown/outro cue points from audio analysis | `modules/cue_suggest.py` |
 | `set-builder` | Build an energy-curve DJ set from the library database | `modules/set_builder.py` |
@@ -186,7 +195,9 @@ trackiq/
 │   ├── artist_folder_clean.py Retroactive bad-name folder repair
 │   ├── cue_suggest.py        Audio cue point suggestion (RMS + LF + spectral flux)
 │   ├── harmonic.py           Harmonic mixing suggestions (Camelot + BPM + energy + genre)
-│   └── set_builder.py        Energy-curve auto set builder
+│   ├── set_builder.py        Energy-curve auto set builder
+│   ├── analyze_missing.py    Find and re-analyze library tracks missing BPM or key
+│   └── convert_audio.py      .m4a → .aiff parallel ffmpeg converter with archive
 │
 ├── config/
 │   └── junk_patterns.json    Centralised junk pattern definitions (URLs, promo, symbols)
@@ -327,7 +338,8 @@ GENERATE_ROUTE_PLAYLISTS = False  # disable route playlists if not needed
 | `AUBIO_BIN` | _(auto)_ | aubio binary — probes `aubio` then `aubiotrack` |
 | `AUBIOBPM_BIN` | `aubiobpm` | Legacy aubio BPM binary |
 | `KEYFINDER_BIN` | `keyfinder-cli` | Key detection binary |
-| `FFPROBE_BIN` | `ffprobe` | ffprobe binary (ffmpeg derived from same path) |
+| `FFPROBE_BIN` | `ffprobe` | ffprobe binary |
+| `FFMPEG_BIN` | `ffmpeg` | ffmpeg binary (used by convert-audio and cue-suggest) |
 | `BEET_BIN` | `beet` | Beets CLI binary |
 
 ### Directory Layout
@@ -484,10 +496,13 @@ python3 pipeline.py --dry-run
 # Skip Beets — use pure-Python organizer only
 python3 pipeline.py --skip-beets
 
-# Skip BPM and key analysis (useful for re-tagging only)
+# [legacy] Skip BPM and key analysis — not normally needed; pipeline is MIK-first by default
 python3 pipeline.py --skip-analysis
 
-# Re-run BPM+key on all library tracks missing those values
+# Enable cue point suggestion (disabled by default — MIK owns cues)
+python3 pipeline.py --force-cue-suggest
+
+# Re-run BPM+key on all library tracks missing those values (MIK-first: only fills gaps)
 python3 pipeline.py --reanalyze
 
 # Enable verbose/debug logging
@@ -497,16 +512,21 @@ python3 pipeline.py --verbose
 ### Pipeline Steps (in order)
 
 ```
-[1/8]  Quality control          ffprobe: bitrate, duration, codec
-[2/8]  Duplicate detection      rmlint: byte-identical / near-duplicate
-[3/8]  Organize                 Beets (MusicBrainz) → Python parser fallback
-[4/8]  Sanitize tags            Strip URL watermarks, promo phrases, symbols,
+[1/9]  Quality control          ffprobe: bitrate, duration, codec
+[2/9]  Duplicate detection      rmlint: byte-identical / near-duplicate
+[3/9]  Organize                 Beets (MusicBrainz) → Python parser fallback
+[4/9]  Sanitize tags            Strip URL watermarks, promo phrases, symbols,
                                 Camelot key prefixes, DJ-pool watermarks
-[5/8]  BPM + key analysis       aubio → Camelot key via keyfinder-cli
-[6/8]  Write tags               mutagen: ID3v2.3 / FLAC / M4A
-[7/8]  Playlist generation      Letter + Genre + Energy + Combined + Key + Route M3U
-                                Rekordbox XML (all six playlist hierarchies)
-[8/8]  Report                   Text report + auto-update README in logs/
+[5/9]  BPM + key analysis       MIK-first: only fills values absent from both DB and
+                                file tags. aubio (→ librosa fallback) for BPM;
+                                keyfinder-cli for Camelot key.
+[6/9]  Write tags               mutagen: ID3v2.3 / FLAC / M4A
+[7/9]  Cue suggest              Disabled by default (MIK owns cues). Enable with
+                                --force-cue-suggest.
+[8/9]  Playlist generation      Letter + Genre + Energy + Combined + Key + Route M3U
+                                Rekordbox XML disabled by default (use rekordbox-export
+                                --force-xml only when not using MIK)
+[9/9]  Report                   Text report + auto-update README in logs/
 ```
 
 All steps are idempotent. Tracks with `status='ok'` in the database are skipped.
@@ -585,9 +605,102 @@ python3 pipeline.py dedupe --quarantine-dir /music/review/
 
 ---
 
+### Rekordbox Export (`rekordbox-export`)
+
+Export the library as M3U playlists (and optionally Rekordbox XML) mapped to the SSD drive letter. XML export is **disabled by default** because Mixed In Key writes cues into Rekordbox XML — generating a competing XML would overwrite MIK data. M3U generation is always safe.
+
+```bash
+# Export M3U playlists only (default — safe with MIK)
+python3 pipeline.py rekordbox-export
+
+# Export with XML (only use when NOT using Mixed In Key)
+python3 pipeline.py rekordbox-export --force-xml
+
+# Dry run — show what would be written
+python3 pipeline.py rekordbox-export --dry-run
+
+# Custom library root (e.g. SSD mount)
+python3 pipeline.py rekordbox-export --path /mnt/music_ssd/KKDJ
+```
+
+Paths in all outputs are translated from Linux (`RB_LINUX_ROOT`) to Windows (`RB_WINDOWS_DRIVE:\`) using the configured drive letter.
+
+---
+
+### Analyze Missing BPM/Key (`analyze-missing`)
+
+Find library tracks that are missing BPM or Camelot key in the database and re-run analysis on them. Respects the MIK-first rule — only fills values that are genuinely absent from both the DB and file tags.
+
+```bash
+# Report tracks missing BPM/key without running analysis
+python3 pipeline.py analyze-missing --dry-run
+
+# Analyze all tracks missing BPM or key
+python3 pipeline.py analyze-missing
+
+# Analyze against a custom library root
+python3 pipeline.py analyze-missing --path /mnt/music_ssd/KKDJ
+```
+
+This is equivalent to `python3 pipeline.py --reanalyze` but runs as a standalone subcommand without touching any other pipeline stages.
+
+---
+
+### Convert Audio (`convert-audio`)
+
+Convert `.m4a` files to `.aiff` in parallel using ffmpeg. Archives the original `.m4a` files after successful conversion and verification. Useful when DJ software (or Rekordbox) requires lossless AIFF rather than AAC.
+
+```bash
+# Convert all .m4a files in --src, output to --dst, archive originals to --archive
+python3 pipeline.py convert-audio \
+    --src /downloads/m4a \
+    --dst /mnt/music_ssd/KKDJ/inbox \
+    --archive /mnt/music_ssd/originals_m4a
+
+# Dry run — show what would be converted, no files written
+python3 pipeline.py convert-audio --src /downloads/m4a --dst /tmp/out --archive /tmp/arc --dry-run
+
+# Custom parallelism (default: 4 workers)
+python3 pipeline.py convert-audio --src ... --dst ... --archive ... --workers 8
+
+# Overwrite existing output files
+python3 pipeline.py convert-audio --src ... --dst ... --archive ... --overwrite
+
+# Relax duration verification tolerance (default: 1.0 second)
+python3 pipeline.py convert-audio --src ... --dst ... --archive ... --verify-tolerance-sec 2.0
+```
+
+**Workflow per file:**
+
+1. `ffprobe` validates the source `.m4a` (codec, readability, duration)
+2. `ffmpeg` converts to `pcm_s16be` (16-bit big-endian PCM AIFF)
+3. `ffprobe` verifies the output duration matches source (within `--verify-tolerance-sec`)
+4. Original is moved to `--archive` preserving relative folder structure
+5. On any failure: output deleted, original left untouched
+
+**Flags:**
+
+| Flag | Default | Effect |
+|---|---|---|
+| `--src DIR` | _(required)_ | Directory to scan for `.m4a` files |
+| `--dst DIR` | _(required)_ | Output directory for `.aiff` files |
+| `--archive DIR` | _(required)_ | Directory to move originals after conversion |
+| `--workers N` | `4` | Number of parallel ffmpeg workers |
+| `--overwrite` | off | Overwrite existing output files |
+| `--verify-tolerance-sec S` | `1.0` | Max allowed duration delta between source and output |
+| `--dry-run` | off | Show what would be converted without writing any files |
+| `--no-progress` | off | Suppress tqdm progress bar |
+| `--verbose` | off | Log per-file ffmpeg command output |
+
+**Note:** `tqdm` is an optional dependency. If not installed, progress is shown as plain log lines.
+
+---
+
 ### Cue Point Suggestion (`cue-suggest`)
 
 Analyse audio to detect natural cue point positions. Outputs suggested positions for review — **not native Rekordbox hot-cues**. All positions should be reviewed and confirmed in Rekordbox before use in a live set.
+
+> **MIK workflow note:** Cue suggest is disabled in the main pipeline by default (use `--force-cue-suggest` to enable). The `cue-suggest` subcommand below always runs regardless of that flag.
 
 ```bash
 # Analyse full library (dry run — no DB writes)
@@ -1227,8 +1340,20 @@ systemctl --user enable --now djtoolkit-watch.service
 | Store cue points to DB | `cue-suggest` run (not dry-run), confidence ≥ `CUE_SUGGEST_MIN_CONFIDENCE` |
 | Store set playlist to DB | `set-builder` run (not dry-run) |
 
+### MIK-first rules (hard constraints)
+
+| Resource | Rule |
+|---|---|
+| **BPM** | Pipeline never overwrites an existing `TBPM`/`tmpo` tag or DB BPM value |
+| **Camelot key** | Pipeline never overwrites an existing `TKEY`/`INITIALKEY`/`©key` tag or DB key value |
+| **Cue points** | Cue suggest is disabled in the main pipeline by default; use `--force-cue-suggest` |
+| **Rekordbox XML** | XML export is disabled by default in both `playlists` and `rekordbox-export`; use `--force-xml` only when MIK is not in use |
+| **M3U playlists** | Always generated safely — do not affect MIK or Rekordbox state |
+
 ### What is never written automatically
 
+- BPM or Camelot key when those values already exist in DB or file tags (MIK-first)
+- Rekordbox XML (disabled by default — MIK writes cues into XML)
 - Native Rekordbox hot-cues — cue-suggest outputs suggested positions for review only
 - Rollback-only tag restoration (requires explicit command)
 - Any external provider data (Discogs, Beatport IDs) — not yet implemented
@@ -1308,6 +1433,21 @@ sudo apt install aubio-tools
 ### `keyfinder-cli: command not found`
 keyfinder-cli is not in apt. Install from the project's AppImage or source.
 Override in `config_local.py`: `KEYFINDER_BIN = "/path/to/keyfinder-cli"`
+
+### `convert-audio` produces no output / all files fail
+
+Check ffmpeg is installed (`which ffmpeg`). Override the binary path in `config_local.py`:
+```python
+FFMPEG_BIN = "/path/to/ffmpeg"
+```
+If verification fails (duration mismatch), increase `--verify-tolerance-sec`. Check that the source files are valid AAC/M4A: `ffprobe <file>`.
+
+### BPM/key values are being overwritten after MIK
+
+They should not be. The pipeline reads existing `TBPM`/`TKEY` tags before running aubio/keyfinder-cli. If overwriting still happens:
+1. Check that MIK has actually written the tags to the file on disk (not just in its internal database)
+2. Confirm the tags are readable: `mutagen-inspect <file>` — look for `TBPM` (MP3), `BPM` (FLAC), or `tmpo` (M4A)
+3. If tags are present but still getting overwritten, open a bug report
 
 ### cue-suggest produces no output / all BPM-estimate
 

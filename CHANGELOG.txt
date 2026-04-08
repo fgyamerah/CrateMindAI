@@ -9,6 +9,40 @@ Rules:
 
 
 ----------------------------------------------------------------------
+[2026-04-08] — README updated to reflect v1.1.0 and v1.2.0
+----------------------------------------------------------------------
+
+TYPE: docs
+
+SUMMARY:
+- README now documents MIK-first design philosophy, constraints, and safety rules
+- Added sections for rekordbox-export, analyze-missing, and convert-audio subcommands
+- Updated pipeline steps, feature tables, env vars, repo structure, and troubleshooting
+
+DETAILS:
+- Design Philosophy: added MIK-first bullet
+- Feature Overview: updated BPM/key rows to note MIK-first behavior; added
+  analyze-missing and convert-audio rows; noted XML disabled by default
+- Standalone Subcommands table: added rekordbox-export, analyze-missing, convert-audio
+- Repository Structure: added modules/analyze_missing.py and modules/convert_audio.py
+- Environment Variables: added FFMPEG_BIN (new in v1.2.0)
+- Pipeline steps: expanded to 9 steps; step 5 explains MIK-first; step 7 notes
+  cue-suggest default; step 8 notes XML default
+- Main Pipeline usage: added --force-cue-suggest; updated --skip-analysis note
+- New sections: Rekordbox Export, Analyze Missing BPM/Key, Convert Audio
+- cue-suggest section: added MIK workflow note
+- Safety section: added MIK-first rules table; updated "never written" list
+- Troubleshooting: added convert-audio and MIK overwrite entries
+- Table of Contents: added new section links
+
+FILES:
+- README.md
+
+IMPACT:
+- No code changes; documentation only
+
+
+----------------------------------------------------------------------
 [2026-04-07] v1.2.0 — Add convert-audio subcommand (.m4a → .aiff)
 ----------------------------------------------------------------------
 
