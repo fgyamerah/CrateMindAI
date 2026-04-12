@@ -1,0 +1,9 @@
+# TrackIQ — Development dependencies
+#
+# Install: pip install -r requirements-dev.txt
+# This pulls in all runtime deps via -r requirements.txt.
+
+-r requirements.txt
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+pytest>=7.4.0

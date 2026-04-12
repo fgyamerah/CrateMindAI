@@ -8,7 +8,21 @@
       "Bash(do echo:*)",
       "Bash(__NEW_LINE_e8a204fba657b8b1__ python3:*)",
       "Bash(__NEW_LINE_e8a204fba657b8b1__ done:*)",
-      "Bash(grep -rn \"\\\\.post\\\\|\\\\.get\\\\|\\\\.put\\\\|\\\\.delete\\\\|requests\\\\.\" /home/koolkatdj/code/apps/djtoolkit --include=*.py)"
+      "Bash(grep -rn \"\\\\.post\\\\|\\\\.get\\\\|\\\\.put\\\\|\\\\.delete\\\\|requests\\\\.\" /home/koolkatdj/code/apps/djtoolkit --include=*.py)",
+      "Bash(VIRTUAL_ENV=\"\" python3:*)",
+      "Bash(pip install:*)",
+      "Read(//usr/bin/**)",
+      "Bash(curl -fsSL https://deb.nodesource.com/setup_lts.x)",
+      "Bash(sudo -E bash -)",
+      "Bash(cat /home/koolkatdj/code/apps/djtoolkit/frontend/src/*.tsx)",
+      "Bash(cat /home/koolkatdj/code/apps/djtoolkit/frontend/src/*.ts)",
+      "Bash(ls /home/koolkatdj/code/apps/djtoolkit/frontend/src/*.css)",
+      "Bash(ls /home/koolkatdj/code/apps/djtoolkit/frontend/src/*.tsx)",
+      "Read(//home/koolkatdj/**)",
+      "Read(//home/koolkatdj/.local/bin/**)",
+      "Bash(command -v pnpm)",
+      "Bash(command -v yarn)",
+      "Read(//usr/**)"
     ]
   },
   "hooks": {

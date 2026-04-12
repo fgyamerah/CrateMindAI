@@ -9,6 +9,858 @@ Rules:
 
 
 ----------------------------------------------------------------------
+[2026-04-12] — Documentation update: README.md rewritten to reflect current state
+----------------------------------------------------------------------
+
+TYPE: docs
+
+SUMMARY:
+README.md was substantially out of date. It documented only 6 backend API
+endpoints (the original Phase 1 skeleton) when the backend now exposes 24+
+routes across 7 route files. The frontend web app had no documentation at all.
+Added Troubleshooting, Current Status, and Next Steps sections.
+
+CHANGES:
+- README.md rewritten from scratch.
+  Added: Current Status table, Repository Structure, Running the Web App
+  section (two-terminal start, after-reboot commands), Web App Pages table,
+  full Backend API Reference (all 24+ routes across health/jobs/tracks/
+  analysis/playlists/exports/sync), Troubleshooting section (6 common issues),
+  Next Steps section (planned items not yet built).
+  Updated: Backend section (was 6 routes, now complete), developer setup,
+  configuration, data locations (added backend/data/ paths).
+  Removed: stale "Phase 2 open" framing; frontend was not mentioned before.
+  Preserved: pipeline CLI docs, subcommands block (auto-generated section),
+  MIK-first safety table, environment variables, rollback, audit quality.
+
+FILES:
+  README.md
+
+IMPACT: Documentation only. No code changes.
+
+----------------------------------------------------------------------
+[2026-04-12] v0.6.2 — Frontend polish pass 2: lucide icons, PageHeader, Jobs/SetBuilder improvements
+----------------------------------------------------------------------
+
+TYPE: polish
+
+SUMMARY:
+Second UI pass. Installed lucide-react and replaced Unicode sidebar glyphs.
+Created a reusable PageHeader component applied across all 6 pages.  Rewrote
+Jobs page with lucide icon buttons, new progress/indeterminate bars, and a
+running-row left-border accent.  Rewrote SetBuilder with a collapsible log
+section and a new set-detail card (summary stats + track table).  Applied
+consistent table header contrast, improved row padding, and click affordances
+across all tables.  Added spin animation for async buttons.
+
+DETAILS:
+- package.json: added lucide-react@^1.8.0
+- Sidebar.tsx: replaced Unicode glyphs with lucide SVG icons (LayoutDashboard,
+  ListTodo, Music, AudioWaveform, ListMusic, Upload, HardDrive, Settings)
+- components/PageHeader.tsx: new — title, subtitle, badge, actions slots
+- pages/Jobs.tsx: PageHeader; JobProgress component (numeric bar + indeterminate
+  bar for pending); running row left-border accent; lucide icons on buttons;
+  table--jobs class with column widths; .text--ok for exit code 0
+- pages/SetBuilder.tsx: PageHeader; LogInline now collapsible via .log-section-toggle;
+  SetDetail replaces TrackTable — adds summary stat cards before the track list;
+  saved sets table uses .table + .table-wrapper; row click to select
+- pages/Tracks.tsx: PageHeader with track count subtitle
+- pages/BpmReview.tsx: PageHeader; Loader2 spinner on Scan button
+- pages/Export.tsx: PageHeader; Loader2 spinner on Run button
+- pages/SsdSync.tsx: PageHeader with mounted/not-mounted badge; Loader2 on Preview
+- index.css: spin/@keyframes; slide-in-out for indeterminate bar; PageHeader
+  layout classes (page-header-left, page-header-title-row, page-header-badge,
+  page-subtitle-small); improved .table th/td (better contrast #8490b0 header
+  color, 10px/12px padding, rgba borders); .table-wrap matched; .table--jobs
+  helpers; .job-progress* classes; .job-progress-indeterminate*; .log-section*;
+  .job-status-panel*; .set-detail*; .set-stat-card*; .td-num/mono/bold/cancel-error;
+  .row--running left-border accent; .row--clickable cursor; .text--ok
+
+FILES:
+  package.json, package-lock.json
+  frontend/src/components/PageHeader.tsx (new)
+  frontend/src/components/Sidebar.tsx
+  frontend/src/pages/Jobs.tsx
+  frontend/src/pages/SetBuilder.tsx
+  frontend/src/pages/Tracks.tsx
+  frontend/src/pages/BpmReview.tsx
+  frontend/src/pages/Export.tsx
+  frontend/src/pages/SsdSync.tsx
+  frontend/src/index.css
+
+IMPACT: Frontend only. Build verified clean (1770 modules, 247 kB JS / 29 kB CSS).
+
+----------------------------------------------------------------------
+[2026-04-12] v0.6.1 — UI/UX upgrade: log overflow fix, font, icons, table styles
+----------------------------------------------------------------------
+
+TYPE: polish / bugfix
+
+SUMMARY:
+Fixed the critical `.log-inline` CSS gap that caused all inline log views (Set
+Builder, Export, SSD Sync) to overflow page width.  Added IBM Plex Sans as the
+UI font, Unicode icons in the sidebar, improved active-link styling, and a
+`.table-wrap` CSS block so bare tables in SetBuilder render with consistent
+borders and hover.
+
+DETAILS:
+- index.css: Added `.log-inline` rule — max-height 55vh, overflow-x/y: auto,
+  white-space: pre, monospace font.  Previously the class had zero CSS, causing
+  every pre log block to expand to full content width and break page layout.
+- index.css: Added `.badge--info` (used by Camelot key badges in SetBuilder).
+- index.css: Added `.table-wrap` table/th/td rules — SetBuilder uses bare
+  `<table>` inside `.table-wrap` rather than `.table`, so it had no styling.
+- index.css: Sidebar `.sidebar-link` now uses flex layout with gap for icons.
+  `.sidebar-link--active` gains a 2px left-border accent.  `.sidebar-icon` added.
+- index.css: Updated `--font-ui` to IBM Plex Sans (falls back to system-ui).
+- index.html: Added Google Fonts preconnect + link for IBM Plex Sans and
+  JetBrains Mono.
+- components/Sidebar.tsx: Each nav item now has a Unicode icon glyph rendered
+  via `.sidebar-icon` span.
+
+FILES:
+  frontend/index.html
+  frontend/src/index.css
+  frontend/src/components/Sidebar.tsx
+
+IMPACT: Frontend-only, no backend changes, no DB changes.
+
+NOTES: Build verified clean (npx tsc --noEmit + npm run build, 63 modules).
+
+----------------------------------------------------------------------
+[2026-04-12] v0.6.0 — SSD Sync, job cancellation, and progress tracking
+----------------------------------------------------------------------
+
+TYPE: feature
+
+SUMMARY:
+Adds SSD Sync page (rsync library → SSD target), cancellation for all running
+jobs via SIGTERM, and progress tracking (current/total/percent/message) stored
+in the jobs DB and displayed as progress bars in the UI.
+
+DETAILS:
+Backend — new files:
+  backend/app/services/process_registry.py
+      Shared in-process table of running asyncio subprocesses (job_id →
+      asyncio.subprocess.Process).  Both toolkit_runner and rsync_runner
+      register here so the cancel route works for all job types.
+      request_cancel() adds job to _cancelling set and sends SIGTERM.
+      Background tasks check is_cancelling() to choose 'cancelled' vs 'failed'.
+
+  backend/app/schemas/sync.py
+      SyncPreviewRequest, SyncPreviewResponse, SyncFileChange,
+      SyncRunRequest, SyncRunResponse, SyncConfigResponse
+
+  backend/app/services/rsync_runner.py
+      preview_sync() — async dry-run rsync, parses file list + stats,
+        returns structured SyncPreviewResponse (no DB writes, no job).
+      start_sync_job() — validates paths, creates job record, launches
+        _run_rsync_job() as asyncio background task.
+      _run_rsync_job() — reads rsync stdout line-by-line, writes to log
+        file, parses --info=progress2 lines for to-chk=N/M progress,
+        throttled to one DB write per second.
+      _parse_progress_line() — regex parse for to-chk=remaining/total.
+      get_sync_config() — returns configured paths + SSD mount status.
+      Path validation: source must be 'library' or 'inbox' key (never
+        raw user-supplied paths); destination is always SYNC_DEST_SSD.
+
+  backend/app/api/routes/sync.py
+      GET  /api/sync/config       — read-only config + ssd_mounted flag
+      POST /api/sync/preview      — dry-run rsync preview (awaited, 60s timeout)
+      POST /api/sync/run          — dispatch live rsync job (202)
+      GET  /api/sync              — list past ssd-sync jobs
+      GET  /api/sync/{job_id}     — get single sync job
+
+Backend — modified files:
+  backend/app/core/config.py
+      SYNC_SOURCE_LIBRARY, SYNC_SOURCE_INBOX, SYNC_SOURCE_MAP,
+      SYNC_DEST_SSD, RSYNC_BIN (shutil.which)
+
+  backend/app/core/db.py
+      Added 5 new columns to jobs schema:
+        pid, progress_current, progress_total, progress_percent, progress_message
+      _add_column_safe() migration helper — ALTER TABLE with OperationalError
+      catch for "duplicate column name" (idempotent; safe on existing DB).
+      init_db() runs migrations on every startup.
+
+  backend/app/models/job.py
+      Added: pid, progress_current, progress_total, progress_percent,
+      progress_message (all Optional, default None).
+      Status now includes 'cancelled'.
+
+  backend/app/schemas/job.py
+      JobResponse includes all new progress + pid fields.
+
+  backend/app/services/job_service.py
+      mark_pid(), mark_progress(), clear_pid() added.
+      mark_finished() now accepts 'cancelled' status.
+
+  backend/app/services/toolkit_runner.py
+      Imports process_registry.  After subprocess creation: registers proc,
+      stores PID in DB.  On finish: checks is_cancelling() for 'cancelled'
+      status.  finally: unregister + clear_pid.
+
+  backend/app/api/routes/jobs.py
+      POST /api/jobs/{job_id}/cancel
+        - 404 if job not found
+        - 409 if job is not pending/running
+        - Calls process_registry.request_cancel() → SIGTERM
+        - If proc not in registry (e.g. pending), marks directly as cancelled
+
+  backend/app/main.py
+      Registers sync_router.
+
+Frontend — new files:
+  frontend/src/types/sync.ts       — SyncSource, SyncFileChange, SyncPreviewRequest/Response,
+                                     SyncRunRequest/Response, SyncConfigResponse
+  frontend/src/api/sync.ts         — fetchSyncConfig, previewSync, startSync,
+                                     fetchSyncJobs, fetchSyncJob
+  frontend/src/pages/SsdSync.tsx   — full sync page: config panel + source picker,
+                                     preview results with paginated file list,
+                                     run panel with allow_delete checkbox + warning,
+                                     active job with progress bar + live log + cancel,
+                                     sync history table
+
+Frontend — modified files:
+  frontend/src/types/job.ts        — added 'cancelled' to JobStatus; added pid,
+                                     progress_current/total/percent/message fields;
+                                     isActive() helper exported
+  frontend/src/api/jobs.ts         — cancelJob() → POST /api/jobs/{id}/cancel
+  frontend/src/components/StatusBadge.tsx — 'cancelled' label
+  frontend/src/pages/Jobs.tsx      — Cancel button on running/pending rows (SIGTERM);
+                                     InlineProgress bar for jobs with progress data;
+                                     row--cancelled CSS class
+  frontend/src/App.tsx             — /ssd-sync route
+  frontend/src/components/Sidebar.tsx — SSD Sync nav link
+  frontend/src/index.css           — --status-cancelled / --badge-cancelled-bg vars;
+                                     .badge--cancelled; .btn--danger; .row--cancelled;
+                                     progress bar (.progress-wrap, .progress-bar-outer,
+                                     .progress-bar-fill, .progress-labels);
+                                     inline progress (.inline-progress-*);
+                                     all SSD Sync page classes (.sync-*, .preview-*)
+
+IMPACT:
+  Existing DB rows are safe — migration adds columns with NULL defaults.
+  All existing jobs continue to work; new columns are null for pipeline.py jobs.
+  No --delete by default — explicit opt-in only.
+  rsync source is always the working library; SSD path is never used for DB lookups.
+
+----------------------------------------------------------------------
+[2026-04-12] v0.5.1 — Fix TypeScript build errors in Export + ErrorBanner
+----------------------------------------------------------------------
+
+TYPE: bugfix
+
+SUMMARY:
+Two TypeScript compilation errors left over from the Export page session:
+1. ErrorBanner had no onDismiss prop — Export.tsx and SetBuilder.tsx both
+   passed it, causing a TS2322 type error.
+2. canRun was computed in Export.tsx and passed to RunPanel but never
+   used inside RunPanel (TS6133 unused variable) — the Run button was
+   only guarded by busy, not by the validation-in-progress flag.
+
+DETAILS:
+  frontend/src/components/ErrorBanner.tsx — added optional onDismiss prop
+      + dismiss button (×) with aria-label; no change to existing callers
+      that omit the prop
+  frontend/src/index.css — ErrorBanner now flex; .error-banner-dismiss styles
+  frontend/src/pages/Export.tsx — RunPanel Run button: disabled={busy || !canRun}
+      so the button is disabled while validation is running
+
+IMPACT:
+  npm run build now compiles cleanly (0 errors, 0 warnings from tsc).
+
+----------------------------------------------------------------------
+[2026-04-12] v0.5.0 — Export validation and export workflow UI
+----------------------------------------------------------------------
+
+TYPE: feature
+
+SUMMARY:
+Adds an Export page with pre-export library validation, exclusion analysis,
+and a job-dispatching run workflow.  Validation runs inline (no subprocess)
+to give immediate feedback before the user commits to the long-running
+rekordbox-export job.
+
+DETAILS:
+Backend:
+  backend/app/services/export_validation.py — in-process validation service
+      that mirrors pipeline/modules/rekordbox_export.py exclusion logic:
+      junk placeholder, stale DB path, missing artist/title, BPM range,
+      Camelot key format, junk genre.  Returns structured ExcludedTrack +
+      ValidationStats + ExportWarning list, capped at 500 excluded tracks.
+  backend/app/schemas/export.py             — ExportRunRequest, ExportRunResponse,
+      ExcludedTrack, ExportWarning, ValidationStats, ValidateResponse
+  backend/app/api/routes/exports.py         — POST /api/exports/validate (fast,
+      synchronous), POST /api/exports/run (dispatches job), GET /api/exports,
+      GET /api/exports/{export_id}
+  backend/app/main.py                       — registers exports router
+  backend/app/services/toolkit_runner.py   — added --no-m3u and
+      --recover-missing-analysis to bool flag allowlist
+
+Frontend:
+  frontend/src/types/export.ts   — ExclusionCategory, ExportWarning, ValidationStats,
+                                   ExcludedTrack, ValidateResponse, ExportRunRequest,
+                                   CATEGORY_COLORS/LABELS, WARNING_COLORS
+  frontend/src/api/exports.ts    — validateExport(), runExport(), fetchExports(),
+                                   fetchExport()
+  frontend/src/pages/Export.tsx  — validation summary grid, paginated excluded-
+                                   tracks table with category filter tabs + search,
+                                   run options (dry-run, skip-m3u, force-xml,
+                                   recover-missing), inline job log viewer,
+                                   export history table
+  frontend/src/App.tsx           — /export route
+  frontend/src/components/Sidebar.tsx — Export nav link
+  frontend/src/index.css         — stat grid, warning banners, filter tabs,
+                                   category badges, reason cells, output paths
+
+IMPACT:
+  - Validation is read-only (pipeline DB + Path.exists() — no writes, no subprocesses)
+  - Export job runs through existing toolkit_runner subprocess path (consistent
+    with all other jobs — polling, log streaming, exit code tracking all work)
+  - GET /api/exports is a filtered view of the jobs table — no new DB tables
+  - rekordbox-export MIK-first policy preserved: XML stays disabled by default,
+    force_xml=False is the default in both schema and UI
+
+----------------------------------------------------------------------
+[2026-04-12] v0.4.0 — Set Builder UI
+----------------------------------------------------------------------
+
+TYPE: feature
+
+SUMMARY:
+Adds a browser UI for the set-builder: a form-based interface to dispatch
+energy-curve DJ set jobs, monitor their progress inline, and browse the
+saved playlist history with full track listings.
+
+DETAILS:
+Backend:
+  backend/app/services/toolkit_runner.py  — added set-builder flags to
+      allowlists: --vibe, --duration, --genre, --strategy, --structure,
+      --max-bpm-jump, --artist-repeat-window, --name (value flags) +
+      --no-strict-harmonic (bool flag).  All values validated by regex
+      or enum before subprocess dispatch.
+  backend/app/schemas/playlist.py         — SetBuilderRequest (with
+      field validators), SetBuilderJobResponse, PlaylistSummary,
+      SetTrackResponse, PlaylistDetail
+  backend/app/services/playlist_service.py — read-only pipeline DB
+      access: list_playlists(), get_playlist(), get_playlist_tracks(),
+      get_playlist_detail()
+  backend/app/api/routes/playlists.py     — POST /api/playlists/set-builder
+      (dispatches subprocess job), GET /api/playlists, GET /api/playlists/{id}
+  backend/app/main.py                     — registers playlists router
+
+Frontend:
+  frontend/src/types/playlist.ts          — Vibe/Strategy/Structure types,
+      SetBuilderParams, PlaylistSummary, SetTrack, PlaylistDetail,
+      VIBE_LABELS, STRATEGY_LABELS, STRUCTURE_LABELS, PHASE_COLORS
+  frontend/src/api/playlists.ts           — runSetBuilder(), fetchPlaylists(),
+      fetchPlaylist()
+  frontend/src/pages/SetBuilder.tsx       — build form (all set-builder params),
+      inline job log panel with polling, playlist history table, track
+      detail table with phase badges and transition notes
+  frontend/src/App.tsx                    — /set-builder route
+  frontend/src/components/Sidebar.tsx     — Set Builder nav link
+  frontend/src/index.css                  — set-builder form/table/badge styles
+
+IMPACT:
+  - No pipeline DB writes from backend (read-only, same policy as tracks)
+  - set-builder job runs as subprocess via toolkit_runner (consistent
+    with all other jobs — polling, log streaming, status tracking reused)
+  - Route order: /api/playlists/set-builder registered before
+    /api/playlists/{playlist_id} to prevent path collision
+
+----------------------------------------------------------------------
+[2026-04-12] v0.3.0 — BPM anomaly detection + review workflow
+----------------------------------------------------------------------
+
+TYPE: feature
+
+SUMMARY:
+Adds a BPM anomaly detection pipeline: scans existing BPM values in the
+library DB using heuristic rules (same logic as analyzer.py corrections),
+persists anomaly records with human review state in the backend DB, and
+surfaces them in a dedicated BPM Review page with per-row actions and
+an inline re-analysis job launcher.
+
+DETAILS:
+Backend:
+  backend/app/core/db.py              — added bpm_anomalies table to jobs.db schema
+  backend/app/services/bpm_analysis.py — classify_bpm() logic + scan/upsert/list/update
+  backend/app/schemas/bpm_analysis.py — BpmAnomalyResponse, BpmCheckResult, BpmSummary,
+                                        UpdateAnomalyRequest, ReanalyzeRequest
+  backend/app/api/routes/analysis.py  — POST /bpm-check, GET /bpm-anomalies,
+                                        GET /bpm-anomalies/summary, PATCH /bpm-anomalies/{id},
+                                        POST /reanalyze
+  backend/app/main.py                 — registered analysis_router
+
+Frontend:
+  frontend/src/types/analysis.ts      — BpmAnomaly, BpmCheckResult, BpmSummary types
+  frontend/src/api/analysis.ts        — all analysis API calls
+  frontend/src/api/client.ts          — added apiFetch.patch()
+  frontend/src/pages/BpmReview.tsx    — BPM Review page with scan, summary, filter table,
+                                        per-row actions, inline job log viewer
+  frontend/src/App.tsx                — added /bpm-review route
+  frontend/src/components/Sidebar.tsx — added BPM Review nav link
+  frontend/src/index.css              — reason badges, anomaly status badges, summary bar,
+                                        reanalyze panel, job log viewer, anomaly table styles
+
+BPM LOGIC (classify_bpm):
+  missing_bpm    : NULL or zero stored
+  too_low_10x    : 0 < BPM < 20  → suggest × 10  (e.g. 12.1 → 121)
+  likely_halved  : 20 ≤ BPM < 90 → suggest × 2   (e.g. 64 → 128)
+  likely_doubled : 160 < BPM ≤ 240, not DNB/jungle/hardcore → suggest ÷ 2
+  too_high       : BPM > 240 → suggest ÷ 2
+
+WHY:
+  Incorrect BPM (especially doubled/halved) is a common aubio artifact.
+  The analyzer already corrects these at analysis time, but values that
+  came from MIK, Rekordbox, or direct tag writes bypass that correction.
+  This feature surfaces those cases without touching files.
+
+NOTES:
+  - bpm_anomalies table is in backend jobs.db, NOT pipeline processed.db
+  - Human review state (reviewed/ignored/requeued) is preserved across re-scans
+  - reanalyze endpoint uses existing analyze-missing + --reanalyze via job system
+
+
+----------------------------------------------------------------------
+[2026-04-12] v0.2.0 — Track browsing: /api/tracks + /api/tracks/stats + /api/tracks/issues + Tracks UI
+----------------------------------------------------------------------
+
+TYPE: feature
+
+SUMMARY:
+Adds a full track-browsing layer: four read-only backend endpoints querying
+the pipeline's processed.db, and a Tracks page in the frontend with
+search/filter/sort table and a slide-in detail panel.
+
+DETAILS:
+Backend:
+  backend/app/core/config.py        — added PIPELINE_DB_PATH (resolved from toolkit config.py)
+  backend/app/core/pipeline_db.py   — read-only SQLite connection helper for processed.db
+  backend/app/models/track.py       — Track dataclass with computed `issues` field
+  backend/app/schemas/track.py      — TrackSummary, TrackDetail, TrackStats, TrackIssueItem
+  backend/app/services/track_service.py — list_tracks (filtered), get_track, get_stats, get_issues
+  backend/app/api/routes/tracks.py  — GET /api/tracks, /stats, /issues, /{id}
+  backend/app/main.py               — registered tracks router
+
+Frontend:
+  frontend/src/types/track.ts       — TrackSummary, TrackDetail, TrackStats, ISSUE_LABELS
+  frontend/src/api/tracks.ts        — fetchTracks, fetchTrack, fetchTrackStats, fetchTrackIssues
+  frontend/src/hooks/useTracks.ts   — filter-aware hook, 30 s poll cadence
+  frontend/src/pages/Tracks.tsx     — search/filter/sort/paginate table; click-to-open panel
+  frontend/src/components/TrackPanel.tsx — slide-in detail panel (Escape to close)
+  frontend/src/App.tsx              — added /tracks route
+  frontend/src/components/Sidebar.tsx — added Tracks nav link
+  frontend/src/index.css            — quality badges, issue flags, filter bar, panel styles
+
+WHY:
+  The pipeline DB already has all the data (BPM, key, quality tier, status, issues).
+  This surfaces it without duplicating or fighting the existing schema.
+  Backend is strictly read-only against processed.db — pipeline owns all writes.
+
+NOTES:
+  - If processed.db doesn't exist yet (no pipeline run), all endpoints return empty results.
+  - /api/tracks/stats and /api/tracks/issues registered before /{id} to avoid path conflict.
+
+
+----------------------------------------------------------------------
+[2026-04-12] v0.1.0 (frontend) — React/Vite/TS frontend shell: app entry, routing, CSS, Settings page
+----------------------------------------------------------------------
+
+TYPE: feature / new subsystem
+
+SUMMARY:
+Phase 2 of the web UI. Completes the frontend shell by adding the missing
+entry point, React Router wiring, Settings page, and full CSS layer.
+All existing components, pages, hooks, and API client were already present
+but not yet wired up.
+
+DETAILS:
+  frontend/src/main.tsx          — createRoot entry point; imports index.css
+  frontend/src/App.tsx           — BrowserRouter + Routes (/, /jobs, /settings)
+  frontend/src/pages/Settings.tsx — static settings reference page (live editing TBD)
+  frontend/src/index.css         — full CSS: layout, sidebar, cards, table, badges,
+                                   buttons, forms, modal/log viewer, utility classes
+
+WHY:
+  The component tree was complete but there was no entry point or styles,
+  so the app could not render.
+
+FILES ADDED:
+  frontend/src/main.tsx
+  frontend/src/App.tsx
+  frontend/src/pages/Settings.tsx
+  frontend/src/index.css
+
+IMPACT: frontend now runnable with `npm run dev`
+NOTES: node/npm must be installed first (see npm commands in README)
+
+
+----------------------------------------------------------------------
+[2026-04-12] v0.1.0 (backend) — FastAPI backend skeleton: jobs API, toolkit runner, SQLite job tracking
+----------------------------------------------------------------------
+
+TYPE: feature / new subsystem
+
+SUMMARY:
+Phase 1 of a local-first web API wrapper around the existing Python toolkit.
+Introduces a FastAPI backend with a SQLite job-tracking database, a safe
+subprocess runner, and five REST endpoints for health, version, and job
+management.  The CLI is unchanged.
+
+DETAILS:
+Architecture:
+  backend/app/main.py               — FastAPI app, CORS, lifespan startup/shutdown
+  backend/app/core/config.py        — resolved paths (TOOLKIT_ROOT, PIPELINE_PY,
+                                      JOBS_DB_PATH, JOBS_LOG_DIR, PYTHON_BIN)
+  backend/app/core/db.py            — jobs.db init (separate from pipeline processed.db)
+  backend/app/models/job.py         — Job dataclass with from_row()
+  backend/app/schemas/job.py        — Pydantic JobCreate / JobResponse
+  backend/app/services/job_service.py  — CRUD: create, get, list, mark_running,
+                                         mark_finished
+  backend/app/services/toolkit_runner.py — command builder with allowlists,
+                                         asyncio subprocess runner, task registry
+  backend/app/api/routes/health.py  — GET /api/health, GET /api/version
+  backend/app/api/routes/jobs.py    — POST /api/jobs, GET /api/jobs,
+                                      GET /api/jobs/{id}, GET /api/jobs/{id}/logs
+  backend/requirements.txt          — fastapi, uvicorn[standard], pydantic
+
+Security:
+  - Commands validated against ALLOWED_COMMANDS (18 subcommands)
+  - CLI args validated against _ALLOWED_BOOL_FLAGS and _ALLOWED_VALUE_FLAGS
+    with per-flag value validators
+  - Subprocess commands always built as argument lists (shell=False)
+  - No user-supplied string ever interpolated into a shell command
+  - Bad command or flag → HTTP 422 with clear error message
+
+Job lifecycle:
+  pending → running → succeeded / failed
+  stdout + stderr both written to backend/data/logs/{job_id}.log in real-time
+  /api/jobs/{id}/logs returns file contents; ?tail=N for last N lines
+
+FILES:
+  backend/__init__.py
+  backend/requirements.txt
+  backend/app/__init__.py
+  backend/app/main.py
+  backend/app/core/__init__.py
+  backend/app/core/config.py
+  backend/app/core/db.py
+  backend/app/models/__init__.py
+  backend/app/models/job.py
+  backend/app/schemas/__init__.py
+  backend/app/schemas/job.py
+  backend/app/services/__init__.py
+  backend/app/services/job_service.py
+  backend/app/services/toolkit_runner.py
+  backend/app/api/__init__.py
+  backend/app/api/routes/__init__.py
+  backend/app/api/routes/health.py
+  backend/app/api/routes/jobs.py
+  .gitignore               (added backend/data/)
+  README.md                (added Backend section)
+
+IMPACT:
+  No changes to pipeline.py, config.py, db.py, or any module.
+  The CLI is completely unchanged.
+  backend/data/ is git-ignored (runtime-only).
+
+HOW TO RUN:
+  pip install -r backend/requirements.txt
+  uvicorn backend.app.main:app --reload --port 8000
+
+
+----------------------------------------------------------------------
+[2026-04-12] v1.7.0 — Artist merge: three-category classification, normalization fix, tests
+----------------------------------------------------------------------
+
+TYPE: feature / bug fix
+
+SUMMARY:
+Refactored artist-merge classification so that punctuation/casing/hyphen variants
+(e.g. "Heavy-K" / "Heavy K", "H.O.S.H" / "HOSH") are correctly recognised as
+safe aliases instead of being marked ambiguous. Introduced three explicit merge
+categories and 77 new tests.
+
+DETAILS:
+Root cause of the bug:
+  The old _classify_merge() compared fi.primary_artist.lower() directly.
+  "Heavy-K".lower() = "heavy-k" ≠ "heavy k" = "Heavy K".lower(), so despite
+  being grouped correctly, the comparison flagged them as different primaries.
+
+Fix:
+  New _normalize_primary_for_compare() applies the same transforms used by
+  normalize_artist_key() (period strip, hyphen→space, etc.) before comparison.
+  Now "Heavy-K" and "Heavy K" both normalize to "heavy k" → SAFE_ALIAS.
+
+Three merge categories (replacing the old binary safe/unsafe):
+  SAFE_ALIAS          — formatting/punctuation/casing differences only; no collab.
+                        Examples: "Heavy-K" / "Heavy K", "H.O.S.H" / "HOSH",
+                        "Rosalie" / "Rosalie.", "culoe de song" / "Culoe De Song"
+  SAME_PRIMARY_COLLAB — same primary after normalization; ≥1 folder has feat/comma.
+                        Examples: "Heavy-K" / "Heavy-K feat. Davido"
+  AMBIGUOUS           — primary artists differ after normalization; never auto-merged.
+
+Other improvements:
+  - _describe_alias_differences() generates human-readable reason strings:
+      "capitalization variant", "dotted-initials variant", "hyphen/space variant",
+      "trailing period variant", "period variant", "underscore/space variant",
+      "quotation style variant"
+  - _pick_canonical() penalises all-uppercase names (e.g. HOSH loses to H.O.S.H)
+    and all-lowercase names; mixed-case preferred.
+  - FolderInfo.has_collab_suffix field added (populated at scan time).
+  - MergeGroup.merge_category field added.
+  - build_merge_groups() returns (safe, ambiguous) where safe = SAFE_ALIAS +
+    SAME_PRIMARY_COLLAB groups; ambiguous = AMBIGUOUS only.
+  - JSON report restructured with safe_alias_merges, same_primary_collab_merges,
+    ambiguous_merges sections.
+  - Console output shows all three categories with clear labels.
+  - New constants: MERGE_CATEGORY_SAFE_ALIAS, MERGE_CATEGORY_SAME_PRIMARY_COLLAB,
+    MERGE_CATEGORY_AMBIGUOUS.
+
+FILES:
+  modules/artist_merge.py     — full refactor (normalization fix, new functions,
+                                 updated dataclasses, report structure)
+  tests/test_artist_merge.py  — new: 77 tests across 7 test classes
+
+IMPACT:
+  - Behaviour change: groups that were previously marked AMBIGUOUS (and skipped)
+    because of hyphen/period/case differences are now correctly classified as
+    SAFE_ALIAS and auto-applied in --apply mode.
+  - No change to file-move logic, DB updates, or other pipeline steps.
+  - JSON report format changed (new category sections); any downstream tooling
+    reading the old flat structure should be updated.
+
+NOTES:
+  - Version bump: 1.6.0 → 1.7.0 (minor: new behaviour, backwards-compatible CLI)
+
+
+----------------------------------------------------------------------
+[2026-04-12] v1.6.0 — Developer experience: direnv, requirements, venv warning, autocomplete
+----------------------------------------------------------------------
+
+TYPE: developer tooling / infrastructure
+
+SUMMARY:
+Four developer-experience improvements: direnv auto-activation of .venv,
+split requirements files, a startup warning when no virtualenv is active,
+and argcomplete tab-completion for all subcommands and flags.
+
+DETAILS:
+1. .envrc (new)
+   direnv configuration. Sources .venv/bin/activate when you cd into the
+   project. Warns (stderr) if .venv does not exist. Includes setup
+   instructions in comments. .envrc.local added to .gitignore.
+
+2. requirements.txt (updated), requirements-dev.txt (new)
+   requirements.txt: added tqdm>=4.65.0, argcomplete>=3.1.0,
+     anthropic>=0.25.0 (uncommented); improved section comments.
+   requirements-dev.txt: new file, -r requirements.txt + pytest>=7.4.0.
+
+3. pipeline.py: _warn_if_no_venv() (new function)
+   Checks sys.prefix != sys.base_prefix and VIRTUAL_ENV / CONDA_DEFAULT_ENV.
+   Prints a one-line advisory to stderr. Non-fatal. Called at the top of main().
+
+4. pipeline.py: argcomplete wiring
+   Added PYTHON_ARGCOMPLETE_OK marker on line 2 (required for global
+   activation). Added try/import argcomplete; argcomplete.autocomplete(parser)
+   before parse_args() — silently skipped if argcomplete is not installed.
+
+5. README.md
+   Quick Start section expanded with venv creation steps.
+   New "Developer Setup" section added: direnv setup and tab-completion
+   activation (per-command and global).
+
+FILES:
+  .envrc                  (new)
+  .gitignore              (added .envrc.local)
+  requirements.txt        (updated: tqdm, argcomplete, anthropic uncommented)
+  requirements-dev.txt    (new)
+  pipeline.py             (PYTHON_ARGCOMPLETE_OK marker, _warn_if_no_venv(),
+                           argcomplete.autocomplete(parser))
+  README.md               (Quick Start + Developer Setup sections)
+  COMMANDS.txt            (regenerated — v1.6.0)
+  COMMANDS.html           (regenerated — v1.6.0)
+  modules/doc_registry.py (VERSION bumped to 1.6.0)
+
+IMPACT:
+  No changes to audio processing, tag writes, DB schema, or config.
+  All changes are additive and backward-compatible.
+
+----------------------------------------------------------------------
+[2026-04-12] v1.5.0 — Documentation enforcement and CLI help integration
+----------------------------------------------------------------------
+
+TYPE: infrastructure / developer tooling
+
+SUMMARY:
+Added a centralized command registry as the single source of truth for all
+CLI commands, flags, and examples. Two new subcommands regenerate and validate
+documentation automatically. An optional pre-commit hook enforces sync.
+
+DETAILS:
+New files:
+  modules/doc_registry.py  — COMMAND_REGISTRY: 18 commands with descriptions,
+                             flags (name, meta, description, default), and
+                             examples. Also defines VERSION = "1.5.0".
+  modules/doc_gen.py       — generate_commands_txt(), generate_readme_commands_section(),
+                             splice_readme_commands(), generate_commands_html().
+                             Generates all three doc formats from the registry.
+  scripts/pre_commit_validate_docs.sh  — Optional git hook (copy to
+                             .git/hooks/pre-commit). Runs validate-docs --strict
+                             and blocks commits when docs are out of sync.
+
+New subcommands in pipeline.py:
+  generate-docs  — Regenerates COMMANDS.txt, README.md (spliced in-place
+                   between <!-- COMMANDS:START --> and <!-- COMMANDS:END -->
+                   markers), and COMMANDS.html. Supports --dry-run (preview
+                   to stdout), --output-dir, and --format csv|md|html.
+  validate-docs  — Checks that all registry commands are present in
+                   COMMANDS.txt. Supports --strict (exit 1 on mismatch) for
+                   CI and pre-commit use.
+
+COMMANDS.txt updated:
+  Now generated from the registry (version bumped to 1.5.0, date updated).
+  Contains the generate-docs and validate-docs commands.
+
+README.md updated:
+  Old hand-crafted Subcommands section replaced with generated version inside
+  <!-- COMMANDS:START --> / <!-- COMMANDS:END --> splice markers.
+
+COMMANDS.html updated:
+  Fully regenerated from the registry with sidebar navigation.
+
+FILES:
+  modules/doc_registry.py     (new)
+  modules/doc_gen.py          (new)
+  scripts/pre_commit_validate_docs.sh  (new)
+  pipeline.py                 (added run_generate_docs, run_validate_docs,
+                               generate-docs and validate-docs subparsers)
+  COMMANDS.txt                (regenerated from registry — v1.5.0)
+  README.md                   (Subcommands section regenerated, markers added)
+  COMMANDS.html               (regenerated from registry)
+
+IMPACT:
+  No changes to audio processing, tag writes, DB schema, or config.
+  Fully additive — no existing behavior changed.
+
+HOW TO USE:
+  # Regenerate all docs after adding/changing a command
+  python3 pipeline.py generate-docs
+
+  # Verify docs are in sync before committing
+  python3 pipeline.py validate-docs
+
+  # Install optional pre-commit hook
+  cp scripts/pre_commit_validate_docs.sh .git/hooks/pre-commit
+  chmod +x .git/hooks/pre-commit
+
+----------------------------------------------------------------------
+[2026-04-11] v1.4.0 — New subcommand: audit-quality
+----------------------------------------------------------------------
+
+TYPE: feature
+
+SUMMARY:
+New `audit-quality` subcommand audits the library for codec/bitrate quality,
+classifies every audio file into LOSSLESS/HIGH/MEDIUM/LOW/UNKNOWN tiers, and
+generates CSV/JSON reports.  Optional actions (both off by default): move LOW
+files and/or write a QUALITY tag to each file.
+
+DETAILS:
+Quality tier rules:
+  LOSSLESS  FLAC / ALAC / WAV / AIFF (codec-based; bitrate irrelevant)
+  HIGH      lossy codec (MP3/AAC) >= 256 kbps
+  MEDIUM    lossy codec 192–255 kbps  (lower bound: --min-lossy-kbps, default 192)
+  LOW       lossy codec < 192 kbps
+  UNKNOWN   ffprobe could not read file or codec/bitrate not recognized
+
+Default run is fully non-destructive:
+  - probes files with ffprobe
+  - classifies each file
+  - writes CSV + JSON report to logs/reports/audit_quality/
+  - prints terminal summary with counts + percentages per tier
+  - no file moves, no tag writes
+
+Optional flags:
+  --move-low-quality DIR  move only LOW files; relative folder structure preserved
+  --write-tags            write QUALITY tag (MP3: TXXX:QUALITY, FLAC: QUALITY,
+                          M4A: ----:com.apple.iTunes:QUALITY; AIFF/WAV skipped safely)
+  --dry-run               log intended actions; make no changes; skip report files
+  --min-lossy-kbps N      shift LOW/MEDIUM boundary (default 192; HIGH fixed at 256)
+  --report-format csv,json  control output formats (default: both)
+  --verbose               per-file output
+
+DB:
+  - quality_tier TEXT column added to tracks table via ALTER TABLE migration in
+    init_db() (backward compatible; existing rows get NULL, not an error)
+  - quality_tier is stored per file when store_in_db=True (default, non-dry-run)
+
+TESTS:
+  - 46 new tests in tests/test_audit_quality.py
+  - TestClassifyTier: pure classification logic (lossless, HIGH, MEDIUM, LOW, UNKNOWN,
+    custom thresholds, case-insensitive, edge cases)
+  - TestMoveFile: folder-structure preservation, dry-run, invalid paths
+  - TestRunFunction: full integration with mocked ffprobe (all tier types,
+    unreadable files, move, write-tags off by default, CSV/JSON reports, dry-run,
+    empty dir, custom min_lossy_kbps)
+
+FILES:
+- modules/audit_quality.py     — new module
+- pipeline.py                  — new run_audit_quality(), argparse subcommand, dispatch
+- db.py                        — quality_tier migration in init_db()
+- config.py                    — AUDIT_QUALITY_REPORT_DIR, PIPELINE_VERSION→1.4.0
+- tests/test_audit_quality.py  — 46 new tests
+
+IMPACT:
+- Existing subcommands unchanged
+- DB schema gains quality_tier TEXT column (nullable, backward compatible)
+- Existing DB rows unaffected (column defaults to NULL)
+
+MIGRATION:
+- No manual DB action needed; init_db() runs the ALTER TABLE on next pipeline start
+
+
+----------------------------------------------------------------------
+[2026-04-11] v1.3.0 — Sanitizer: strip leading track-index junk before pipe
+----------------------------------------------------------------------
+
+TYPE: feature / patch
+
+SUMMARY:
+- New regex rule in sanitize_text() removes junk prefixes (digit, single letter,
+  or symbol+digit/letter) that appear at the very start of a title before a `|`
+  character and a space.  Handles DJ-pool numbering like "2 | Heartbreaker" or
+  "***3 | Track (Remix)" and single-letter prefixes like "A | Charlotte".
+
+DETAILS:
+- Pattern: `^[^\w\s]*(?:\d+|[A-Za-z])\s*\|\s*`
+  - `^`         — anchored to start; mid-string pipes are NEVER touched
+  - `[^\w\s]*`  — zero or more leading symbol chars (e.g. `***`)
+  - `(?:\d+|[A-Za-z])` — one or more digits OR exactly one letter (single-char only)
+  - `\s*\|\s*`  — optional spaces around the pipe (all consumed)
+- Multi-letter words before a pipe (e.g. "Rock | Roll", "Day | Night") are
+  preserved because the single `[A-Za-z]` token requires the next char to be
+  the pipe, not another word character.
+- Runs as Step 0 in sanitize_text(), before URL and promo-phrase passes.
+- 8 new test cases added to TestSanitizeText.
+
+FILES:
+- modules/sanitizer.py     — added _RE_PIPE_JUNK_PREFIX regex + Step 0 in sanitize_text()
+- tests/test_sanitizer.py  — 8 new tests for the pipe-prefix rule
+
+IMPACT:
+- Any title/field string starting with a short numeric or single-letter index
+  before a `|` will now be cleaned automatically in the sanitize pass.
+- No impact on MIK BPM/key/cue data (sanitizer never touches those fields).
+
+NOTES:
+- This is additive; all 76 existing tests pass.
+
+
+----------------------------------------------------------------------
 [2026-04-08] — README updated to reflect v1.1.0 and v1.2.0
 ----------------------------------------------------------------------
 

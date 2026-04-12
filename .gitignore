@@ -2,6 +2,7 @@ config_local.py
 *.pyo
 *.egg-info/
 .env
+.envrc.local
 
 # music files
 *.mp3
@@ -21,3 +22,6 @@ __pycache__/
 
 # LLM prompt logs (auto-generated, potentially large)
 last-prompts/
+
+# Backend runtime data (jobs DB + log files)
+backend/data/

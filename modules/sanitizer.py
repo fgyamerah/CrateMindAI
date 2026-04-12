@@ -96,6 +96,16 @@ def _build_plain_domain_re() -> re.Pattern:
 
 _RE_PLAIN_DOMAIN = _build_plain_domain_re()
 
+# Leading junk prefix before first pipe — e.g. "2 | Heartbreaker", "A | Title",
+# "***3 | Track (Remix)".  Pattern: optional non-word/non-space symbols, then a
+# short token (one or more digits OR exactly one letter), optional spaces, pipe,
+# optional spaces.  Anchored at ^ so mid-string pipes are never touched.
+# Conservative: only strips single-letter or pure-numeric prefixes (with optional
+# leading punctuation/symbols).  Multi-letter words before a pipe are preserved.
+_RE_PIPE_JUNK_PREFIX = re.compile(
+    r'^[^\w\s]*(?:\d+|[A-Za-z])\s*\|\s*',
+)
+
 # Trademark, copyright, and currency symbols — embedded by DJ pools or YouTube
 # auto-tagging; meaningless and sometimes folder-name-unsafe.
 # ™ ® © ℗ $ € £ ¥ ¢
@@ -147,6 +157,9 @@ def sanitize_text(text: str) -> str:
         return text
 
     result = text
+
+    # Step 0 — Leading junk prefix before first pipe (e.g. "2 | Title", "A | Title")
+    result = _RE_PIPE_JUNK_PREFIX.sub('', result)
 
     # Step 1 — Underscore-encoded URLs (https___domain.com style)
     result = _RE_URL_UNDERSCORE.sub('', result)

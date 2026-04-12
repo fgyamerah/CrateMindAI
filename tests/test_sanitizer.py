@@ -375,6 +375,66 @@ class TestSanitizeText(unittest.TestCase):
         """Text without symbols must pass through unchanged."""
         self.assertEqual(sanitize_text("Normal Track"), "Normal Track")
 
+    # -----------------------------------------------------------------------
+    # Leading junk prefix before pipe (track-index / numbering removal)
+    # -----------------------------------------------------------------------
+
+    def test_numeric_pipe_prefix_removed(self):
+        """Single digit index before pipe must be stripped."""
+        self.assertEqual(
+            sanitize_text("2 | Heartbreaker"),
+            "Heartbreaker",
+        )
+
+    def test_numeric_pipe_prefix_multi_digit(self):
+        """Multi-digit index before pipe must be stripped."""
+        self.assertEqual(
+            sanitize_text("3 | Stay On The Scene"),
+            "Stay On The Scene",
+        )
+
+    def test_symbol_and_numeric_pipe_prefix_removed(self):
+        """Symbol(s) + digit prefix before pipe must be stripped."""
+        self.assertEqual(
+            sanitize_text("***2 | Love Will (feat. Bilal) [Breyth Remix]"),
+            "Love Will (feat. Bilal) [Breyth Remix]",
+        )
+
+    def test_letter_pipe_prefix_removed(self):
+        """Single letter prefix before pipe must be stripped."""
+        self.assertEqual(
+            sanitize_text("A | Charlotte (Original)"),
+            "Charlotte (Original)",
+        )
+
+    def test_no_pipe_prefix_unchanged(self):
+        """Title with no leading junk prefix must pass through unchanged."""
+        self.assertEqual(
+            sanitize_text("Heartbreaker"),
+            "Heartbreaker",
+        )
+
+    def test_legitimate_pipe_in_middle_preserved(self):
+        """Pipe in middle of a real title must NOT be touched."""
+        self.assertEqual(
+            sanitize_text("Rock | Roll"),
+            "Rock | Roll",
+        )
+
+    def test_multi_word_before_pipe_preserved(self):
+        """A real phrase before a mid-string pipe must not be stripped."""
+        self.assertEqual(
+            sanitize_text("Day | Night"),
+            "Day | Night",
+        )
+
+    def test_pipe_prefix_with_no_junk_elsewhere(self):
+        """Strip only the prefix; rest of clean title stays intact."""
+        self.assertEqual(
+            sanitize_text("12 | Something (Original Mix)"),
+            "Something (Original Mix)",
+        )
+
 
 class TestSanitizeMetadata(unittest.TestCase):
 

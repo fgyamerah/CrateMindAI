@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# PYTHON_ARGCOMPLETE_OK
 """
 DJ Toolkit — main pipeline entry point.
 
@@ -47,6 +48,31 @@ from modules import (
     artist_merge, artist_folder_clean, metadata_clean, tag_normalize,
 )
 from modules.textlog import log_action, log_run_separator
+
+
+# ---------------------------------------------------------------------------
+# Virtualenv check
+# ---------------------------------------------------------------------------
+def _warn_if_no_venv() -> None:
+    """
+    Print a one-time warning if the script is running outside a virtualenv.
+    Detection: sys.prefix != sys.base_prefix (set by venv/virtualenv) and
+    VIRTUAL_ENV env var not set (set by activation scripts).
+    Non-fatal — just advisory.
+    """
+    import os
+    in_venv = (
+        sys.prefix != sys.base_prefix
+        or os.environ.get("VIRTUAL_ENV")
+        or os.environ.get("CONDA_DEFAULT_ENV")
+    )
+    if not in_venv:
+        print(
+            "WARNING: Virtual environment does not appear to be active.\n"
+            "  Recommended: source .venv/bin/activate\n"
+            "  Or with direnv: direnv allow .\n",
+            file=sys.stderr,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -1339,6 +1365,100 @@ def run_db_prune_stale(args) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Audit Quality
+# ---------------------------------------------------------------------------
+def run_audit_quality(args) -> int:
+    """
+    Audit the library (or a custom path) for codec/bitrate quality.
+
+    Default: non-destructive audit + report only.
+    Optional actions: --move-low-quality DIR, --write-tags.
+    """
+    from modules import audit_quality
+
+    _setup_logging(getattr(args, "verbose", False))
+
+    raw_path = getattr(args, "path", None)
+    if raw_path:
+        scan_root = _resolve_path(raw_path)
+    else:
+        scan_root = config.SORTED
+        if not scan_root.exists():
+            # Fall back to LIBRARY if SORTED doesn't exist (useful on a fresh install)
+            scan_root = config.LIBRARY
+
+    if scan_root is None or not scan_root.exists():
+        print(
+            f"ERROR: scan path does not exist: {scan_root or raw_path}",
+            file=sys.stderr,
+        )
+        return 2
+
+    _log_active_path("AUDIT-QUALITY", scan_root)
+
+    dry_run = getattr(args, "dry_run", False)
+
+    # --move-low-quality DIR
+    move_low_raw = getattr(args, "move_low_quality", None)
+    move_low_dir = Path(move_low_raw).expanduser().resolve() if move_low_raw else None
+
+    # --report-format csv,json  (default: both)
+    fmt_raw = getattr(args, "report_format", "csv,json") or "csv,json"
+    report_formats = [f.strip().lower() for f in fmt_raw.split(",") if f.strip()]
+    valid_fmts = {"csv", "json"}
+    report_formats = [f for f in report_formats if f in valid_fmts]
+    if not report_formats:
+        log.warning("No valid report formats specified; defaulting to csv,json")
+        report_formats = ["csv", "json"]
+
+    min_lossy_kbps = getattr(args, "min_lossy_kbps", 192)
+    write_tags     = getattr(args, "write_tags", False)
+    report_dir     = config.AUDIT_QUALITY_REPORT_DIR
+
+    log.info(
+        "audit-quality: path=%s  dry_run=%s  move_low=%s  write_tags=%s  "
+        "min_lossy_kbps=%d  report_format=%s",
+        scan_root, dry_run, move_low_dir or "off", write_tags,
+        min_lossy_kbps, ",".join(report_formats),
+    )
+    log_action(
+        f"AUDIT-QUALITY {'DRY-RUN' if dry_run else 'START'}: "
+        f"path={scan_root}  move_low={move_low_dir or 'off'}  write_tags={write_tags}"
+    )
+
+    # Ensure DB is ready (quality_tier column migration runs in init_db)
+    db.init_db()
+
+    results, report_paths = audit_quality.run(
+        scan_root      = scan_root,
+        dry_run        = dry_run,
+        move_low_dir   = move_low_dir,
+        write_tags     = write_tags,
+        report_formats = report_formats,
+        min_lossy_kbps = min_lossy_kbps,
+        verbose        = getattr(args, "verbose", False),
+        ffprobe_bin    = getattr(config, "FFPROBE_BIN", "ffprobe"),
+        report_dir     = report_dir,
+        store_in_db    = not dry_run,
+    )
+
+    moved_count      = sum(1 for r in results if r.action_taken == "moved")
+    tagged_count     = sum(1 for r in results if r.action_taken == "tag_written")
+    unreadable_count = sum(1 for r in results if r.action_taken == "unreadable")
+
+    if report_paths:
+        log.info("Reports written to: %s", report_dir)
+        for fmt, rpath in report_paths.items():
+            log.info("  %-5s %s", fmt, rpath.name)
+
+    log_action(
+        f"AUDIT-QUALITY DONE: {len(results)} scanned, {moved_count} moved, "
+        f"{tagged_count} tagged, {unreadable_count} unreadable → {report_dir}"
+    )
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # Convert Audio
 # ---------------------------------------------------------------------------
 def run_convert_audio(args) -> int:
@@ -1426,6 +1546,152 @@ def run_convert_audio(args) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Generate Docs
+# ---------------------------------------------------------------------------
+def run_generate_docs(args) -> int:
+    """
+    Regenerate COMMANDS.txt, README.md (commands section), and COMMANDS.html
+    from the centralized command registry in modules/doc_registry.py.
+    """
+    _setup_logging(getattr(args, "verbose", False))
+
+    from modules import doc_registry, doc_gen
+
+    dry_run    = getattr(args, "dry_run",    False)
+    output_dir = getattr(args, "output_dir", None)
+    fmt_raw    = getattr(args, "format",     "txt,md,html") or "txt,md,html"
+    formats    = {f.strip().lower() for f in fmt_raw.split(",") if f.strip()}
+
+    project_root = Path(__file__).parent
+    out_root     = Path(output_dir).expanduser().resolve() if output_dir else project_root
+
+    if not dry_run:
+        out_root.mkdir(parents=True, exist_ok=True)
+
+    version = doc_registry.VERSION
+    registry = doc_registry.REGISTRY
+
+    generated: list[tuple[str, str]] = []   # (label, content)
+
+    if "txt" in formats:
+        content = doc_gen.generate_commands_txt(registry, version)
+        generated.append(("COMMANDS.txt", content))
+
+    if "md" in formats:
+        readme_path = out_root / "README.md"
+        section     = doc_gen.generate_readme_commands_section(registry)
+        content     = doc_gen.splice_readme_commands(readme_path, section)
+        generated.append(("README.md", content))
+
+    if "html" in formats:
+        content = doc_gen.generate_commands_html(registry, version)
+        generated.append(("COMMANDS.html", content))
+
+    if dry_run:
+        for label, content in generated:
+            print(f"\n{'='*70}")
+            print(f"  DRY-RUN PREVIEW: {label}")
+            print(f"{'='*70}")
+            # Print first 60 lines as a preview
+            preview_lines = content.splitlines()[:60]
+            print("\n".join(preview_lines))
+            if len(content.splitlines()) > 60:
+                print(f"  ... ({len(content.splitlines())} total lines)")
+        return 0
+
+    for label, content in generated:
+        dest = out_root / label
+        dest.write_text(content, encoding="utf-8")
+        log.info("Wrote: %s", dest)
+        print(f"  WROTE  {dest}")
+
+    print(f"\ngenerate-docs complete: {len(generated)} file(s) written to {out_root}")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Validate Docs
+# ---------------------------------------------------------------------------
+def run_validate_docs(args) -> int:
+    """
+    Check that COMMANDS.txt is in sync with the command registry.
+    Reports commands that are in the registry but absent from COMMANDS.txt,
+    and vice versa (stale entries).
+    """
+    _setup_logging(getattr(args, "verbose", False))
+
+    from modules import doc_registry
+
+    strict      = getattr(args, "strict", False)
+    project_root = Path(__file__).parent
+    commands_txt = project_root / "COMMANDS.txt"
+
+    if not commands_txt.exists():
+        print(f"ERROR: COMMANDS.txt not found at {commands_txt}")
+        return 1
+
+    text = commands_txt.read_text(encoding="utf-8")
+
+    # Every registry entry (except MAIN) should appear somewhere in COMMANDS.txt.
+    # We look for the command name as a standalone token (start of a line or
+    # followed by a space / dash / newline).
+    import re
+
+    registry_names = [e["name"] for e in doc_registry.REGISTRY if e["name"] != "MAIN"]
+
+    missing: list[str] = []
+    for name in registry_names:
+        # Look for "pipeline.py <name>" or "\n<name> " patterns
+        if not re.search(
+            r"(?:pipeline\.py\s+" + re.escape(name) + r"|^" + re.escape(name) + r"\b)",
+            text,
+            re.MULTILINE,
+        ):
+            missing.append(name)
+
+    ok = True
+    if missing:
+        ok = False
+        print(f"\nMISSING from COMMANDS.txt ({len(missing)} command(s)):")
+        for name in missing:
+            print(f"  - {name}")
+
+    # Check for subcommand sections in COMMANDS.txt that have no registry entry.
+    # We look for "pipeline.py <something>" where <something> contains a hyphen
+    # (all subcommands have hyphens) to avoid matching flags like --dry-run.
+    documented = re.findall(r"pipeline\.py\s+([a-z][a-z0-9]*(?:-[a-z0-9]+)+)", text)
+    documented_set = set(documented)
+    registry_set   = set(registry_names)
+    stale = documented_set - registry_set
+
+    if stale:
+        ok = False
+        print(f"\nPOTENTIALLY STALE in COMMANDS.txt ({len(stale)} entry/ies):")
+        for name in sorted(stale):
+            print(f"  ? {name}  (not in registry — may be a flag, not a subcommand)")
+
+    if ok:
+        print(
+            f"validate-docs: OK — all {len(registry_names)} registry commands "
+            f"are present in COMMANDS.txt"
+        )
+        return 0
+    else:
+        if strict:
+            print(
+                "\nvalidate-docs: FAIL (--strict mode). "
+                "Run `python3 pipeline.py generate-docs` to sync."
+            )
+            return 1
+        else:
+            print(
+                "\nvalidate-docs: warnings found. "
+                "Run `python3 pipeline.py generate-docs` to regenerate docs."
+            )
+            return 0
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 def main() -> None:
@@ -1472,7 +1738,13 @@ def main() -> None:
             "Harmonic Mixing Suggestions:\n"
             "  python pipeline.py harmonic-suggest --track /path/to/track.mp3\n"
             "  python pipeline.py harmonic-suggest --key 8A --bpm 128\n"
-            "  python pipeline.py harmonic-suggest --track ... --strategy energy_lift --json\n"
+            "  python pipeline.py harmonic-suggest --track ... --strategy energy_lift --json\n\n"
+            "Audit Quality:\n"
+            "  python3 pipeline.py audit-quality                        # audit + report\n"
+            "  python3 pipeline.py audit-quality --dry-run --verbose    # preview\n"
+            "  python3 pipeline.py audit-quality --move-low-quality /music/_low_quality\n"
+            "  python3 pipeline.py audit-quality --write-tags           # write QUALITY tag\n"
+            "  python3 pipeline.py audit-quality --report-format csv    # CSV only\n"
         ),
     )
     # ----- existing pipeline flags -----
@@ -2192,6 +2464,95 @@ def main() -> None:
         help="Enable debug logging",
     )
 
+    # ----- audit-quality subcommand -----
+    p_aq = subparsers.add_parser(
+        "audit-quality",
+        help="Audit library for codec/bitrate quality — report LOSSLESS/HIGH/MEDIUM/LOW/UNKNOWN",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Scan the library (or a custom path) for audio quality issues.\n\n"
+            "Quality tiers:\n"
+            "  LOSSLESS  FLAC / ALAC / WAV / AIFF (lossless codec)\n"
+            "  HIGH      lossy (MP3/AAC) >= 256 kbps\n"
+            "  MEDIUM    lossy (MP3/AAC) 192–255 kbps\n"
+            "  LOW       lossy (MP3/AAC) < 192 kbps  (threshold: --min-lossy-kbps)\n"
+            "  UNKNOWN   unreadable file or unrecognized codec/bitrate\n\n"
+            "Default mode: non-destructive.  No files are moved or modified.\n"
+            "Outputs: terminal summary + CSV/JSON report in logs/reports/audit_quality/\n\n"
+            "Optional actions (both off by default):\n"
+            "  --move-low-quality DIR   Move LOW files to DIR (folder structure preserved)\n"
+            "  --write-tags             Write QUALITY tag to each file\n\n"
+            "QUALITY tag locations:\n"
+            "  MP3  : TXXX:QUALITY  (ID3v2.3 custom text frame)\n"
+            "  FLAC : QUALITY       (Vorbis comment)\n"
+            "  M4A  : ----:com.apple.iTunes:QUALITY  (MP4 freeform atom)\n"
+            "  AIFF/WAV : skipped safely (tagging unreliable — logged, not failed)\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py audit-quality\n"
+            "  python3 pipeline.py audit-quality --path /mnt/music_ssd/KKDJ/\n"
+            "  python3 pipeline.py audit-quality --dry-run --verbose\n"
+            "  python3 pipeline.py audit-quality --move-low-quality /music/_low_quality\n"
+            "  python3 pipeline.py audit-quality --write-tags\n"
+            "  python3 pipeline.py audit-quality --report-format csv\n"
+            "  python3 pipeline.py audit-quality --min-lossy-kbps 160\n"
+        ),
+    )
+    p_aq.add_argument(
+        "--path", metavar="DIR",
+        help=(
+            "Scan this directory instead of the default sorted library. "
+            "Example: --path /mnt/music_ssd/KKDJ/"
+        ),
+    )
+    p_aq.add_argument(
+        "--dry-run", action="store_true",
+        help=(
+            "Show what would happen (probe + classify + report) "
+            "without moving files or writing tags"
+        ),
+    )
+    p_aq.add_argument(
+        "--move-low-quality", metavar="DIR",
+        default=None,
+        dest="move_low_quality",
+        help=(
+            "Move LOW quality files to this directory. "
+            "Relative folder structure under the scanned root is preserved. "
+            "Only LOW files are moved — LOSSLESS/HIGH/MEDIUM/UNKNOWN are untouched."
+        ),
+    )
+    p_aq.add_argument(
+        "--write-tags", action="store_true",
+        dest="write_tags",
+        help=(
+            "Write a QUALITY tag (LOSSLESS/HIGH/MEDIUM/LOW) to each file. "
+            "UNKNOWN files are skipped. Off by default."
+        ),
+    )
+    p_aq.add_argument(
+        "--report-format", metavar="FORMATS",
+        default="csv,json",
+        dest="report_format",
+        help=(
+            "Comma-separated list of report formats to generate: csv, json. "
+            "Default: csv,json"
+        ),
+    )
+    p_aq.add_argument(
+        "--min-lossy-kbps", metavar="N", type=int,
+        default=192,
+        dest="min_lossy_kbps",
+        help=(
+            "Bitrate threshold (kbps) that separates LOW from MEDIUM. "
+            "Files below this value are LOW; >= this value are MEDIUM "
+            "(unless >= 256 kbps, which is always HIGH). Default: 192"
+        ),
+    )
+    p_aq.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Enable debug logging and per-file output",
+    )
+
     # ----- cue-suggest subcommand -----
     p_cs = subparsers.add_parser(
         "cue-suggest",
@@ -2459,7 +2820,85 @@ def main() -> None:
         help="Enable debug logging",
     )
 
+    # ----- generate-docs subcommand -----
+    p_gd = subparsers.add_parser(
+        "generate-docs",
+        help="Regenerate COMMANDS.txt, README.md, and COMMANDS.html from the command registry",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Reads the centralized command registry (modules/doc_registry.py) and\n"
+            "regenerates all documentation files from it.\n\n"
+            "Files regenerated (by default):\n"
+            "  COMMANDS.txt   — plain-text command reference\n"
+            "  README.md      — subcommands section spliced in-place\n"
+            "  COMMANDS.html  — dark-themed HTML with sidebar navigation\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py generate-docs\n"
+            "  python3 pipeline.py generate-docs --dry-run\n"
+            "  python3 pipeline.py generate-docs --format txt,html\n"
+            "  python3 pipeline.py generate-docs --output-dir /tmp/docs\n"
+        ),
+    )
+    p_gd.add_argument(
+        "--dry-run", action="store_true",
+        help="Preview generated content to stdout — write no files",
+    )
+    p_gd.add_argument(
+        "--output-dir", metavar="DIR", default=None,
+        help=(
+            "Write generated files to this directory instead of the project root. "
+            "The directory is created if it does not exist."
+        ),
+    )
+    p_gd.add_argument(
+        "--format", metavar="FORMATS", default="txt,md,html",
+        help="Comma-separated list of formats to generate: txt, md, html. Default: txt,md,html",
+    )
+
+    # ----- validate-docs subcommand -----
+    p_vd = subparsers.add_parser(
+        "validate-docs",
+        help="Check that COMMANDS.txt is in sync with the command registry",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Reads the command registry (modules/doc_registry.py) and COMMANDS.txt,\n"
+            "then reports:\n"
+            "  - Commands in the registry that are MISSING from COMMANDS.txt\n"
+            "  - Entries in COMMANDS.txt that have NO matching registry entry (stale)\n\n"
+            "Use --strict to make the command exit 1 on any mismatch (useful in CI\n"
+            "and pre-commit hooks).\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py validate-docs\n"
+            "  python3 pipeline.py validate-docs --strict\n"
+        ),
+    )
+    p_vd.add_argument(
+        "--strict", action="store_true",
+        help=(
+            "Exit with code 1 if any commands are missing from or stale in COMMANDS.txt. "
+            "Without this flag, mismatches are printed as warnings but the command exits 0."
+        ),
+    )
+
+    # Warn if running outside a virtualenv (advisory only, non-fatal)
+    _warn_if_no_venv()
+
+    # Enable tab-completion when argcomplete is installed.
+    # Activate per-command:  eval "$(register-python-argcomplete pipeline.py)"
+    # Activate globally:     activate-global-python-argcomplete
+    try:
+        import argcomplete
+        argcomplete.autocomplete(parser)
+    except ImportError:
+        pass  # argcomplete is optional; silently skip if not installed
+
     args = parser.parse_args()
+
+    if args.command == "generate-docs":
+        sys.exit(run_generate_docs(args))
+
+    if args.command == "validate-docs":
+        sys.exit(run_validate_docs(args))
 
     if args.command == "artist-merge":
         sys.exit(run_artist_merge(args))
@@ -2493,6 +2932,9 @@ def main() -> None:
 
     if args.command == "analyze-missing":
         sys.exit(run_analyze_missing(args))
+
+    if args.command == "audit-quality":
+        sys.exit(run_audit_quality(args))
 
     if args.command == "rekordbox-export":
         sys.exit(run_rekordbox_export(args))

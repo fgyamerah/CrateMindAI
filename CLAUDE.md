@@ -128,6 +128,14 @@ python3 pipeline.py convert-audio \
     --dst /mnt/music_ssd/KKDJ/inbox \
     --archive /mnt/music_ssd/originals_m4a
 
+# Audit library for codec/bitrate quality (non-destructive by default)
+python3 pipeline.py audit-quality
+python3 pipeline.py audit-quality --path /mnt/music_ssd/KKDJ/
+python3 pipeline.py audit-quality --dry-run --verbose
+python3 pipeline.py audit-quality --move-low-quality /music/_low_quality
+python3 pipeline.py audit-quality --write-tags
+python3 pipeline.py audit-quality --report-format csv,json
+
 # Roll back tag changes for a track
 python3 scripts/rollback.py
 ```
@@ -175,6 +183,7 @@ Each module in `modules/` exposes a `run()` function with signature `run(files, 
 | `rekordbox_export.py` | Export library to Rekordbox XML, mapping Linux paths to Windows drive letter |
 | `analyze_missing.py` | Find and re-analyze tracks missing BPM/key |
 | `convert_audio.py` | Convert .m4a → .aiff with parallel ffmpeg, metadata preservation, archive |
+| `audit_quality.py` | Codec/bitrate quality audit; classify files into LOSSLESS/HIGH/MEDIUM/LOW/UNKNOWN; CSV/JSON reports; optional move + tag write |
 | `metadata_clean.py` | Retroactive tag sanitization across entire library |
 | `artist_merge.py` | Consolidate artist spelling variants |
 | `artist_folder_clean.py` | Remove bad artist folder names |

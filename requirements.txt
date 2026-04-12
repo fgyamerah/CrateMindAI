@@ -1,30 +1,35 @@
-# TrackIQ — Python dependencies
+# TrackIQ — Python runtime dependencies
 #
 # Install:  pip install -r requirements.txt
-# Dev/test: pip install -r requirements.txt pytest
+# Dev/test: pip install -r requirements-dev.txt
 
-# Audio tag reading and writing (MP3 ID3v2.3, FLAC, M4A, OGG, OPUS, WAV, AIFF)
+# ── Audio tags ────────────────────────────────────────────────────────────────
+# Read/write MP3 ID3v2.3, FLAC, M4A, OGG, OPUS, WAV, AIFF
 mutagen>=1.46.0
 
-# Numerical processing — required for cue-suggest full-mode analysis
-# (RMS energy, low-frequency energy, spectral flux via FFT).
-# Ships by default on Ubuntu Studio 24; install via: pip install numpy
+# ── Numerical / audio analysis ────────────────────────────────────────────────
+# Required for cue-suggest full-mode (RMS energy, spectral flux via FFT)
 numpy>=1.24.0
 
-# HTTP scraping for Label Intelligence (label-intel subcommand)
+# BPM fallback when aubio binary is unavailable or fails
+librosa>=0.10.0
+
+# ── Progress bars ─────────────────────────────────────────────────────────────
+# Used in convert-audio for parallel conversion progress
+tqdm>=4.65.0
+
+# ── HTTP / web scraping ───────────────────────────────────────────────────────
+# Label Intelligence (label-intel subcommand)
 requests>=2.31.0
 beautifulsoup4>=4.12.3
 
-# ---------------------------------------------------------------------------
-# Optional dependencies
-# ---------------------------------------------------------------------------
+# ── CLI autocomplete ──────────────────────────────────────────────────────────
+# Enables tab-completion for all subcommands and flags.
+# Activate: eval "$(register-python-argcomplete pipeline.py)"
+# Or globally: activate-global-python-argcomplete
+argcomplete>=3.1.0
 
-# librosa — primary BPM fallback when aubio is unavailable or fails.
-# analyzer.py tries aubio first, then falls back to librosa automatically.
-# Install via: pip install librosa
-librosa>=0.10.0
-
-# anthropic — required for LLM features (genre suggestions, metadata assist, etc.)
-# utils/llm_client.py wraps all Claude API calls and auto-logs to ./last-prompts/
-# Install via: pip install anthropic
-# anthropic>=0.25.0
+# ── LLM / Claude API ─────────────────────────────────────────────────────────
+# Required for LLM features (genre inference, metadata assist via Claude).
+# utils/llm_client.py wraps all API calls and logs prompts to ./last-prompts/
+anthropic>=0.25.0

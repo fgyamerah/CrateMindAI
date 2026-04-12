@@ -136,6 +136,15 @@ def get_conn() -> Iterator[sqlite3.Connection]:
 def init_db() -> None:
     with get_conn() as conn:
         conn.executescript(_SCHEMA)
+        # Schema migrations — ADD COLUMN is safe on existing DBs (SQLite ignores
+        # OperationalError "duplicate column name" so we suppress it).
+        for migration in [
+            "ALTER TABLE tracks ADD COLUMN quality_tier TEXT",
+        ]:
+            try:
+                conn.execute(migration)
+            except Exception:
+                pass  # column already exists — safe to ignore
 
 
 # ---------------------------------------------------------------------------

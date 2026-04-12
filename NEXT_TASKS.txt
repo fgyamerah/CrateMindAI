@@ -17,7 +17,210 @@ P3 = low
 ----------------------------------------------------------------------
 CURRENT FOCUS
 ----------------------------------------------------------------------
-(nothing active — see DONE below)
+(nothing active — docs updated 2026-04-12; see DONE below)
+
+
+----------------------------------------------------------------------
+DOCUMENTATION (completed 2026-04-12)
+----------------------------------------------------------------------
+[x] (P2) README.md — full rewrite: web app, all API routes, folder structure,
+         two-terminal start, troubleshooting, next steps, current status table
+[x] (P2) CHANGELOG.txt — docs entry added
+[x] (P2) DJToolkit_CONTEXT.txt — backend section expanded to reflect v0.6.x
+         (process_registry, SSD sync, BPM analysis, all 7 route files, frontend)
+
+
+----------------------------------------------------------------------
+FRONTEND UI POLISH (completed 2026-04-12)
+----------------------------------------------------------------------
+[x] (P1) Fix .log-inline CSS — all inline log views now constrained (max-height 55vh,
+         overflow-x/y: auto, white-space: pre, monospace font). Affected: SetBuilder,
+         Export, SsdSync. Previously the class had zero CSS, causing overflow.
+[x] (P2) Sidebar icons — lucide-react SVG icons replace Unicode glyphs
+[x] (P2) Sidebar active state — 2px left-border accent on active link
+[x] (P2) Font upgrade — IBM Plex Sans loaded via Google Fonts; replaces system-ui
+[x] (P2) .badge--info — added for Camelot key badges in SetBuilder
+[x] (P2) .table-wrap — added table/th/td rules; SetBuilder bare tables now styled
+[x] (P2) PageHeader component — reusable title/subtitle/badge/actions; applied to all pages
+[x] (P2) Jobs page — lucide buttons, JobProgress bar (numeric + indeterminate), running-row accent
+[x] (P2) SetBuilder — collapsible log section, set-detail stat cards
+[x] (P2) SsdSync — mounted status badge in PageHeader
+[x] (P2) Table polish — improved header contrast (#8490b0), row padding, rgba borders
+[x] (P2) spin/@keyframes — Loader2 spinner on async buttons (Jobs, BpmReview, Export, SsdSync)
+
+[ ] (P2) Dashboard: improve stat cards (left-border accent coloring, tighter layout)
+[ ] (P2) Export: output path copy-to-clipboard button
+[ ] (P3) BpmReview: collapsible re-analysis log panel (same pattern as SetBuilder)
+[ ] (P3) SsdSync: make sync history use .table/.table-wrapper for consistency
+[ ] (P3) Dashboard: show last-run timestamp + quick-launch buttons for common commands
+
+
+----------------------------------------------------------------------
+EXPORT WORKFLOW (completed 2026-04-12)
+----------------------------------------------------------------------
+[x] (P1) POST /api/exports/validate — in-process validation, no subprocesses
+[x] (P1) POST /api/exports/run — dispatch rekordbox-export job (async, returns job_id)
+[x] (P1) GET /api/exports — list past export jobs (filtered view of jobs table)
+[x] (P1) GET /api/exports/{id} — single export job by ID
+[x] (P1) Export page — validation summary, excluded tracks table, run panel, history
+[x] (P1) ErrorBanner onDismiss prop + TS build fixed
+
+
+----------------------------------------------------------------------
+SSD SYNC / JOB CANCELLATION / PROGRESS (completed 2026-04-12)
+----------------------------------------------------------------------
+[x] (P1) process_registry — shared subprocess table; SIGTERM cancel for all job types
+[x] (P1) Job model extended: pid, progress_current/total/percent/message, 'cancelled' status
+[x] (P1) DB migration: _add_column_safe() — idempotent ALTER TABLE on startup
+[x] (P1) job_service: mark_pid(), mark_progress(), clear_pid()
+[x] (P1) toolkit_runner: registers process, stores PID, checks cancellation flag on exit
+[x] (P1) rsync_runner: preview_sync (dry-run), start_sync_job, _run_rsync_job with
+         progress parsing from --info=progress2 (to-chk=N/M, throttled 1s writes)
+[x] (P1) POST /api/jobs/{id}/cancel — SIGTERM + 'cancelled' status
+[x] (P1) GET /api/sync/config, POST /api/sync/preview, POST /api/sync/run
+[x] (P1) GET /api/sync, GET /api/sync/{id}
+[x] (P1) SsdSync page — config panel, preview list, run panel (allow_delete opt-in),
+         active job with progress bar + cancel, sync history
+[x] (P1) Jobs page — Cancel button on running rows, inline progress bar
+[x] (P1) CSS: cancelled badge, danger button, progress bars, sync page classes
+
+[ ] (P2) POST /api/jobs/{id}/cancel: handle SIGKILL fallback if SIGTERM is ignored after timeout
+[ ] (P2) GET /api/jobs/{id}/logs: SSE streaming for live log tail (currently polls 2s)
+[ ] (P2) WebSocket /ws/jobs/{id}/logs — real-time log streaming
+[ ] (P2) rsync --bwlimit option for bandwidth throttling during sync
+[ ] (P3) Job retention policy — auto-clean logs older than N days
+[ ] (P3) SSD Sync: show last-synced timestamp from most recent succeeded sync job
+
+
+----------------------------------------------------------------------
+BACKEND — PHASE 1 (completed 2026-04-12)
+----------------------------------------------------------------------
+[x] (P1) FastAPI backend skeleton
+    Files: backend/app/main.py, backend/app/core/config.py, backend/app/core/db.py
+
+[x] (P1) Routes: GET /api/health, GET /api/version
+    File: backend/app/api/routes/health.py
+
+[x] (P1) Routes: GET /api/jobs, GET /api/jobs/{id}, GET /api/jobs/{id}/logs, POST /api/jobs
+    File: backend/app/api/routes/jobs.py
+
+[x] (P1) SQLite-backed Job model (backend/data/jobs.db — separate from pipeline DB)
+    Files: backend/app/models/job.py, backend/app/schemas/job.py,
+           backend/app/core/db.py, backend/app/services/job_service.py
+
+[x] (P1) toolkit_runner service — safe subprocess execution with allowlists
+    File: backend/app/services/toolkit_runner.py
+    - ALLOWED_COMMANDS (18 subcommands)
+    - _ALLOWED_BOOL_FLAGS, _ALLOWED_VALUE_FLAGS with value validators
+    - Commands built as argument lists; never shell strings
+    - asyncio background tasks with task registry (prevents GC)
+
+[x] (P1) stdout+stderr → log files; /logs endpoint returns file contents + ?tail=N
+[x] (P2) README Backend section with run commands and API table
+
+
+----------------------------------------------------------------------
+BACKEND — PHASE 2 (open)
+----------------------------------------------------------------------
+[x] (P1) Frontend: React/Vite/TS shell — entry point, routing, CSS, Settings page
+    Files: frontend/src/main.tsx, frontend/src/App.tsx,
+           frontend/src/pages/Settings.tsx, frontend/src/index.css
+    Note: node/npm must be installed on the host to run
+[ ] (P2) POST /api/jobs: support --path override (validated absolute path)
+[ ] (P2) GET /api/jobs/{id}/logs: SSE streaming for live log tail
+[ ] (P2) POST /api/jobs/{id}/cancel — SIGTERM the subprocess if still running
+[x] (P2) GET /api/tracks, /stats, /issues, /{id} — read-only track browsing from pipeline DB
+    Files: backend/app/core/pipeline_db.py, backend/app/models/track.py,
+           backend/app/schemas/track.py, backend/app/services/track_service.py,
+           backend/app/api/routes/tracks.py
+[x] (P2) Frontend Tracks page — search/filter/sort/paginate + slide-in detail panel
+    Files: frontend/src/types/track.ts, frontend/src/api/tracks.ts,
+           frontend/src/hooks/useTracks.ts, frontend/src/pages/Tracks.tsx,
+           frontend/src/components/TrackPanel.tsx
+[x] (P1) BPM anomaly detection + review workflow
+    Backend: bpm_analysis.py service, analysis.py routes, bpm_anomalies table in jobs.db
+    Frontend: BpmReview page, types/analysis.ts, api/analysis.ts
+[x] (P2) Set Builder UI — form + job dispatch + playlist history + track detail
+    Backend: schemas/playlist.py, services/playlist_service.py,
+             api/routes/playlists.py — POST /set-builder, GET /playlists, GET /playlists/{id}
+    Frontend: types/playlist.ts, api/playlists.ts, pages/SetBuilder.tsx
+    Also: toolkit_runner.py extended with all set-builder flags
+[ ] (P2) BPM anomaly: per-track reanalyze (requires pipeline support for --track-id)
+[ ] (P2) POST /api/jobs: support --path override (validated absolute path)
+[ ] (P2) GET /api/jobs/{id}/logs: SSE streaming for live log tail
+[ ] (P2) POST /api/jobs/{id}/cancel — SIGTERM the subprocess if still running
+[ ] (P3) WebSocket /ws/jobs/{id}/logs — real-time log streaming
+[ ] (P3) Job retention policy — auto-clean logs older than N days
+
+
+----------------------------------------------------------------------
+ARTIST MERGE (completed 2026-04-12)
+----------------------------------------------------------------------
+[x] (P1) Fix _classify_merge() normalization bug
+    Old code compared fi.primary_artist.lower() directly; "Heavy-K" and "Heavy K"
+    produced different lowercase strings → incorrectly flagged as AMBIGUOUS.
+    Fix: _normalize_primary_for_compare() applies same transforms as normalize_artist_key()
+    (strip periods, hyphen→space) before comparison.
+    File: modules/artist_merge.py
+
+[x] (P1) Three-category merge classification
+    SAFE_ALIAS          — formatting/punctuation/casing differences only
+    SAME_PRIMARY_COLLAB — same primary after normalization; ≥1 folder has collab suffix
+    AMBIGUOUS           — primary artists genuinely differ; never auto-merged
+    File: modules/artist_merge.py
+
+[x] (P2) _describe_alias_differences() helper
+    Generates human-readable reason strings for SAFE_ALIAS groups:
+    "capitalization variant", "dotted-initials variant", "hyphen/space variant",
+    "trailing period variant", "period variant", etc.
+    File: modules/artist_merge.py
+
+[x] (P2) _pick_canonical() all-uppercase penalty
+    All-uppercase canonical names (HOSH) penalized; mixed-case preferred (H.O.S.H).
+    File: modules/artist_merge.py
+
+[x] (P1) Tests for artist merge (77 tests)
+    File: tests/test_artist_merge.py
+    Covers: extract_primary_artist, _has_collab_suffix, normalize_artist_key,
+    _normalize_primary_for_compare, _describe_alias_differences, _classify_merge,
+    _pick_canonical — all variant types: punctuation, casing, hyphen/space,
+    trailing period, dotted initials, feat/ft/featuring, comma-collab, ambiguous
+
+
+----------------------------------------------------------------------
+DEV EXPERIENCE (completed 2026-04-12)
+----------------------------------------------------------------------
+[x] (P2) direnv support — .envrc activates .venv on cd into project
+[x] (P2) requirements-dev.txt — separate dev deps; -r requirements.txt + pytest
+[x] (P2) requirements.txt — added tqdm, argcomplete, anthropic
+[x] (P2) venv warning in pipeline.py — advisory stderr message if no venv active
+[x] (P2) argcomplete wiring — PYTHON_ARGCOMPLETE_OK + autocomplete(parser)
+[x] (P2) README Developer Setup section — direnv + autocomplete activation docs
+
+
+----------------------------------------------------------------------
+DOCS / CLI HELP (completed 2026-04-12)
+----------------------------------------------------------------------
+[x] (P1) Centralized command registry (modules/doc_registry.py)
+    Single source of truth for all commands, flags, examples.
+    Used to generate COMMANDS.txt, README.md sections, COMMANDS.html.
+
+[x] (P1) generate-docs subcommand
+    python3 pipeline.py generate-docs [--dry-run] [--format ...] [--output-dir DIR]
+    Regenerates COMMANDS.txt, README.md (spliced), COMMANDS.html.
+
+[x] (P1) validate-docs subcommand
+    python3 pipeline.py validate-docs [--strict]
+    Reports missing/stale commands. --strict exits 1 for CI/pre-commit use.
+
+[x] (P2) Pre-commit hook script
+    scripts/pre_commit_validate_docs.sh — copy to .git/hooks/pre-commit.
+    Blocks commits when docs are out of sync with the registry.
+
+[ ] (P3) When adding a new subcommand:
+    1. Add entry to modules/doc_registry.py REGISTRY list
+    2. Run: python3 pipeline.py generate-docs
+    3. Commit COMMANDS.txt, README.md, COMMANDS.html alongside pipeline.py changes
 
 
 ----------------------------------------------------------------------
@@ -123,6 +326,24 @@ DISCOVERED DURING SESSION (2026-04-07)
 
 
 ----------------------------------------------------------------------
+AUDIT-QUALITY FOLLOW-UPS
+----------------------------------------------------------------------
+[ ] (P2) set-builder: honour quality_tier — exclude LOW tracks from auto sets
+    Filter LOW from the set-builder candidate pool, or add --exclude-low flag.
+    File: modules/set_builder.py + pipeline.py set-builder subcommand
+
+[ ] (P3) audit-quality: quality-tier playlists
+    Generate LOW.m3u8 / MEDIUM.m3u8 / HIGH.m3u8 / LOSSLESS.m3u8 under M3U_DIR/Quality/
+    Useful for reviewing problem tracks in Rekordbox.
+    File: modules/playlists.py or audit_quality.py
+
+[ ] (P3) audit-quality: re-check already-tagged files incrementally
+    If quality_tier is already set in DB and file is unchanged, skip re-probe.
+    Speeds up repeated runs on large libraries.
+    File: modules/audit_quality.py
+
+
+----------------------------------------------------------------------
 DONE
 ----------------------------------------------------------------------
 [x] Initial pipeline implementation
@@ -132,6 +353,9 @@ DONE
 [x] Rekordbox export
 [x] MIK-first refactor (v1.1.0)
 [x] convert-audio subcommand: .m4a → .aiff (v1.2.0)
+[x] Sanitizer: strip leading track-index junk before pipe (v1.3.0)
+[x] audit-quality subcommand: codec/bitrate audit, report, move, tag (v1.4.0)
+[x] Artist merge: three-category classification + normalization fix + 77 tests (v1.7.0)
 
 
 ======================================================================

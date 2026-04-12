@@ -129,6 +129,9 @@ LABEL_CLEAN_THRESHOLD = 0.85    # minimum confidence for automatic tag write-bac
 # metadata-clean subcommand
 METADATA_CLEAN_REPORT_DIR = LOGS_DIR / "metadata_clean"
 
+# audit-quality subcommand
+AUDIT_QUALITY_REPORT_DIR  = REPORTS_DIR / "audit_quality"
+
 # cue-suggest subcommand
 CUE_SUGGEST_OUTPUT_DIR    = LOGS_DIR / "cue_suggest"
 CUE_SUGGEST_WRITE_SIDECARS = False    # write .cues.json sidecar next to each audio file
@@ -171,7 +174,7 @@ PLAYLIST_MIN_TRACKS = 2
 # ---------------------------------------------------------------------------
 # Pipeline metadata
 # ---------------------------------------------------------------------------
-PIPELINE_VERSION = "1.2.0"
+PIPELINE_VERSION = "1.4.0"
 
 # ---------------------------------------------------------------------------
 # rmlint binary (override if not in PATH)

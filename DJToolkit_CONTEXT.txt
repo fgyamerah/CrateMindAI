@@ -1,8 +1,8 @@
 ======================================================================
 DJTOOLKIT (TrackIQ) — PROJECT CONTEXT
-Version : 1.2.0
+Version : 1.7.0 (backend v0.6.2 web app)
 Platform: Ubuntu Studio 24 (Linux)
-Updated : 2026-04-07 (housekeeping pass)
+Updated : 2026-04-12
 ======================================================================
 
 
@@ -17,6 +17,7 @@ Design principles:
 - Idempotent
 - Rekordbox-compatible output
 - MIK-first: Mixed In Key is the authoritative source of BPM, key, and cues
+- Backend API: FastAPI wrapper around the CLI (Phase 1 complete)
 
 
 ----------------------------------------------------------------------
@@ -49,6 +50,8 @@ MODULES:
 - set_builder / harmonic
 - label_intel (external data enrichment)
 - convert_audio (.m4a → .aiff with parallel ffmpeg, metadata preservation, archive)
+- audit_quality (codec/bitrate audit; quality tier classification; CSV/JSON reports)
+- artist_merge (consolidate artist folder spelling variants; three-category classification)
 
 DATA FLOW:
 Audio → QC → Dedup → Organize → Sanitize → Analyze → Tag → Playlists → Export
@@ -78,6 +81,13 @@ REKORDBOX XML:
 - --force-xml enables it with a warning. Use only when MIK is not in use.
 - M3U playlist generation is always enabled (safe, does not affect MIK state).
 
+SANITIZER (sanitize_text):
+- Step 0: strip leading track-index junk before first pipe
+  Pattern: `^[^\w\s]*(?:\d+|[A-Za-z])\s*\|\s*`
+  Removes "2 | ", "A | ", "***3 | " etc. at start of string only.
+  Mid-string pipes and multi-letter words before pipe are untouched.
+- Steps 1–9: URL removal, promo phrases, symbol cleanup, artifact cleanup.
+
 IDEMPOTENCY:
 - TXXX:PROCESSED=1
 - DB status='ok'
@@ -97,6 +107,7 @@ Key subcommands:
 - analyze-missing
 - dedupe
 - convert-audio           (new v1.2.0: .m4a → .aiff with parallel ffmpeg)
+- audit-quality           (new v1.4.0: codec/bitrate audit, classify, CSV/JSON report, optional move/tag)
 - label-intel
 - cue-suggest             (disabled in pipeline by default; --force-cue-suggest)
 - metadata-clean
@@ -104,6 +115,28 @@ Key subcommands:
 - tag-normalize
 - db-prune-stale
 - label-clean
+- generate-docs           (new v1.5.0: regenerate COMMANDS.txt / README.md / COMMANDS.html from registry)
+- validate-docs           (new v1.5.0: check docs are in sync with registry; --strict for CI)
+
+DEV ENVIRONMENT (v1.6.0):
+- .envrc — direnv auto-activates .venv on cd; warns if .venv missing.
+  Install: sudo apt install direnv; add hook to shell; run: direnv allow .
+- requirements.txt — runtime deps (mutagen, numpy, librosa, tqdm, argcomplete, anthropic, requests, bs4)
+- requirements-dev.txt — -r requirements.txt + pytest>=7.4.0
+- pipeline.py startup: _warn_if_no_venv() advisory stderr if no venv detected (non-fatal)
+- pipeline.py autocomplete: PYTHON_ARGCOMPLETE_OK marker + argcomplete.autocomplete(parser)
+  Activate: eval "$(register-python-argcomplete pipeline.py)"
+  Or globally: activate-global-python-argcomplete
+
+DOCUMENTATION SYSTEM (v1.5.0):
+- modules/doc_registry.py — COMMAND_REGISTRY is the single source of truth for all
+  CLI commands, flags, descriptions, and examples.
+- modules/doc_gen.py      — Generators for COMMANDS.txt, README.md sections, COMMANDS.html.
+- generate-docs / validate-docs subcommands in pipeline.py.
+- Optional pre-commit hook: scripts/pre_commit_validate_docs.sh
+  Install: cp scripts/pre_commit_validate_docs.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+- README.md Subcommands section is now between <!-- COMMANDS:START --> / <!-- COMMANDS:END --> markers.
+- When adding a new subcommand: update doc_registry.py, then run generate-docs.
 
 Important flags:
 --duration
@@ -114,10 +147,143 @@ Important flags:
 
 
 ----------------------------------------------------------------------
+BACKEND API (backend/ — v0.6.x)
+----------------------------------------------------------------------
+FastAPI backend wrapper around the existing CLI. Full feature set as of 2026-04-12.
+
+Run:
+  pip install -r backend/requirements.txt
+  uvicorn backend.app.main:app --reload --port 8000
+
+Job lifecycle: pending → running → succeeded / failed / cancelled
+Log files:    backend/data/logs/{job_id}.log (written live by subprocess)
+Jobs DB:      backend/data/jobs.db (separate SQLite, NOT the pipeline processed.db)
+
+Security model:
+  - ALLOWED_COMMANDS frozenset (18 subcommands)
+  - Boolean flags: _ALLOWED_BOOL_FLAGS frozenset
+  - Value flags: _ALLOWED_VALUE_FLAGS dict with per-flag validators
+  - subprocess always built as an argument list (shell=False enforced)
+  - Bad input → HTTP 422 with exact disallowed token named
+
+Job model extra fields (added v0.5):
+  pid, progress_current, progress_total, progress_percent, progress_message
+  Added via _add_column_safe() migration in init_db() (idempotent, safe on existing DB)
+
+Process registry (backend/app/services/process_registry.py):
+  Shared dict[job_id → asyncio.subprocess.Process] + set[cancelling_ids].
+  POST /api/jobs/{id}/cancel calls request_cancel() → SIGTERM.
+  Background tasks check is_cancelling() to choose 'cancelled' vs 'failed'.
+
+Route files (backend/app/api/routes/):
+  health.py      GET /api/health, GET /api/version
+  jobs.py        POST/GET /api/jobs, GET/GET /api/jobs/{id}/logs, POST /api/jobs/{id}/cancel
+  tracks.py      GET /api/tracks, /api/tracks/{id}, /api/tracks/stats, /api/tracks/issues
+  analysis.py    POST /api/analysis/bpm-check, GET /api/analysis/bpm-anomalies,
+                 PATCH /api/analysis/bpm-anomalies/{id}, POST /api/analysis/reanalyze
+  playlists.py   POST /api/playlists/set-builder, GET /api/playlists, GET /api/playlists/{id}
+  exports.py     POST /api/exports/validate, POST /api/exports/run,
+                 GET /api/exports, GET /api/exports/{id}
+  sync.py        GET /api/sync/config, POST /api/sync/preview, POST /api/sync/run,
+                 GET /api/sync, GET /api/sync/{id}
+
+SSD Sync (backend/app/services/rsync_runner.py):
+  Source: SYNC_SOURCE_MAP = {"library": ..., "inbox": ...} — never raw user paths.
+  Dest: SYNC_DEST_SSD = /mnt/music_ssd/KKDJ/ — not user-configurable.
+  No --delete by default; user must enable allow_delete=True.
+  Progress: parses rsync --info=progress2 (to-chk=remaining/total), throttled 1s DB writes.
+
+BPM analysis (backend/app/services/bpm_analysis.py):
+  Stores anomalies in bpm_anomalies table in jobs.db.
+  Anomaly reasons: missing_bpm, too_low_10x, likely_halved, likely_doubled, too_high.
+  Review statuses: pending, reviewed, ignored, requeued, resolved.
+
+Frontend (React + Vite + TypeScript):
+  Dev server: cd frontend && npm install && npm run dev  (port 5173)
+  Proxy:      vite.config.ts forwards /api/* → http://localhost:8000
+  Build:      npm run build → frontend/dist/
+  Pages:      Dashboard, Jobs, Tracks, BpmReview, SetBuilder, Export, SsdSync, Settings
+  Icons:      lucide-react@1.8.0
+
+Files:
+  backend/app/main.py
+  backend/app/core/config.py, db.py, pipeline_db.py
+  backend/app/models/job.py
+  backend/app/schemas/job.py, track.py, playlist.py, bpm_analysis.py, export.py, sync.py
+  backend/app/services/job_service.py, toolkit_runner.py, track_service.py,
+                        playlist_service.py, bpm_analysis.py, export_validation.py,
+                        rsync_runner.py, process_registry.py
+  backend/app/api/routes/health.py, jobs.py, tracks.py, analysis.py,
+                          playlists.py, exports.py, sync.py
+  frontend/src/pages/{Dashboard,Jobs,Tracks,BpmReview,SetBuilder,Export,SsdSync,Settings}.tsx
+  frontend/src/components/{Sidebar,PageHeader,Layout,LogModal,StatusBadge,ErrorBanner,TrackPanel}.tsx
+
+----------------------------------------------------------------------
+AUDIT QUALITY (modules/audit_quality.py — v1.4.0)
+----------------------------------------------------------------------
+audit-quality subcommand: classify every audio file by codec/bitrate.
+
+Quality tiers:
+  LOSSLESS  FLAC / ALAC / WAV / AIFF (codec-based; bitrate ignored)
+  HIGH      lossy >= 256 kbps
+  MEDIUM    lossy 192–255 kbps  (lower bound: --min-lossy-kbps, default 192)
+  LOW       lossy < 192 kbps
+  UNKNOWN   ffprobe failure or unrecognized codec
+
+Default behavior: non-destructive (probe + classify + report; no moves, no tag writes)
+
+Optional actions:
+  --move-low-quality DIR   move only LOW files; relative folder structure preserved
+  --write-tags             write QUALITY tag per file
+    MP3  : TXXX:QUALITY (ID3v2.3)
+    FLAC : QUALITY Vorbis comment
+    M4A  : ----:com.apple.iTunes:QUALITY MP4 freeform atom
+    AIFF/WAV: skipped safely
+  --dry-run                log intentions; no file writes; no report files
+
+Report output: logs/reports/audit_quality/audit_quality_TIMESTAMP.{csv,json}
+DB: quality_tier TEXT column added to tracks table via migration in init_db()
+
+
+----------------------------------------------------------------------
+ARTIST MERGE (modules/artist_merge.py — v1.7.0)
+----------------------------------------------------------------------
+artist-merge subcommand: consolidate artist folder spelling variants.
+
+Three-category classification:
+  SAFE_ALIAS          Difference is formatting/punctuation/casing only.
+                      Examples: "Heavy-K"/"Heavy K", "H.O.S.H"/"HOSH",
+                      "Rosalie"/"Rosalie.", "culoe de song"/"Culoe De Song"
+  SAME_PRIMARY_COLLAB Primary artist matches after normalization; ≥1 folder
+                      has a feat/ft/comma collab suffix.
+                      Examples: "Heavy-K"/"Heavy-K feat. Davido"
+  AMBIGUOUS           Primary artists differ after full normalization.
+                      Never auto-merged; written to review report only.
+
+Both SAFE_ALIAS and SAME_PRIMARY_COLLAB are applied in --apply mode.
+AMBIGUOUS groups are always skipped.
+
+Normalization for comparison (_normalize_primary_for_compare):
+  NFC unicode → lowercase → strip periods/apostrophes/quotes → hyphen/underscore→space
+  → collapse spaces. This is applied AFTER extract_primary_artist() so collab suffixes
+  do not affect the comparison.
+
+Canonical name selection (_pick_canonical):
+  Most files wins. Tiebreakers: penalise all-uppercase (HOSH < H.O.S.H),
+  penalise all-lowercase (culoe < Culoe De Song), then alphabetical.
+  Collab folder names are never chosen as canonical.
+
+Report: logs/reports/artist_merge/artist_merge_{dry_run|applied}.json
+  Sections: safe_alias_merges, same_primary_collab_merges, ambiguous_merges
+
+Tests: tests/test_artist_merge.py — 77 tests
+
+
+----------------------------------------------------------------------
 DATABASE
 ----------------------------------------------------------------------
 SQLite tables:
-- tracks
+- tracks          (quality_tier TEXT column added v1.4.0 via migration)
 - track_history
 - pipeline_runs
 - duplicate_groups

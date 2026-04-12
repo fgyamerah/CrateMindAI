@@ -1,0 +1,11 @@
+# DJ Toolkit — Backend (FastAPI) dependencies
+#
+# Install into the same venv as the toolkit:
+#   pip install -r backend/requirements.txt
+#
+# Run:
+#   uvicorn backend.app.main:app --reload --port 8000
+
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.7.0
