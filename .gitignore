@@ -1,27 +1,98 @@
-config_local.py
-*.pyo
-*.egg-info/
+# =========================
+# ENV / SECRETS
+# =========================
 .env
+.env.*
+.envrc
 .envrc.local
+config_local.py
 
-# music files
+# =========================
+# PYTHON
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+
+# =========================
+# AI / PREVIEW OUTPUTS
+# =========================
+preview*.json
+*_preview.json
+full_preview.json
+
+# Claude / prompt logs
+last-prompts/
+
+# =========================
+# AI DATASETS (LOCAL ONLY)
+# =========================
+data/intelligence/
+*.jsonl
+
+# =========================
+# CACHE / TEMP
+# =========================
+cache/
+.cache/
+*.tmp
+*.cache
+
+# =========================
+# DATABASES
+# =========================
+*.db
+*.sqlite
+
+# Backend runtime data (jobs DB + logs)
+backend/data/
+
+# =========================
+# LOGS
+# =========================
+_LOGS/
+*.log
+
+# =========================
+# AUDIO FILES (DO NOT TRACK)
+# =========================
 *.mp3
 *.wav
 *.flac
 *.aiff
+*.aac
+*.m4a
+*.ogg
 
-# large data
-data/
-cache/
-.cache/
+# =========================
+# ARCHIVES
+# =========================
+*.zip
+*.tar
+*.gz
 
-# python
-__pycache__/
-*.pyc
-.venv/
+# =========================
+# NODE / FRONTEND
+# =========================
+node_modules/
+dist/
+build/
 
-# LLM prompt logs (auto-generated, potentially large)
-last-prompts/
+# =========================
+# EDITOR / OS
+# =========================
+.vscode/
+.idea/
+.DS_Store
+*.swp
 
-# Backend runtime data (jobs DB + log files)
-backend/data/
+# =========================
+# EXTERNAL / MOUNTED PATHS
+# =========================
+mnt/
