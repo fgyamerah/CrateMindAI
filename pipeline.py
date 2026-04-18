@@ -2880,6 +2880,145 @@ def main() -> None:
         ),
     )
 
+    # ----- artist-intelligence subcommand -----
+    p_ari = subparsers.add_parser(
+        "artist-intelligence",
+        help="Deterministic artist normalization, alias resolution, and review queue",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Artist Intelligence — deterministic artist normalization layer.\n\n"
+            "Parses compound artist strings, resolves canonical names via the\n"
+            "alias store, and proposes corrected artist tags.  Changes are shown\n"
+            "as a diff preview and only written when --apply is explicitly passed.\n\n"
+            "Safe by design:\n"
+            "  • Preview is the default — no writes without --apply\n"
+            "  • Never rewrites the title field\n"
+            "  • Never moves '(feat ...)' from title into the artist field\n"
+            "  • Low-confidence candidates go to the review queue, not auto-applied\n\n"
+            "Alias store  : data/intelligence/artist_aliases.json\n"
+            "Review queue : data/intelligence/artist_review_queue.json\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py artist-intelligence --input /mnt/music_ssd/inbox --dry-run\n"
+            "  python3 pipeline.py artist-intelligence --input /mnt/music_ssd/inbox --limit 20\n"
+            "  python3 pipeline.py artist-intelligence --input /mnt/music_ssd/inbox --apply\n"
+            "  python3 pipeline.py artist-intelligence --input /mnt/music_ssd/inbox --output-json preview.json\n"
+        ),
+    )
+    p_ari.add_argument(
+        "--input", metavar="DIR", required=True,
+        help="Directory of audio files to process (scanned recursively)",
+    )
+    p_ari.add_argument(
+        "--limit", metavar="N", type=int, default=50,
+        help="Maximum number of files to process in this run. Default: 50",
+    )
+    p_ari.add_argument(
+        "--dry-run", action="store_true",
+        help="Parse and show diffs — write no files",
+    )
+    p_ari.add_argument(
+        "--apply", action="store_true",
+        help="Write high-confidence changes to audio file tags. Cannot be combined with --dry-run.",
+    )
+    p_ari.add_argument(
+        "--min-confidence", metavar="FLOAT", type=float, default=0.90,
+        dest="min_confidence",
+        help="Minimum confidence (0.0–1.0) required to apply a change. Default: 0.90",
+    )
+    p_ari.add_argument(
+        "--output-json", metavar="FILE", default=None, dest="output_json",
+        help="Save the full diff preview to this JSON file.",
+    )
+    p_ari.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Enable debug logging",
+    )
+
+    # ----- ai-normalize subcommand -----
+    p_ain = subparsers.add_parser(
+        "ai-normalize",
+        help="Use a local Ollama model to propose normalized metadata (safe preview by default)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "AI-assisted metadata normalization using a local Ollama model.\n\n"
+            "The model proposes normalized artist, title, version, label, remixers,\n"
+            "and featured_artists for each track. Changes are shown as a diff preview\n"
+            "and only written when --apply is explicitly passed.\n\n"
+            "Safe by design:\n"
+            "  • Default mode is preview — no file changes without --apply\n"
+            "  • Only writes: artist, title (+ version), label\n"
+            "  • Never touches BPM, key, cue points, or genre\n"
+            "  • Skips tracks where confidence < --min-confidence\n\n"
+            "Requirements:\n"
+            "  Ollama must be running locally: ollama serve\n"
+            "  Model must be pulled:           ollama pull qwen2.5-coder:3b\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py ai-normalize --input ~/Music/test_batch --dry-run\n"
+            "  python3 pipeline.py ai-normalize --input ~/Music/test_batch --limit 20\n"
+            "  python3 pipeline.py ai-normalize --input ~/Music/inbox --output-json preview.json\n"
+            "  python3 pipeline.py ai-normalize --input ~/Music/inbox --apply --min-confidence 0.85\n"
+            "  python3 pipeline.py ai-normalize --input ~/Music/inbox --model qwen2.5:3b\n"
+        ),
+    )
+    p_ain.add_argument(
+        "--input", metavar="DIR", required=True,
+        help="Directory of audio files to normalize (scanned recursively)",
+    )
+    p_ain.add_argument(
+        "--model", metavar="MODEL",
+        default=config.OLLAMA_DEFAULT_MODEL,
+        help=f"Ollama model name to use. Default: {config.OLLAMA_DEFAULT_MODEL}",
+    )
+    p_ain.add_argument(
+        "--ollama-url", metavar="URL",
+        default=config.OLLAMA_BASE_URL,
+        dest="ollama_url",
+        help=f"Ollama server base URL. Default: {config.OLLAMA_BASE_URL}",
+    )
+    p_ain.add_argument(
+        "--timeout", metavar="SECS", type=int,
+        default=config.OLLAMA_TIMEOUT,
+        help=f"Per-request timeout in seconds. Default: {config.OLLAMA_TIMEOUT}",
+    )
+    p_ain.add_argument(
+        "--limit", metavar="N", type=int,
+        default=50,
+        help="Maximum number of files to process in this run. Default: 50",
+    )
+    p_ain.add_argument(
+        "--dry-run", action="store_true",
+        help="Run AI inference and show diffs — write no files",
+    )
+    p_ain.add_argument(
+        "--apply", action="store_true",
+        help=(
+            "Write high-confidence changes to audio file tags. "
+            "Cannot be combined with --dry-run."
+        ),
+    )
+    p_ain.add_argument(
+        "--min-confidence", metavar="FLOAT", type=float,
+        default=0.75,
+        dest="min_confidence",
+        help=(
+            "Minimum model confidence (0.0–1.0) required to apply a change. "
+            "Default: 0.75"
+        ),
+    )
+    p_ain.add_argument(
+        "--output-json", metavar="FILE",
+        default=None,
+        dest="output_json",
+        help=(
+            "Save the full diff preview to this JSON file. "
+            "Useful for reviewing proposals before running --apply."
+        ),
+    )
+    p_ain.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Enable debug logging",
+    )
+
     # Warn if running outside a virtualenv (advisory only, non-fatal)
     _warn_if_no_venv()
 
@@ -2947,6 +3086,14 @@ def main() -> None:
 
     if args.command == "harmonic-suggest":
         sys.exit(run_harmonic_suggest(args))
+
+    if args.command == "artist-intelligence":
+        from artist_intelligence.runner import run_artist_intelligence
+        sys.exit(run_artist_intelligence(args))
+
+    if args.command == "ai-normalize":
+        from ai.normalizer import run_ai_normalize
+        sys.exit(run_ai_normalize(args))
 
     if args.label_enrich_from_library:
         sys.exit(run_label_enrichment_from_library(args.verbose))

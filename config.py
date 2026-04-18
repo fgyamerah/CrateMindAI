@@ -193,6 +193,25 @@ FFMPEG_BIN     = os.environ.get("FFMPEG_BIN",  "ffmpeg")
 BEET_BIN       = os.environ.get("BEET_BIN", "beet")
 
 # ---------------------------------------------------------------------------
+# Artist Intelligence (artist-intelligence subcommand)
+# Deterministic normalization, alias resolution, and review queue.
+# Data lives in the project repo at data/intelligence/ (version-controlled).
+# Override paths in config_local.py if needed.
+# ---------------------------------------------------------------------------
+_INTEL_DIR          = Path(__file__).parent / "data" / "intelligence"
+ARTIST_ALIAS_STORE  = _INTEL_DIR / "artist_aliases.json"
+ARTIST_REVIEW_QUEUE = _INTEL_DIR / "artist_review_queue.json"
+
+# ---------------------------------------------------------------------------
+# AI normalization (ai-normalize subcommand)
+# Local Ollama inference — no cloud, no API keys required.
+# Override in config_local.py or via env vars if your Ollama runs elsewhere.
+# ---------------------------------------------------------------------------
+OLLAMA_BASE_URL      = os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
+OLLAMA_DEFAULT_MODEL = os.environ.get("OLLAMA_MODEL",    "qwen2.5:3b")
+OLLAMA_TIMEOUT       = int(os.environ.get("OLLAMA_TIMEOUT", "120"))
+
+# ---------------------------------------------------------------------------
 # Local overrides (git-ignored, create config_local.py to override anything)
 # ---------------------------------------------------------------------------
 try:

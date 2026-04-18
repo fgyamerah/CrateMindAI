@@ -1,0 +1,228 @@
+[
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/&lez - Setter (Original Mix).mp3",
+    "current_artist": "&lez",
+    "proposed_artist": null,
+    "confidence": 1.0,
+    "changes": [],
+    "applied": false,
+    "skipped_reason": null,
+    "review_queued": false,
+    "notes": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/'Whatcha Call Me'.m4a",
+    "current_artist": "Kinnerman",
+    "proposed_artist": null,
+    "confidence": 1.0,
+    "changes": [],
+    "applied": false,
+    "skipped_reason": null,
+    "review_queued": false,
+    "notes": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/00. Webaba.mp3",
+    "current_artist": "Culoe de Song",
+    "proposed_artist": null,
+    "confidence": 1.0,
+    "changes": [],
+    "applied": false,
+    "skipped_reason": null,
+    "review_queued": false,
+    "notes": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/003. Axwell ^ Ingrosso - More Than You Know .mp3",
+    "current_artist": "Axwell & Ingrosso",
+    "proposed_artist": "Axwell, Ingrosso",
+    "confidence": 1.0,
+    "changes": [
+      {
+        "field": "artist",
+        "old": "Axwell & Ingrosso",
+        "new": "Axwell, Ingrosso"
+      }
+    ],
+    "applied": false,
+    "skipped_reason": null,
+    "review_queued": false,
+    "notes": "split on 'ampersand': ['Axwell', 'Ingrosso']"
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/009 - Dele Sosimi - Turbulent Times (Armonica Remix).mp3",
+    "current_artist": "Dele Sosimi",
+    "proposed_artist": null,
+    "confidence": 1.0,
+    "changes": [],
+    "applied": false,
+    "skipped_reason": null,
+    "review_queued": false,
+    "notes": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/009. David Mayer, Floyd Lavine - Sondela fea.mp3",
+    "current_artist": "David Mayer, Floyd Lavine",
+    "proposed_artist": null,
+    "confidence": 1.0,
+    "changes": [],
+    "applied": false,
+    "skipped_reason": null,
+    "review_queued": false,
+    "notes": "split on 'comma': ['David Mayer', 'Floyd Lavine']"
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01 - 2point1 Feat. Butana & Phlyvocals - Batho Bana (Acapela).mp3",
+    "current_artist": "2point1 Feat. Butana & Phlyvocals",
+    "proposed_artist": null,
+    "confidence": 1.0,
+    "changes": [],
+    "applied": false,
+    "skipped_reason": null,
+    "review_queued": false,
+    "notes": "feat extracted from artist field: 'Butana & Phlyvocals'"
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01 - Gary Caos - Blow Yo Mind (Original Mi-1.mp3",
+    "current_artist": "Gary Caos",
+    "proposed_artist": null,
+    "confidence": 1.0,
+    "changes": [],
+    "applied": false,
+    "skipped_reason": null,
+    "review_queued": false,
+    "notes": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01 Atjazz - Ooto (Out Of The Ordinary Origin.mp3",
+    "current_artist": "Atjazz",
+    "proposed_artist": null,
+    "confidence": 1.0,
+    "changes": [],
+    "applied": false,
+    "skipped_reason": null,
+    "review_queued": false,
+    "notes": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01 Dirty Cash (Money Talks) -Sold Ou.mp3",
+    "current_artist": "Adventures Of Stevie V",
+    "proposed_artist": null,
+    "confidence": 1.0,
+    "changes": [],
+    "applied": false,
+    "skipped_reason": null,
+    "review_queued": false,
+    "notes": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01 Goodbye (feat_ Prudence) [DukeSoul's Late Night Mix].mp3",
+    "current_artist": "DukeSoul",
+    "proposed_artist": null,
+    "confidence": 1.0,
+    "changes": [],
+    "applied": false,
+    "skipped_reason": null,
+    "review_queued": false,
+    "notes": "feat token in title — not extracted from artist"
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01 Lonely Street.mp3",
+    "current_artist": "Club Rayo",
+    "proposed_artist": null,
+    "confidence": 1.0,
+    "changes": [],
+    "applied": false,
+    "skipped_reason": null,
+    "review_queued": false,
+    "notes": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01 Over You.mp3",
+    "current_artist": "Limpopo Rhythm; Pulse",
+    "proposed_artist": null,
+    "confidence": 1.0,
+    "changes": [],
+    "applied": false,
+    "skipped_reason": null,
+    "review_queued": false,
+    "notes": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01 To Live For.mp3",
+    "current_artist": "Rabs Vhafuwi",
+    "proposed_artist": null,
+    "confidence": 1.0,
+    "changes": [],
+    "applied": false,
+    "skipped_reason": null,
+    "review_queued": false,
+    "notes": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01 Venice Beach (Original Mix).mp3",
+    "current_artist": "DJ Moy",
+    "proposed_artist": null,
+    "confidence": 1.0,
+    "changes": [],
+    "applied": false,
+    "skipped_reason": null,
+    "review_queued": false,
+    "notes": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01 jump off (hollen remix).mp3",
+    "current_artist": "Piemont",
+    "proposed_artist": null,
+    "confidence": 1.0,
+    "changes": [],
+    "applied": false,
+    "skipped_reason": null,
+    "review_queued": false,
+    "notes": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01-Nikos Diamantopoulos-Marimba & Drums Ft. Jovolos.mp3",
+    "current_artist": "Nikos Diamantopoulos",
+    "proposed_artist": null,
+    "confidence": 1.0,
+    "changes": [],
+    "applied": false,
+    "skipped_reason": null,
+    "review_queued": false,
+    "notes": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01-cane_garden_quartet_feat._dj_r_-_shine_a_light_on_me-soulful www.0daymusic.org.mp3",
+    "current_artist": "Cane Garden Quartet Feat. DJ R",
+    "proposed_artist": null,
+    "confidence": 1.0,
+    "changes": [],
+    "applied": false,
+    "skipped_reason": null,
+    "review_queued": false,
+    "notes": "feat extracted from artist field: 'DJ R'"
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01. Dj Léo Mix - Bantwinny (Original Mix).mp3",
+    "current_artist": "Dj Léo Mix",
+    "proposed_artist": null,
+    "confidence": 1.0,
+    "changes": [],
+    "applied": false,
+    "skipped_reason": null,
+    "review_queued": false,
+    "notes": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01. Love Will (feat. Bilal) [Breyth Remix].mp3",
+    "current_artist": "Boddhi Satva",
+    "proposed_artist": null,
+    "confidence": 1.0,
+    "changes": [],
+    "applied": false,
+    "skipped_reason": null,
+    "review_queued": false,
+    "notes": "feat token in title — not extracted from artist"
+  }
+]

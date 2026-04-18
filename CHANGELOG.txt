@@ -7,6 +7,82 @@ Rules:
 - Always include: TYPE, SUMMARY, DETAILS, FILES, IMPACT, NOTES
 - Focus on WHY, not just WHAT
 
+----------------------------------------------------------------------
+[2026-04-15] — Implement artist-intelligence subcommand (Phase 1)
+----------------------------------------------------------------------
+TYPE: New feature
+SUMMARY: Adds `python3 pipeline.py artist-intelligence` — a deterministic,
+         preview-first artist normalization layer sitting after ai-normalize
+         in the intelligence pipeline. No LLM required.
+DETAILS:
+  - Parses compound artist strings (commas, &, x, vs, feat) into typed entities
+  - Resolves canonical names via a JSON alias store (data/intelligence/artist_aliases.json)
+  - Low-confidence candidates written to review queue, never auto-applied
+  - Hard house-style rules: feat in title is never moved to artist field
+  - Designed for label_intelligence to follow the same schema/store/runner pattern
+FILES:
+  - artist_intelligence/__init__.py        — new package
+  - artist_intelligence/artist_schema.py   — ArtistEntity, ArtistParseResult
+  - artist_intelligence/artist_normalizer.py — unicode/whitespace/feat normalization
+  - artist_intelligence/artist_parser.py   — deterministic splitting
+  - artist_intelligence/artist_alias_store.py — alias store + review queue
+  - artist_intelligence/runner.py          — CLI entry point
+  - data/intelligence/artist_aliases.json  — seed: Heavy K / Heavy-K mapping
+  - config.py                              — ARTIST_ALIAS_STORE, ARTIST_REVIEW_QUEUE
+  - pipeline.py                            — argparse subcommand + dispatch
+IMPACT: No changes to existing pipeline behavior. New subcommand only.
+NOTES: data/intelligence/ is in-repo (version-controlled), not on music SSD.
+
+----------------------------------------------------------------------
+[2026-04-15] — Add ai-normalize subcommand (local Ollama metadata proposals)
+----------------------------------------------------------------------
+TYPE: New feature
+SUMMARY: Adds `python3 pipeline.py ai-normalize` — a safe, preview-first
+  workflow that uses a local Ollama LLM to propose normalized artist/title/
+  version/label/remixers/featured_artists metadata for a batch of audio files.
+
+DETAILS:
+  - New ai/ package: ollama_client.py (urllib, no new deps), metadata_schema.py
+    (strict validated dataclass), normalizer.py (prompt builder, JSON extractor,
+    diff engine, apply step, CLI entry point)
+  - OllamaClient uses stdlib urllib.request; healthcheck + generate endpoints
+  - NormalizedMetadata.from_dict() tolerates malformed model output (wrong types,
+    sentinel strings, confidence out of range) — never raises
+  - _extract_json() handles plain JSON, markdown code fences, and mixed text
+  - compute_diff() only surfaces fields where the proposal is non-empty AND
+    different from the current value — no spurious diffs
+  - apply_normalized() writes using mutagen easy tags (same pattern as
+    sanitizer._write_tags); artist + featured_artists combined to "A feat. B";
+    title + version combined to "Track (Original Mix)"
+  - Reuses parse_filename_stem() for deterministic pre-AI context
+  - Reuses sanitize_text() to strip residual junk from model output
+  - Reuses config.AUDIO_EXTENSIONS + same rglob dedup pattern as _collect_inbox()
+  - Safe by design: preview is the default; --apply is required to write anything;
+    --min-confidence gate (default 0.75); BPM/key/cue never touched
+  - config.py gains OLLAMA_BASE_URL, OLLAMA_DEFAULT_MODEL, OLLAMA_TIMEOUT
+    (all overridable via env vars or config_local.py)
+
+FILES:
+  ai/__init__.py          (new)
+  ai/ollama_client.py     (new)
+  ai/metadata_schema.py   (new)
+  ai/normalizer.py        (new)
+  config.py               (added OLLAMA_* constants)
+  pipeline.py             (ai-normalize subparser + lazy dispatch import)
+
+IMPACT: Additive only. No existing module changed structurally. The lazy import
+  (`from ai.normalizer import run_ai_normalize`) means the ai/ package is never
+  loaded unless the user explicitly runs the ai-normalize subcommand, so there is
+  zero startup-time cost for all other commands.
+
+NOTES:
+  - Default model: qwen2.5-coder:3b (already installed per user setup)
+  - Ollama must be running: `ollama serve`
+  - No cloud calls; no API keys; fully local inference
+  - v1 scope: artist, title, version, label, remixers, featured_artists only
+    (no BPM, key, genre, energy — those are MIK-owned or handled elsewhere)
+
+
 
 ----------------------------------------------------------------------
 [2026-04-12] — Documentation update: README.md rewritten to reflect current state

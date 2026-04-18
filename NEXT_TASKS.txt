@@ -17,7 +17,20 @@ P3 = low
 ----------------------------------------------------------------------
 CURRENT FOCUS
 ----------------------------------------------------------------------
-(nothing active — docs updated 2026-04-12; see DONE below)
+[~] (P1) Artist Intelligence — Phase 1 complete; Phase 2 open (see below)
+
+
+----------------------------------------------------------------------
+ARTIST INTELLIGENCE (Phase 1 complete 2026-04-15)
+----------------------------------------------------------------------
+[x] (P1) artist_intelligence package: schema, normalizer, parser, alias store, runner
+[x] (P1) CLI: artist-intelligence subcommand wired into pipeline.py
+[x] (P1) Config: ARTIST_ALIAS_STORE, ARTIST_REVIEW_QUEUE paths added
+[x] (P1) Seed alias: Heavy K / Heavy-K in data/intelligence/artist_aliases.json
+[ ] (P2) Phase 2: populate alias store from existing library scan (auto-discover variants)
+[ ] (P2) Phase 2: add --add-alias CLI flag (artist-intelligence --add-alias "Heavy-K" "Heavy K")
+[ ] (P2) Phase 2: review queue approval workflow (artist-intelligence --approve-queue)
+[ ] (P3) Future: label_intelligence package mirroring this same pattern
 
 
 ----------------------------------------------------------------------
@@ -309,10 +322,22 @@ PIPELINE INFRASTRUCTURE
     Store config JSON in pipeline_runs table
     Enables debugging of historical runs
 
-[ ] (P3) LLM metadata assist integration
-    Use Claude for:
-      - genre inference
-      - metadata disambiguation
+[x] (P2) Local AI metadata normalization (ai-normalize subcommand, 2026-04-15)
+    Ollama-backed; preview-first; safe write with --apply + --min-confidence gate.
+    Files: ai/__init__.py, ai/ollama_client.py, ai/metadata_schema.py, ai/normalizer.py
+    Config keys: OLLAMA_BASE_URL, OLLAMA_DEFAULT_MODEL, OLLAMA_TIMEOUT
+
+[ ] (P3) ai-normalize: add --resume / skip-already-normalized flag
+    Skip files whose tags were already written by a previous --apply run
+    (detect via a TXXX:AI_NORMALIZED custom ID3 marker, similar to TXXX:PROCESSED)
+
+[ ] (P3) ai-normalize: batch mode with rate limiting for large libraries
+    Currently processes one file at a time. Could parallelize with a thread pool
+    and add a --workers flag (safe since Ollama handles concurrent requests).
+
+[ ] (P3) LLM metadata assist integration via Claude API
+    Use Claude for genre inference / metadata disambiguation (cloud fallback
+    when Ollama is not available). Wire through utils/llm_client.py.
     File: utils/llm_client.py
 
 

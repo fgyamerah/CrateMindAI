@@ -1,0 +1,234 @@
+[
+  {
+    "file": "/mnt/music_ssd/00-blackhole_to_fix/3A - DJ Ganyani - Angesabi (feat Toshi).mp3",
+    "current_tags": {
+      "title": "Angesabi (feat Toshi)",
+      "artist": "DJ Ganyani",
+      "album": "",
+      "genre": "Afro House",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "DJ Ganyani",
+      "title": "Angesabi (feat Toshi)",
+      "version": null,
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole_to_fix/Christos Fourkis - Djembe Fever (Original Mix).mp3",
+    "current_tags": {
+      "title": "Djembe Fever",
+      "artist": "Christos Fourkis",
+      "album": "",
+      "genre": "Afro House",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "Christos Fourkis",
+      "title": "Djembe Fever",
+      "version": "Original Mix",
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [
+      {
+        "field": "title",
+        "old": "Djembe Fever",
+        "new": "Djembe Fever (Original Mix)"
+      }
+    ],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole_to_fix/Echo Deep - Kuana (Original Mix).mp3",
+    "current_tags": {
+      "title": "Kuana",
+      "artist": "Echo Deep",
+      "album": "",
+      "genre": "Afro House",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "Echo Deep",
+      "title": "Kuana",
+      "version": "Original Mix",
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [
+      {
+        "field": "title",
+        "old": "Kuana",
+        "new": "Kuana (Original Mix)"
+      }
+    ],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole_to_fix/Echo Deep - Nastee Flavour.mp3",
+    "current_tags": {
+      "title": "Nastee Flavour",
+      "artist": "Echo Deep",
+      "album": "",
+      "genre": "Deep House",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "Echo Deep",
+      "title": "Nastee Flavour",
+      "version": null,
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole_to_fix/Rob Hayes - Feel The Heat (Original Mix).mp3",
+    "current_tags": {
+      "title": "Feel The Heat",
+      "artist": "Rob Hayes",
+      "album": "",
+      "genre": "House",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "Rob Hayes",
+      "title": "Feel The Heat",
+      "version": "Original Mix",
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [
+      {
+        "field": "title",
+        "old": "Feel The Heat",
+        "new": "Feel The Heat (Original Mix)"
+      }
+    ],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole_to_fix/Rob Hayes - Midas Touched (Extended Mix).mp3",
+    "current_tags": {
+      "title": "Midas Touched (Extended Mix)",
+      "artist": "Rob Hayes",
+      "album": "",
+      "genre": "House",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "Rob Hayes",
+      "title": "Midas Touched (Extended Mix)",
+      "version": null,
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole_to_fix/Rob Hayes - You Do Something to Me (feat Rebecca Burgin).mp3",
+    "current_tags": {
+      "title": "You Do Something to Me (feat Rebecca Burgin)",
+      "artist": "Rob Hayes",
+      "album": "",
+      "genre": "House",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "Rob Hayes",
+      "title": "You Do Something to Me (feat Rebecca Burgin)",
+      "version": null,
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole_to_fix/Zico House Junkie - Unsung (Original Mix).mp3",
+    "current_tags": {
+      "title": "Unsung",
+      "artist": "Zico House Junkie",
+      "album": "",
+      "genre": "Afro House",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "Zico House Junkie",
+      "title": "Unsung",
+      "version": "Original Mix",
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [
+      {
+        "field": "title",
+        "old": "Unsung",
+        "new": "Unsung (Original Mix)"
+      }
+    ],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  }
+]

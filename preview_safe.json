@@ -1,0 +1,604 @@
+[
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/&lez - Setter (Original Mix).mp3",
+    "current_tags": {
+      "title": "3 | Setter (Original Mix)",
+      "artist": "&lez",
+      "album": "TraxCrate.com",
+      "genre": "Afro Tech",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "&lez",
+      "title": "3 | Setter (Original Mix)",
+      "version": null,
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": "string or null"
+    },
+    "changes": [],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/'Whatcha Call Me'.m4a",
+    "current_tags": {
+      "title": "3 | 'Whatcha Call Me'",
+      "artist": "Kinnerman",
+      "album": "",
+      "genre": "House",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "Kinnerman",
+      "title": "'Whatcha Call Me'",
+      "version": null,
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": "string or null"
+    },
+    "changes": [
+      {
+        "field": "title",
+        "old": "3 | 'Whatcha Call Me'",
+        "new": "'Whatcha Call Me'"
+      }
+    ],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/00. Webaba.mp3",
+    "current_tags": {
+      "title": "1 | Webaba",
+      "artist": "Culoe de Song",
+      "album": "[non-album tracks]",
+      "genre": "Afro House",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "Culoe de Song",
+      "title": "Webaba",
+      "version": null,
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [
+      {
+        "field": "title",
+        "old": "1 | Webaba",
+        "new": "Webaba"
+      }
+    ],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/003. Axwell ^ Ingrosso - More Than You Know .mp3",
+    "current_tags": {
+      "title": "3 | More Than You Know (Extended Mix)",
+      "artist": "Axwell & Ingrosso",
+      "album": "",
+      "genre": "Dance",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "Axwell & Ingrosso",
+      "title": "3 | More Than You Know (Extended Mix)",
+      "version": null,
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/009 - Dele Sosimi - Turbulent Times (Armonica Remix).mp3",
+    "current_tags": {
+      "title": "Turbulent Times (Armonica Remix)",
+      "artist": "Dele Sosimi",
+      "album": "Techno Jungle // Afro House / Tribal Beats",
+      "genre": "Electro",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "Dele Sosimi",
+      "title": "Turbulent Times (Armonica Remix)",
+      "version": null,
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/009. David Mayer, Floyd Lavine - Sondela fea.mp3",
+    "current_tags": {
+      "title": "3 | Sondela feat. Xolisa (Original Mix)",
+      "artist": "David Mayer, Floyd Lavine",
+      "album": "Sondela EP",
+      "genre": "Afro House",
+      "comment": "",
+      "organization": "Connected Frontline"
+    },
+    "proposed": {
+      "artist": "David Mayer, Floyd Lavine",
+      "title": "3 | Sondela feat. Xolisa (Original Mix)",
+      "version": null,
+      "label": "Connected Frontline",
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": "(empty)"
+    },
+    "changes": [],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01 - 2point1 Feat. Butana & Phlyvocals - Batho Bana (Acapela).mp3",
+    "current_tags": {
+      "title": "Batho Bana (Acapela) ",
+      "artist": "2point1 Feat. Butana & Phlyvocals",
+      "album": "WWW.MAISMUSICAPRO.COM",
+      "genre": "Afro House",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "2point1 Feat. Butana & Phlyvocals",
+      "title": "Batho Bana (Acapela)",
+      "version": null,
+      "label": null,
+      "remixers": [],
+      "featured_artists": [
+        "Butana"
+      ],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [
+      {
+        "field": "artist",
+        "old": "2point1 Feat. Butana & Phlyvocals",
+        "new": "2point1 Feat. Butana & Phlyvocals feat. Butana"
+      }
+    ],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01 - Gary Caos - Blow Yo Mind (Original Mi-1.mp3",
+    "current_tags": {
+      "title": "3 | Blow Yo Mind (Original Mix)",
+      "artist": "Gary Caos",
+      "album": "",
+      "genre": "House",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "Gary Caos",
+      "title": "3 | Blow Yo Mind (Original Mix)",
+      "version": null,
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01 Atjazz - Ooto (Out Of The Ordinary Origin.mp3",
+    "current_tags": {
+      "title": "2 | Ooto (Out Of The Ordinary) (Original Mix)",
+      "artist": "Atjazz",
+      "album": "10 Years Of NuLu",
+      "genre": "Afro House",
+      "comment": "",
+      "organization": "Nulu"
+    },
+    "proposed": {
+      "artist": "Atjazz",
+      "title": "2 | Ooto (Out Of The Ordinary) (Original Mix)",
+      "version": null,
+      "label": "Nulu",
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": "(empty)"
+    },
+    "changes": [],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01 Dirty Cash (Money Talks) -Sold Ou.mp3",
+    "current_tags": {
+      "title": "2 | Dirty Cash (Money Talks) [Sold Out Mix]",
+      "artist": "Adventures Of Stevie V",
+      "album": "Dirty Cash (Money Talks) [David Morales Remix] {Maxi}",
+      "genre": "House",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "Adventures Of Stevie V",
+      "title": "Dirty Cash (Money Talks) [Sold Out Mix]",
+      "version": null,
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [
+      {
+        "field": "title",
+        "old": "2 | Dirty Cash (Money Talks) [Sold Out Mix]",
+        "new": "Dirty Cash (Money Talks) [Sold Out Mix]"
+      }
+    ],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01 Goodbye (feat_ Prudence) [DukeSoul's Late Night Mix].mp3",
+    "current_tags": {
+      "title": "1 | Goodbye (feat. Prudence) [DukeSoul's Late Night Mix]",
+      "artist": "DukeSoul",
+      "album": "My Harmonic Journey",
+      "genre": "Deep House",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "DukeSoul",
+      "title": "Goodbye (feat. Prudence) [DukeSoul's Late Night Mix]",
+      "version": null,
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [
+      {
+        "field": "title",
+        "old": "1 | Goodbye (feat. Prudence) [DukeSoul's Late Night Mix]",
+        "new": "Goodbye (feat. Prudence) [DukeSoul's Late Night Mix]"
+      }
+    ],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01 Lonely Street.mp3",
+    "current_tags": {
+      "title": "2 | Lonely Street",
+      "artist": "Club Rayo",
+      "album": "Floppy Disk EP",
+      "genre": "Tech House",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "Club Rayo",
+      "title": "Lonely Street",
+      "version": null,
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [
+      {
+        "field": "title",
+        "old": "2 | Lonely Street",
+        "new": "Lonely Street"
+      }
+    ],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01 Over You.mp3",
+    "current_tags": {
+      "title": "2 | Over You",
+      "artist": "Limpopo Rhythm; Pulse",
+      "album": "DREAM",
+      "genre": "Afro House",
+      "comment": "",
+      "organization": "Tambor Projects"
+    },
+    "proposed": {
+      "artist": "Limpopo Rhythm; Pulse",
+      "title": "Over You",
+      "version": null,
+      "label": "Tambor Projects",
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": "string or null"
+    },
+    "changes": [
+      {
+        "field": "title",
+        "old": "2 | Over You",
+        "new": "Over You"
+      }
+    ],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01 To Live For.mp3",
+    "current_tags": {
+      "title": "2 | To Live For",
+      "artist": "Rabs Vhafuwi",
+      "album": "Unboxed",
+      "genre": "Afro House",
+      "comment": "",
+      "organization": "FreezeTheMoment Productions"
+    },
+    "proposed": {
+      "artist": "Rabs Vhafuwi",
+      "title": "To Live For",
+      "version": null,
+      "label": "FreezeTheMoment Productions",
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": "string or null"
+    },
+    "changes": [
+      {
+        "field": "title",
+        "old": "2 | To Live For",
+        "new": "To Live For"
+      }
+    ],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01 Venice Beach (Original Mix).mp3",
+    "current_tags": {
+      "title": "1 | Venice Beach (Original Mix)",
+      "artist": "DJ Moy",
+      "album": "Miami Nu Disco 2017",
+      "genre": "Nu Disco",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "DJ Moy",
+      "title": "1 | Venice Beach (Original Mix)",
+      "version": null,
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": "string or null"
+    },
+    "changes": [],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01 jump off (hollen remix).mp3",
+    "current_tags": {
+      "title": "3 | Jump Off (Hollen Remix)",
+      "artist": "Piemont",
+      "album": "Jump Off",
+      "genre": "Techno",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "Piemont",
+      "title": "jump off (Hollen Remix)",
+      "version": null,
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [
+      {
+        "field": "title",
+        "old": "3 | Jump Off (Hollen Remix)",
+        "new": "jump off (Hollen Remix)"
+      }
+    ],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01-Nikos Diamantopoulos-Marimba & Drums Ft. Jovolos.mp3",
+    "current_tags": {
+      "title": "1 | Marimba & Drums Ft. Jovolos",
+      "artist": "Nikos Diamantopoulos",
+      "album": "www.tukillas-s.net",
+      "genre": "Afro House",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "Nikos Diamantopoulos",
+      "title": "Marimba & Drums Ft. Jovolos",
+      "version": null,
+      "label": null,
+      "remixers": [],
+      "featured_artists": [
+        "Jovolos"
+      ],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [
+      {
+        "field": "artist",
+        "old": "Nikos Diamantopoulos",
+        "new": "Nikos Diamantopoulos feat. Jovolos"
+      },
+      {
+        "field": "title",
+        "old": "1 | Marimba & Drums Ft. Jovolos",
+        "new": "Marimba & Drums Ft. Jovolos"
+      }
+    ],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01-cane_garden_quartet_feat._dj_r_-_shine_a_light_on_me-soulful www.0daymusic.org.mp3",
+    "current_tags": {
+      "title": "1 | Shine A Light on Me",
+      "artist": "Cane Garden Quartet Feat. DJ R",
+      "album": "Deep Soulful Vocal House Vol. 2",
+      "genre": "House",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "Cane Garden Quartet Feat. DJ R",
+      "title": "Shine A Light on Me",
+      "version": null,
+      "label": null,
+      "remixers": [],
+      "featured_artists": [
+        "DJ R"
+      ],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [
+      {
+        "field": "artist",
+        "old": "Cane Garden Quartet Feat. DJ R",
+        "new": "Cane Garden Quartet Feat. DJ R feat. DJ R"
+      },
+      {
+        "field": "title",
+        "old": "1 | Shine A Light on Me",
+        "new": "Shine A Light on Me"
+      }
+    ],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01. Dj Léo Mix - Bantwinny (Original Mix).mp3",
+    "current_tags": {
+      "title": "1 | Bantwinny (Original Mix)",
+      "artist": "Dj Léo Mix",
+      "album": "Djing & Dance",
+      "genre": "Afro House",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "Dj Léo Mix",
+      "title": "1 | Bantwinny (Original Mix)",
+      "version": null,
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  },
+  {
+    "file": "/mnt/music_ssd/00-blackhole/Shiit/01. Love Will (feat. Bilal) [Breyth Remix].mp3",
+    "current_tags": {
+      "title": "***2 | Love Will (feat. Bilal) [Breyth Remix]",
+      "artist": "Boddhi Satva",
+      "album": "The Remixes Part 1",
+      "genre": "House",
+      "comment": "",
+      "organization": ""
+    },
+    "proposed": {
+      "artist": "Boddhi Satva",
+      "title": "***2 | Love Will (feat. Bilal) [Breyth Remix]",
+      "version": null,
+      "label": null,
+      "remixers": [],
+      "featured_artists": [],
+      "confidence": 0.85,
+      "notes": null
+    },
+    "changes": [],
+    "confidence": 0.85,
+    "applied": false,
+    "skipped_reason": null,
+    "error": null
+  }
+]

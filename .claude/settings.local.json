@@ -22,7 +22,9 @@
       "Read(//home/koolkatdj/.local/bin/**)",
       "Bash(command -v pnpm)",
       "Bash(command -v yarn)",
-      "Read(//usr/**)"
+      "Read(//usr/**)",
+      "Bash(grep:*)",
+      "Bash(ls -la /home/koolkatdj/code/apps/djtoolkit/modules/*.py)"
     ]
   },
   "hooks": {
