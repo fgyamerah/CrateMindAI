@@ -212,6 +212,45 @@ OLLAMA_DEFAULT_MODEL = os.environ.get("OLLAMA_MODEL",    "qwen2.5:3b")
 OLLAMA_TIMEOUT       = int(os.environ.get("OLLAMA_TIMEOUT", "120"))
 
 # ---------------------------------------------------------------------------
+# Review dataset (ai-normalize → training data pipeline)
+# JSONL files under data/intelligence/ — one object per line.
+# Accumulated across runs; never truncated by the pipeline.
+# ---------------------------------------------------------------------------
+AI_REVIEW_QUEUE      = _INTEL_DIR / "review_queue.jsonl"
+AI_ACCEPTED_EXAMPLES = _INTEL_DIR / "accepted_examples.jsonl"
+AI_REJECTED_EXAMPLES = _INTEL_DIR / "rejected_examples.jsonl"
+AI_REVIEW_DECISIONS  = _INTEL_DIR / "review_decisions.jsonl"
+AI_FEWSHOT_EXAMPLES  = _INTEL_DIR / "fewshot_examples.jsonl"
+
+# ---------------------------------------------------------------------------
+# Online metadata enrichment (metadata-enrich-online subcommand)
+#
+# Spotify: obtain credentials at https://developer.spotify.com/dashboard
+#   1. Create an app (name/description can be anything).
+#   2. Copy the Client ID and Client Secret.
+#   3. Set the env vars below, or override in config_local.py.
+#
+# Deezer:  no credentials required — public API, no sign-up needed.
+#
+# Extension point: when traxsource_lookup.py is added, add its config here.
+# ---------------------------------------------------------------------------
+SPOTIFY_CLIENT_ID     = os.environ.get("SPOTIFY_CLIENT_ID",     "")
+SPOTIFY_CLIENT_SECRET = os.environ.get("SPOTIFY_CLIENT_SECRET", "")
+
+# Minimum confidence to auto-apply an online enrichment change.
+# Higher than ai-normalize's 0.75 because string matching is noisier than
+# local model inference.  ISRC exact matches always score 0.98 and will
+# pass this threshold.
+ENRICH_ONLINE_MIN_CONFIDENCE = float(
+    os.environ.get("ENRICH_ONLINE_MIN_CONFIDENCE", "0.80")
+)
+
+# Dataset JSONL files for the enrichment pipeline
+AI_ENRICH_QUEUE    = _INTEL_DIR / "enrichment_queue.jsonl"
+AI_ENRICH_ACCEPTED = _INTEL_DIR / "enrichment_accepted.jsonl"
+AI_ENRICH_REJECTED = _INTEL_DIR / "enrichment_rejected.jsonl"
+
+# ---------------------------------------------------------------------------
 # Local overrides (git-ignored, create config_local.py to override anything)
 # ---------------------------------------------------------------------------
 try:

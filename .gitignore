@@ -15,6 +15,9 @@ __pycache__/
 *.pyo
 *.pyd
 *.egg-info/
+build/
+dist/
+*.whl
 
 # Virtual environments
 .venv/
@@ -35,6 +38,7 @@ last-prompts/
 # =========================
 data/intelligence/
 *.jsonl
+ai/review_dataset.py
 
 # =========================
 # CACHE / TEMP
@@ -49,8 +53,6 @@ cache/
 # =========================
 *.db
 *.sqlite
-
-# Backend runtime data (jobs DB + logs)
 backend/data/
 
 # =========================
@@ -90,9 +92,47 @@ build/
 .vscode/
 .idea/
 .DS_Store
+Thumbs.db
 *.swp
+*.lock
 
 # =========================
 # EXTERNAL / MOUNTED PATHS
 # =========================
 mnt/
+
+# =========================
+# DJ LIBRARY (CRITICAL)
+# =========================
+Music/
+music/
+KKDJ/
+*_LIBRARY/
+*_SSD/
+
+# =========================
+# EXPORTS
+# =========================
+exports/
+output/
+*.m3u
+*.xml
+
+# =========================
+# TEST / COVERAGE
+# =========================
+.coverage
+htmlcov/
+.pytest_cache/
+
+# =========================
+# LOCAL AI MODELS
+# =========================
+*.gguf
+ollama_models/
+
+# temp dev files
+*_pass.txt
+*_run.txt
+preview.txt
+sample_codes/

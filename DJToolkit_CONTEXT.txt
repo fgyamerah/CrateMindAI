@@ -2,7 +2,7 @@
 DJTOOLKIT (TrackIQ) — PROJECT CONTEXT
 Version : 1.7.0 (backend v0.6.2 web app)
 Platform: Ubuntu Studio 24 (Linux)
-Updated : 2026-04-12
+Updated : 2026-04-18
 ======================================================================
 
 
@@ -112,6 +112,12 @@ Key subcommands:
 - cue-suggest             (disabled in pipeline by default; --force-cue-suggest)
 - metadata-clean
 - artist-merge / artist-folder-clean
+- ai-normalize            (local Ollama LLM metadata proposals; --apply to write; 0.75 min-confidence)
+                          --pre-sanitize: run metadata-sanitize before inference so model sees clean tags;
+                          respects --apply (both steps preview without it; both write with it)
+- artist-intelligence     (deterministic artist normalization + alias store; intelligence/artist/)
+- metadata-enrich-online  (Spotify + Deezer enrichment; 0.80 min-confidence; intelligence/enrichment/)
+- build-fewshot           (curate few-shot examples from accepted ai-normalize decisions)
 - tag-normalize
 - db-prune-stale
 - label-clean
@@ -243,6 +249,95 @@ Optional actions:
 
 Report output: logs/reports/audit_quality/audit_quality_TIMESTAMP.{csv,json}
 DB: quality_tier TEXT column added to tracks table via migration in init_db()
+
+
+----------------------------------------------------------------------
+ONLINE METADATA ENRICHMENT (intelligence/enrichment/ — 2026-04-18)
+----------------------------------------------------------------------
+metadata-enrich-online subcommand: fill missing album/label/ISRC tags via
+Spotify Web API (primary) and Deezer API (fallback). Preview-first; --apply
+to write. Never writes artist field.
+
+Package layout (intelligence/enrichment/):
+  enrichment_schema.py  — EnrichmentCandidate, EnrichmentMatch dataclasses
+  metadata_matcher.py   — weighted similarity scoring + ISRC exact match + change policy
+  spotify_lookup.py     — SpotifyClient (client credentials OAuth2, token cache)
+  deezer_lookup.py      — DeezerClient (public API, no auth)
+  runner.py             — orchestrator: search → score → preview/apply → log
+
+Scoring weights:
+  artist_sim  0.35   title_sim (base, version stripped)  0.30
+  version_sim 0.25   label_sim  0.10
+  ISRC exact match → confidence 0.98 (overrides formula)
+  Label alias boost: +0.05 when current + candidate labels are in the same alias group
+
+Min confidence threshold: ENRICH_ONLINE_MIN_CONFIDENCE = 0.80 (was 0.92)
+  - Overridable via ENRICH_ONLINE_MIN_CONFIDENCE env var or --min-confidence flag
+
+Hard safeguards (metadata_matcher.best_match — applied after scoring):
+  1. Version mismatch: if BOTH titles carry explicit but DIFFERENT version tokens:
+       confidence capped at 0.74, proposed_changes cleared, reason prefixed
+       "VERSION MISMATCH BLOCKED".  Missing version on either side → NOT a mismatch.
+  2. Low artist similarity: if artist_sim < 0.90 (and no ISRC anchor):
+       confidence capped at 0.74.  Proposed changes KEPT for preview.
+       Reason prefixed "LOW ARTIST SIM (x.xx) — auto-apply blocked".
+  Neither safeguard fires when an ISRC exact match (0.98) anchors the result.
+
+Change policy (safety rules):
+  artist       : NEVER proposed
+  title        : only if current is blank, or ISRC matched + base differs
+  album        : if current is empty, or ISRC matched
+  label        : if current is empty; or ISRC matched + conf >= 0.95
+  isrc         : only if not already set
+
+Dataset logging:
+  AI_ENRICH_QUEUE    = data/intelligence/enrichment_queue.jsonl    (every result)
+  AI_ENRICH_ACCEPTED = data/intelligence/enrichment_accepted.jsonl (applied only)
+  AI_ENRICH_REJECTED = data/intelligence/enrichment_rejected.jsonl (skipped/errors)
+
+Source priority (runner._search_with_fallback):
+  1. Spotify ISRC       — most precise; skipped when file has no ISRC
+  2. Spotify artist+title
+  3. Deezer             — fallback when Spotify conf < 0.70
+  4. Traxsource         — dance-music specialist fallback; triggered when:
+                          a) best-so-far < 0.80, OR
+                          b) genre tag contains house/afro/deep/soulful/amapiano/etc.
+  Winning = highest confidence across all sources tried.
+  EnrichmentMatch.sources_tried records which APIs were queried.
+
+Extension points (not yet implemented):
+  - Album-detail API call for Spotify/Deezer to retrieve record label
+  - Traxsource CSS selectors should be verified against live site before production
+
+Config keys:
+  SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET (env var backed)
+  ENRICH_ONLINE_MIN_CONFIDENCE = 0.80
+  AI_ENRICH_{QUEUE,ACCEPTED,REJECTED}
+
+
+----------------------------------------------------------------------
+AI NORMALIZE (ai/ — 2026-04-15)
+----------------------------------------------------------------------
+ai-normalize subcommand: local Ollama LLM proposals for artist/title/version/
+label/remixers/featured_artists. Preview-first; --apply to write.
+
+Review dataset pipeline (ai/review_dataset.py):
+  write_queue_entry()    — called after every file (preview + apply modes)
+  write_accepted()       — called when changes are auto-applied
+  write_rejected()       — called when skipped or errored
+  build_fewshot(limit)   — curates diverse subset from accepted_examples.jsonl
+  load_fewshot_examples()— helper for future prompt injection (not yet wired)
+
+JSONL dataset files (data/intelligence/):
+  review_queue.jsonl, accepted_examples.jsonl, rejected_examples.jsonl,
+  review_decisions.jsonl, fewshot_examples.jsonl
+
+Config keys:
+  OLLAMA_BASE_URL, OLLAMA_DEFAULT_MODEL, OLLAMA_TIMEOUT
+  AI_REVIEW_{QUEUE,ACCEPTED_EXAMPLES,REJECTED_EXAMPLES,DECISIONS,FEWSHOT_EXAMPLES}
+
+Min confidence: 0.75 (--min-confidence flag)
+Dataset logging is non-fatal; import failure does not break ai-normalize.
 
 
 ----------------------------------------------------------------------

@@ -41,7 +41,7 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from artist_intelligence.artist_normalizer import normalize_artist_string
+from intelligence.artist.artist_normalizer import normalize_artist_string
 
 log = logging.getLogger(__name__)
 

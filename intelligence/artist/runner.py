@@ -30,10 +30,10 @@ from typing import Dict, List, Optional, Tuple
 
 import config
 from ai.normalizer import _collect_files, _read_full_tags, _apply_tags
-from artist_intelligence.artist_schema import ArtistParseResult
-from artist_intelligence.artist_parser import parse_artist_string
-from artist_intelligence.artist_normalizer import normalize_artist_string, names_are_equivalent
-from artist_intelligence.artist_alias_store import ArtistAliasStore, ArtistReviewQueue
+from intelligence.artist.artist_schema import ArtistParseResult
+from intelligence.artist.artist_parser import parse_artist_string
+from intelligence.artist.artist_normalizer import normalize_artist_string, names_are_equivalent
+from intelligence.artist.artist_alias_store import ArtistAliasStore, ArtistReviewQueue
 
 log = logging.getLogger(__name__)
 

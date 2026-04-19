@@ -30,8 +30,8 @@ from __future__ import annotations
 import re
 from typing import List, Optional, Tuple
 
-from artist_intelligence.artist_schema import ArtistEntity, ArtistParseResult
-from artist_intelligence.artist_normalizer import normalize_artist_string
+from intelligence.artist.artist_schema import ArtistEntity, ArtistParseResult
+from intelligence.artist.artist_normalizer import normalize_artist_string
 
 
 # ---------------------------------------------------------------------------

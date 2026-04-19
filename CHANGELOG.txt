@@ -8,6 +8,508 @@ Rules:
 - Focus on WHY, not just WHAT
 
 ----------------------------------------------------------------------
+[2026-04-19] — ai-normalize: add --pre-sanitize flag to run metadata-sanitize first
+----------------------------------------------------------------------
+TYPE: New flag (additive, no behavior change when absent)
+SUMMARY: Adds --pre-sanitize to the ai-normalize subcommand. When present, runs
+         metadata-sanitize --apply on the input path before AI inference begins,
+         so the model receives clean tags rather than junk-polluted input.
+
+DETAILS:
+- New argument registered in the ai-normalize subparser in pipeline.py
+- Dispatch block checks getattr(args, "pre_sanitize", False) before calling
+  run_ai_normalize; if True, constructs a sanitize Namespace and calls
+  run_metadata_sanitize() first
+- Sanitize Namespace forwards: input, apply, limit, verbose from the parent args;
+  output_json is always None (sanitize JSON log not needed in this mode)
+- If run_metadata_sanitize() exits non-zero, the dispatch aborts before ai-normalize
+  runs — partial sanitize failure never feeds a broken state into the model
+- --apply is the single write gate for both steps:
+    no --apply → sanitize previews, ai-normalize previews
+    --apply    → sanitize writes to disk, ai-normalize reads clean tags and writes
+- Without --pre-sanitize, the ai-normalize dispatch path is byte-for-byte identical
+  to before — zero regression risk
+- modules/metadata_sanitize.py and ai/normalizer.py are not modified
+
+FILES:
+- pipeline.py (subparser: 1 add_argument call; dispatch: ~10 lines)
+- DJToolkit_CONTEXT.txt (ai-normalize entry updated)
+- NEXT_TASKS.txt (task marked done)
+
+DEFERRED:
+- --output-json for the sanitize step is not forwarded (not useful in this mode)
+- No combined summary output merging both steps' results
+
+----------------------------------------------------------------------
+[2026-04-18] — metadata-sanitize: clear album/label fields containing email addresses
+----------------------------------------------------------------------
+TYPE: Bug fix
+SUMMARY: Email-like strings (e.g. "privateftpmusic@gmail.com") were partially stripped
+         to "privateftpmusic@" because sanitize_text() removed the domain but left the
+         local-part prefix. The entire field value must be cleared when an email is present.
+
+DETAILS:
+- Added _RE_EMAIL regex: \b[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}\b
+- _sanitize_album(): email check runs first, before URL/path/dots/sanitize_text()
+  → clears value with reason code album_junk_email
+- _sanitize_label(): email check runs first, before placeholder and whitespace checks
+  → clears value with reason code label_junk_email
+- title and artist fields are not affected (per design: no full-clear on those fields)
+- Rule is deterministic: any email match → clear; partial strips are no longer possible
+
+FILES:
+- modules/metadata_sanitize.py
+
+----------------------------------------------------------------------
+[2026-04-18] — metadata-sanitize: fix single-file input + AIFF fixture corruption
+----------------------------------------------------------------------
+TYPE: Bug fix (2 bugs)
+SUMMARY: Running metadata-sanitize with --input pointing to a single file returned
+         "No audio files found". Separately, tc21 AIFF fixture was always read as
+         CORRUPT due to wrong mutagen class used when writing the fixture.
+
+DETAILS:
+Bug 1 — single-file input:
+- _collect_files() only called rglob() which requires a directory.
+- Added early guard: if input_path.is_file(), return [input_path] directly.
+
+Bug 2 — AIFF fixture malformed:
+- tests/create_sanitize_fixtures.py wrote AIFF tags using bare ID3().save(aiff_path),
+  which produces a raw ID3 file, not a valid AIFF+ID3 container.
+  MFile(easy=True) then raised "can't sync to MPEG frame" and marked the file CORRUPT.
+- _write_aiff_id3_tsrc() now uses mutagen.aiff.AIFF, adds tags, and saves —
+  the same interface used by _read_isrc/_clear_isrc in the module itself.
+
+FILES:
+- modules/metadata_sanitize.py (_collect_files one-line guard)
+- tests/create_sanitize_fixtures.py (_write_aiff_id3_tsrc rewritten)
+
+----------------------------------------------------------------------
+[2026-04-18] — metadata-sanitize: fix slash false positive in album path-fragment detection
+----------------------------------------------------------------------
+TYPE: Bug fix
+SUMMARY: Album values containing "/" were cleared as path fragments, incorrectly
+         deleting legitimate names like "AC/DC", "Black/White Remixes", "His/Hers".
+
+DETAILS:
+- Old rule: any "/" or "\" anywhere in the value → clear
+- New rule: clear only if value starts with "/" or "\" (Unix absolute path),
+  or contains a Windows drive prefix matching [A-Za-z]:[/\]  (e.g. C:\ or C:/)
+- A single slash between words is not a path signal
+- All other album rules (URL, ellipsis/dots, sanitize_text) unchanged
+
+FILES:
+- modules/metadata_sanitize.py
+
+----------------------------------------------------------------------
+[2026-04-18] — metadata-sanitize: fix ellipsis false positive in album sanitation
+----------------------------------------------------------------------
+TYPE: Bug fix
+SUMMARY: Album values containing a standard ellipsis (...) were incorrectly cleared
+         as junk. "Future...Past", "...And Justice For All", "So..." all triggered
+         the rule and would have been deleted.
+
+DETAILS:
+- Raised dots threshold from \.{3,} to \.{5,}
+- Three consecutive dots are a standard typographic ellipsis and must not trigger
+- Five or more consecutive dots have no legitimate use in an album name
+- Junk cases like "......DJPOOL........" and "Music.....junk" still clear correctly
+- No other album rules affected
+
+FILES:
+- modules/metadata_sanitize.py (one line change)
+
+----------------------------------------------------------------------
+[2026-04-18] — metadata-sanitize: fix ISRC handling for ID3-tagged AIFF files
+----------------------------------------------------------------------
+TYPE: Bug fix
+SUMMARY: AIFF files tagged with ID3 (common in DJ tools) had their ISRC silently
+         skipped because the code went straight to the iTunes freeform atom path.
+
+DETAILS:
+- _read_isrc() and _clear_isrc() now handle .aif/.aiff separately from .m4a
+- For AIFF: try ID3 TSRC first; if ID3 raises or TSRC absent, fall back to
+  the iTunes freeform atom (----:com.apple.iTunes:ISRC)
+- The inner ID3 attempt has its own try/except so a non-ID3 AIFF degrades
+  cleanly to the atom path without surfacing an error
+- For _clear_isrc: clears whichever location holds the ISRC (ID3 takes priority);
+  if ID3 clear succeeds, the atom path is skipped to avoid a redundant open
+- .m4a is now a separate branch (no behavioral change — just clarifies it never
+  needs the ID3 path)
+- MP3 and FLAC paths unchanged
+
+FILES:
+- modules/metadata_sanitize.py
+
+----------------------------------------------------------------------
+[2026-04-18] — metadata-sanitize: fix ISRC clear falsely logged as applied
+----------------------------------------------------------------------
+TYPE: Bug fix
+SUMMARY: ISRC clearing was logged as a successful applied change even when
+         _clear_isrc() silently failed (e.g. unsupported format, I/O error).
+
+DETAILS:
+- _clear_isrc() now returns bool: True if the clear was attempted and saved,
+  False on any exception or unsupported format
+- _apply_sanitized() return type changed from bool to Tuple[bool, set]:
+    (easy_tag_ok, failed_fields)
+  failed_fields is the set of field names whose write did not succeed
+- Call site in run_metadata_sanitize unpacks the tuple and skips log_action
+  for any field in failed_fields
+- A warning is emitted via log.warning when ISRC clear fails so the failure
+  is visible at --verbose level without polluting normal output
+- Title/artist/album/label logging is unaffected
+
+FILES:
+- modules/metadata_sanitize.py
+
+----------------------------------------------------------------------
+[2026-04-18] — metadata-sanitize: fix multi-value artist field data loss
+----------------------------------------------------------------------
+TYPE: Bug fix
+SUMMARY: Artist sanitization now skips files where the artist tag has more than one
+         value (common in FLAC). Previously, reading only [0] and writing back a
+         single string would silently collapse ["Artist A", "Artist B"] into one entry.
+
+DETAILS:
+- _read_tags() now returns (flat_tags, multi_value_fields) in a single file open
+- _sanitize_track() checks multi_value_fields before calling _sanitize_artist()
+- Multi-value artist fields are skipped entirely; no write occurs
+- Skip is surfaced in preview output as [SKIP] artist: skipped_multi_value_artist
+- Skip is written to the text log in --apply mode
+- _write_json_log includes a "skipped" key per track
+- Other fields (title, album, isrc, organization) are still processed normally
+- TrackSanitizeResult gains a skipped: List[str] field
+
+FILES:
+- modules/metadata_sanitize.py
+
+IMPACT: No data loss possible for multi-value FLAC artist tags.
+
+----------------------------------------------------------------------
+[2026-04-18] — New metadata-sanitize command: offline, deterministic tag sanitation
+----------------------------------------------------------------------
+TYPE: New feature / new CLI command
+SUMMARY: Adds a standalone metadata-sanitize subcommand that cleans tags before any
+         enrichment or AI layer runs. Fully offline, no network calls, no AI.
+
+DETAILS:
+- Covers 5 fields: album, isrc, title, artist, organization (label)
+- album:  clears if value contains a URL, path fragment, 3+ consecutive dots, or promo junk
+          (delegates to existing sanitize_text() for URL/domain/promo phrase detection)
+- isrc:   clears if value does not match strict ISRC format (CC-XXX-YY-NNNNNNN or 12-char bare)
+          Accepts standard dash-formatted ISRCs; rejects everything else
+- title:  strips leading numeric prefixes (e.g. "01. Track", "1 | Track") when an explicit
+          separator is present (safe — "01 Luftballons" is NOT stripped)
+          Also fixes duplicated separators, missing spaces before "(", unclosed parens,
+          empty brackets, and multi-space
+- artist: strips URL junk; normalises ft./featuring → feat.; collapses duplicate separators
+- label:  clears pure placeholder junk (unknown/n/a/none/—/???); normalises whitespace
+- Preview is the default; --apply required for writes
+- Every change logged with a reason code to the text log
+- Supports --limit N, --output-json FILE, --verbose
+
+FILES:
+- modules/metadata_sanitize.py  (new)
+- pipeline.py  (subparser + dispatch added)
+
+NOTES:
+- Designed to slot first in the workflow:
+    metadata-sanitize → ai-normalize → artist-intelligence → metadata-enrich-online
+- Does not modify BPM, key, genre, or cue data
+- Safe on clean libraries: zero changes if tags are already clean
+
+----------------------------------------------------------------------
+[2026-04-18] — Junk metadata cleaner pre-enrichment step + --clean-junk-only flag
+----------------------------------------------------------------------
+TYPE: New feature
+SUMMARY: Adds a junk metadata detection and cleanup pass that runs BEFORE the
+         online API search on every file, and a --clean-junk-only mode that skips
+         API calls entirely and just clears garbage tags.
+DETAILS:
+  New functions in intelligence/enrichment/runner.py:
+    is_junk_album(album) → bool
+      Rules (any one match → junk):
+        1. URL/TLD patterns (http/https/www/.com/.net/.org)
+        2. Known piracy watermarks: traxcrate, 0day, zippy, tukillas,
+           maismusicapro, download (whole word), mp3 (whole word),
+           blogspot, soundcloud rip
+        3. More than 2 dots  (domain / filename artifacts)
+        4. Contains / or \  (path fragments)
+        5. Alpha chars >80% uppercase AND automated punctuation pattern
+
+    _clear_easy_tag(path, key) → bool
+      Deletes a single tag key via mutagen easy tags and saves.
+
+    _clean_junk_fields(path, current_tags, do_write, dry_run)
+      Checks is_junk_album(); if junk: logs, clears in current_tags in-place
+      (so the API search below sees cleaned values), writes to disk when
+      do_write=True and dry_run=False.
+
+  Integration (runner.run_metadata_enrich_online):
+    Step 1 (new): _clean_junk_fields() — runs unconditionally before API lookup,
+      even when no match is found or file would otherwise be NO CHANGE.
+    Step 2 (new): if --clean-junk-only, print cleaned fields and continue (skip API).
+    Step 3 (existing): _search_with_fallback() — unchanged, but now receives
+      clean album values from the in-place update in step 1.
+    Summary: "Junk fields cleared: N" always printed; other counters hidden in
+      --clean-junk-only mode.
+
+  New CLI flag (pipeline.py):
+    --clean-junk-only   runs junk cleanup only, no API calls.
+      Default is preview. Combine with --apply to write:
+        python3 pipeline.py metadata-enrich-online --input DIR --clean-junk-only --apply
+
+FILES:
+  intelligence/enrichment/runner.py
+  pipeline.py
+IMPACT: No schema changes. 313 tests pass.
+
+----------------------------------------------------------------------
+[2026-04-18] — Fix version_sim scoring: both-absent case now scores 1.0
+----------------------------------------------------------------------
+TYPE: Bug fix
+SUMMARY: When neither the current title nor the candidate title had a version/remix
+         token, version_sim was 0.0 (penalising a correct match) instead of 1.0.
+         Root cause: _similarity() short-circuits on empty strings, so
+         _similarity("", "") returned 0.0 rather than indicating agreement.
+DETAILS:
+  Replaced the inline _similarity(_extract_version(a), _extract_version(b)) call
+  in score_candidate() with a dedicated _version_sim(title_a, title_b) function
+  that applies explicit rules:
+    Both absent          → 1.0   ("Setter" ↔ "Setter" now scores correctly)
+    Both present, same   → 1.0
+    Both present, differ → 0.0   (hard mismatch, different recording)
+    One present, one not → 0.0   (asymmetric; version unknown)
+
+  Before fix — "Setter" ↔ "Setter" (perfect artist+title match, no version):
+    version_sim = 0.0  →  composite = 0.35×1 + 0.30×1 + 0.25×0 + 0.10×0 = 0.65
+
+  After fix:
+    version_sim = 1.0  →  composite = 0.35×1 + 0.30×1 + 0.25×1 + 0.10×0 = 0.90
+
+FILES:
+  intelligence/enrichment/metadata_matcher.py
+IMPACT: Tracks with no version token now score correctly (0.90 for a perfect
+        artist+title match).  Mismatches and asymmetric cases unchanged.
+        313 tests pass.
+
+----------------------------------------------------------------------
+[2026-04-18] — metadata-enrich-online: tuned scoring, Traxsource specialist fallback
+----------------------------------------------------------------------
+TYPE: Improvement / new feature
+SUMMARY: Three changes to the online enrichment layer:
+         (1) Scoring weights rebalanced — version/remix similarity now weighted
+             more heavily (0.10→0.25) at the expense of base title (0.45→0.30),
+             because version identity is critical in dance music.
+         (2) Two new hard safeguards in best_match(): version mismatch caps at
+             0.74 (was 0.50); artist similarity < 0.90 also caps at 0.74 to
+             block auto-apply without losing the preview.
+         (3) Label alias boost: +0.05 when current label and candidate label are
+             known aliases of each other (13 alias groups seeded).
+         (4) Traxsource scraper as a dance-music specialist third fallback.
+DETAILS:
+  Weights (metadata_matcher.py):
+    title_sim   0.45 → 0.30
+    version_sim 0.10 → 0.25    (artist 0.35, label 0.10 unchanged)
+    Weights sum to 1.00.
+
+  Hard safeguards (metadata_matcher.best_match):
+    Version mismatch: cap 0.50 → 0.74, clear changes (wrong recording).
+    Artist guard:     cap at 0.74 when artist_sim < 0.90 (no ISRC anchor),
+                      keep changes visible in preview.
+    Neither fires for ISRC-confirmed matches.
+
+  Label alias boost (metadata_matcher.score_candidate):
+    _LABEL_ALIAS_GROUPS: 13 groups (Sony/Warner/Universal + Afro house labels).
+    Boost: +0.05 capped at 1.0. Reflected in reason string as [label-alias+0.05].
+
+  Traxsource (intelligence/enrichment/traxsource_lookup.py — new):
+    HTML scraper using requests + BeautifulSoup4.
+    Extracts: artist, title, version/remix, label, release, genre, date.
+    Combined title+version ("Drive" + "Original Mix" → "Drive (Original Mix)").
+    Robust: each row parsed independently; broken rows skipped; all I/O in try/except.
+    Self-test: python3 -m intelligence.enrichment.traxsource_lookup [artist] [title]
+    CSS selectors may need updating if Traxsource restructures its frontend.
+
+  Source priority (runner._search_with_fallback):
+    1. Spotify ISRC
+    2. Spotify artist+title
+    3. Deezer (when Spotify conf < 0.70)
+    4. Traxsource (when best-so-far < 0.80 OR genre is house/Afro/deep/soulful)
+    Winning match = highest confidence across all sources tried.
+
+  Schema changes (enrichment_schema.py):
+    EnrichmentCandidate.genre  — new optional field (Traxsource-provided)
+    EnrichmentMatch.sources_tried — ordered list of sources queried
+    EnrichmentMatch.match_reason  — property alias for .reason
+    to_dict() updated for both dataclasses.
+
+  Other:
+    _DANCE_GENRE_TERMS frozenset — 20 genre terms for Traxsource trigger
+    TraxsourceClient prints "ready" at startup (consistent with Spotify/Deezer)
+    Terminal output now shows "Sources tried: spotify → deezer → traxsource"
+    genre row added to _print_result() block
+    sources_tried and match_reason added to JSONL queue record
+    __init__.py: documented source priority order and extension instructions
+
+FILES:
+  intelligence/enrichment/metadata_matcher.py   (weights, safeguards, alias boost)
+  intelligence/enrichment/traxsource_lookup.py  (new)
+  intelligence/enrichment/enrichment_schema.py  (genre, sources_tried, match_reason)
+  intelligence/enrichment/runner.py             (source-merge, genre detection)
+  intelligence/enrichment/__init__.py           (source priority docs)
+IMPACT: No schema DB changes. 313 tests pass.
+
+----------------------------------------------------------------------
+[2026-04-18] — metadata-enrich-online: lower threshold to 0.80 + version mismatch safeguard
+----------------------------------------------------------------------
+TYPE: Improvement / safety fix
+SUMMARY: Two targeted changes to the metadata-enrich-online subcommand.
+         (1) Default confidence threshold lowered 0.92 → 0.80 to let more
+             high-confidence-but-not-ISRC matches through in practice.
+         (2) Version mismatch safeguard blocks applying a match when the
+             current file title carries an explicit version token (e.g. "Original Mix")
+             and the matched candidate carries a DIFFERENT version token
+             (e.g. "Radio Edit") — different mixdown, same base title.
+DETAILS:
+  Threshold change:
+    config.py:245                         "0.92" → "0.80"
+    intelligence/enrichment/runner.py:16  docstring updated
+    pipeline.py                           two help strings updated
+
+  Version mismatch safeguard (intelligence/enrichment/metadata_matcher.py):
+    + _extract_version_label() helper — returns inner term only ("Original Mix"),
+      distinct from existing _extract_version() which returns the full bracket.
+    + Block in best_match() after _build_changes(): extracts version labels from
+      both current title and top candidate title.  If both are present AND differ
+      (case-insensitive), caps confidence at min(conf, 0.50), clears proposed
+      changes to [], and rewrites reason as "VERSION MISMATCH BLOCKED — ...".
+    + Fires log.info("Blocked due to version mismatch: %s vs %s  (file=%s)", ...)
+
+  Edge cases handled intentionally:
+    - Missing version on EITHER side → allowed through (APIs routinely omit "(Original Mix)")
+    - ISRC exact match + version mismatch → still blocked (Radio Edit ≠ Original Mix master)
+    - Same version both sides → allowed through normally
+
+FILES:
+  config.py
+  intelligence/enrichment/metadata_matcher.py
+  intelligence/enrichment/runner.py
+  pipeline.py
+IMPACT: No schema changes. 313 tests pass. Version-mismatched pairs that previously
+        could slip through at ISRC confidence (0.98) are now safely blocked.
+
+----------------------------------------------------------------------
+[2026-04-18] — Online metadata enrichment layer (metadata-enrich-online)
+----------------------------------------------------------------------
+TYPE: New feature
+SUMMARY: Adds `python3 pipeline.py metadata-enrich-online` — a conservative
+         online enrichment layer using Spotify Web API (primary) and Deezer API
+         (fallback) to fill missing album, label, and ISRC tags.
+DETAILS:
+  New package: intelligence/enrichment/
+    __init__.py           — package doc + Traxsource extension point note
+    enrichment_schema.py  — EnrichmentCandidate, EnrichmentMatch dataclasses
+    metadata_matcher.py   — deterministic scoring (artist/title/version/label
+                            similarity + ISRC exact match at 0.98), change policy
+    spotify_lookup.py     — Spotify Web API (client credentials flow, token cache,
+                            ISRC lookup + artist+title search)
+    deezer_lookup.py      — Deezer public API (no auth, artist+title search)
+    runner.py             — orchestrator: search → score → preview/apply → log
+
+  config.py additions:
+    SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET (env-var-backed)
+    ENRICH_ONLINE_MIN_CONFIDENCE = 0.92
+    AI_ENRICH_QUEUE / AI_ENRICH_ACCEPTED / AI_ENRICH_REJECTED (JSONL paths)
+
+  pipeline.py: metadata-enrich-online subcommand + dispatch
+
+  data/intelligence/: 3 new empty JSONL stubs
+
+SAFETY RULES:
+  - Artist: never written
+  - Title: only if blank, or ISRC matches + base differs
+  - Album: if current is empty, or ISRC match
+  - Label: only if current is empty; high-conf ISRC match required otherwise
+  - ISRC: only if not already set
+  - Min confidence 0.92; ISRC exact match always passes at 0.98
+FILES:
+  intelligence/enrichment/{__init__, enrichment_schema, metadata_matcher,
+    spotify_lookup, deezer_lookup, runner}.py (all new)
+  config.py
+  pipeline.py
+  data/intelligence/enrichment_{queue,accepted,rejected}.jsonl
+IMPACT: No change to existing pipeline. 313 tests pass.
+NOTES: Traxsource not implemented. Extension point documented in
+  intelligence/enrichment/__init__.py and deezer_lookup.py.
+
+----------------------------------------------------------------------
+[2026-04-18] — Restructure: intelligence/ package, remove legacy clutter
+----------------------------------------------------------------------
+TYPE: Refactor (no runtime behaviour change)
+SUMMARY: Moved artist_intelligence/ → intelligence/artist/ and label_intel/
+         → intelligence/label/ into a single intelligence/ namespace. Removed
+         legacy scaffolding, generated preview files, and scratch files from
+         the tracked source tree.
+DETAILS:
+  Moves (git mv, history preserved):
+    artist_intelligence/ → intelligence/artist/
+    label_intel/         → intelligence/label/
+  Import updates:
+    intelligence/artist/artist_alias_store.py   — 1 import
+    intelligence/artist/artist_parser.py        — 2 imports
+    intelligence/artist/runner.py               — 4 imports
+    pipeline.py                                 — 3 import blocks + error strings
+  New file:
+    intelligence/__init__.py
+  Removed (git rm):
+    djtoolkit_label_intelligence_feature/   — 15 files, legacy Claude scaffold
+    sample_codes/                           — 3 scratch files
+    preview.txt                             — generated output
+  Untracked clutter deleted (already gitignored):
+    preview*.json, full_preview.json, artist_preview.json
+    djtoolkit_label_intelligence_feature.zip
+FILES: pipeline.py, intelligence/artist/*.py, config.py (path constants unchanged)
+IMPACT: No API changes. All 313 tests pass. Import paths for artist-intelligence
+        and label-intel subcommands updated throughout.
+MIGRATION: Any script importing from artist_intelligence.* or label_intel.*
+           must change to intelligence.artist.* or intelligence.label.*
+
+----------------------------------------------------------------------
+[2026-04-18] — Review dataset pipeline for ai-normalize
+----------------------------------------------------------------------
+TYPE: New feature
+SUMMARY: Captures ai-normalize decisions into JSONL training datasets and adds
+         a build-fewshot command for curating few-shot prompt examples.
+DETAILS:
+  - ai/review_dataset.py: new module with write_queue_entry(), write_accepted(),
+    write_rejected(), build_fewshot(), and load_fewshot_examples() helpers
+  - data/intelligence/{review_queue,accepted_examples,rejected_examples,
+    review_decisions,fewshot_examples}.jsonl: stub files created
+  - ai/normalizer.py: _normalize_track() returns parsed dict as 4th value;
+    apply_normalized() returns (success, field_map); run_ai_normalize() calls
+    dataset writers after each file in --apply/--dry-run modes
+  - config.py: 5 new path constants (AI_REVIEW_QUEUE, AI_ACCEPTED_EXAMPLES,
+    AI_REJECTED_EXAMPLES, AI_REVIEW_DECISIONS, AI_FEWSHOT_EXAMPLES)
+  - pipeline.py: build-fewshot subcommand wired up
+  - Dataset logging is non-fatal; import failure does not break ai-normalize
+  - Dataset writes only happen in --apply or non-preview modes (not bare preview)
+FILES:
+  ai/review_dataset.py (new)
+  ai/normalizer.py
+  config.py
+  pipeline.py
+  data/intelligence/accepted_examples.jsonl (new, empty)
+  data/intelligence/rejected_examples.jsonl (new, empty)
+  data/intelligence/review_queue.jsonl (new, empty)
+  data/intelligence/review_decisions.jsonl (new, empty)
+  data/intelligence/fewshot_examples.jsonl (new, empty)
+IMPACT: No change to default pipeline behavior; existing tests unaffected.
+NOTES: load_fewshot_examples() is wired but not yet injected into the Ollama
+       prompt — intentionally left for a future session.
+
+----------------------------------------------------------------------
 [2026-04-15] — Implement artist-intelligence subcommand (Phase 1)
 ----------------------------------------------------------------------
 TYPE: New feature

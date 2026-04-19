@@ -411,11 +411,11 @@ def run_label_intel(args) -> int:
         return 2
 
     try:
-        from label_intel.scraper import scrape_labels
-        from label_intel import exporters
+        from intelligence.label.scraper import scrape_labels
+        from intelligence.label import exporters
     except ImportError as exc:
-        log.error("label_intel package not found (%s). "
-                  "Ensure label_intel/ is at the project root.", exc)
+        log.error("intelligence.label package not found (%s). "
+                  "Ensure intelligence/label/ is at the project root.", exc)
         return 2
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -500,14 +500,14 @@ def run_label_enrichment_from_library(verbose: bool = False) -> int:
     _setup_logging(verbose)
 
     try:
-        from label_intel.enrich_from_library import enrich_store_from_tracks
-        from label_intel.store import LabelStore
-        from label_intel.models import LabelRecord
-        from label_intel import exporters
-        from label_intel.utils import normalize_label_name
+        from intelligence.label.enrich_from_library import enrich_store_from_tracks
+        from intelligence.label.store import LabelStore
+        from intelligence.label.models import LabelRecord
+        from intelligence.label import exporters
+        from intelligence.label.utils import normalize_label_name
     except ImportError as exc:
-        log.error("label_intel package not found (%s). "
-                  "Ensure label_intel/ is at the project root.", exc)
+        log.error("intelligence.label package not found (%s). "
+                  "Ensure intelligence/label/ is at the project root.", exc)
         return 2
 
     import json as _json
@@ -665,14 +665,14 @@ def run_label_clean(args) -> int:
     _setup_logging(getattr(args, "verbose", False))
 
     try:
-        from label_intel.cleaner import (
+        from intelligence.label.cleaner import (
             scan_tracks, write_label_tag, WRITE_THRESHOLD,
         )
-        from label_intel.normalizer import AliasRegistry
-        from label_intel import reports as _reports
+        from intelligence.label.normalizer import AliasRegistry
+        from intelligence.label import reports as _reports
     except ImportError as exc:
-        log.error("label_intel package not found (%s). "
-                  "Ensure label_intel/ is at the project root.", exc)
+        log.error("intelligence.label package not found (%s). "
+                  "Ensure intelligence/label/ is at the project root.", exc)
         return 2
 
     # Provider placeholder warnings
@@ -2880,6 +2880,53 @@ def main() -> None:
         ),
     )
 
+    # ----- metadata-sanitize subcommand -----
+    p_msan = subparsers.add_parser(
+        "metadata-sanitize",
+        help="Offline, deterministic tag sanitation (preview by default)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Offline metadata sanitation — fully deterministic, no AI, no network.\n\n"
+            "Scans audio files and applies conservative, rule-based fixes to:\n"
+            "  album        — clear if it contains URLs, path fragments, or promo junk\n"
+            "  isrc         — clear if the value is not a valid ISRC (CC-XXX-YY-NNNNNNN)\n"
+            "  title        — strip leading numeric prefixes; fix spacing/separators/parens\n"
+            "  artist       — strip URLs; normalize ft./featuring → feat.; fix whitespace\n"
+            "  organization — clear placeholder junk (unknown/n/a/none); fix whitespace\n\n"
+            "Safe by design:\n"
+            "  • Preview is the default — no files modified without --apply\n"
+            "  • Never invents metadata; never guesses missing values\n"
+            "  • If a transform is uncertain, it is skipped\n"
+            "  • Every change is logged with a reason code\n\n"
+            "Workflow position: run BEFORE ai-normalize / artist-intelligence / metadata-enrich-online\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py metadata-sanitize --input /mnt/music_ssd/inbox\n"
+            "  python3 pipeline.py metadata-sanitize --input /mnt/music_ssd/inbox --limit 50\n"
+            "  python3 pipeline.py metadata-sanitize --input /mnt/music_ssd/inbox --apply\n"
+            "  python3 pipeline.py metadata-sanitize --input /mnt/music_ssd/inbox --apply --output-json sanitize_log.json\n"
+        ),
+    )
+    p_msan.add_argument(
+        "--input", metavar="DIR", required=True,
+        help="Directory of audio files to scan (recursive)",
+    )
+    p_msan.add_argument(
+        "--limit", metavar="N", type=int, default=None,
+        help="Maximum number of files to process in this run (default: no limit)",
+    )
+    p_msan.add_argument(
+        "--apply", action="store_true",
+        help="Write changes to audio file tags. Without this flag, changes are only previewed.",
+    )
+    p_msan.add_argument(
+        "--output-json", metavar="FILE", default=None, dest="output_json",
+        help="Save full change log to this JSON file.",
+    )
+    p_msan.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Enable debug logging and show unmodified corrupt files.",
+    )
+
     # ----- artist-intelligence subcommand -----
     p_ari = subparsers.add_parser(
         "artist-intelligence",
@@ -3018,6 +3065,137 @@ def main() -> None:
         "--verbose", "-v", action="store_true",
         help="Enable debug logging",
     )
+    p_ain.add_argument(
+        "--pre-sanitize", action="store_true",
+        dest="pre_sanitize",
+        help=(
+            "Run metadata-sanitize before AI normalization. "
+            "Clears junk tags (URLs, invalid ISRC, promo text, email addresses) "
+            "so the model sees clean input. "
+            "Respects --apply: without it both steps preview only, no files are written."
+        ),
+    )
+
+    # ----- build-fewshot subcommand -----
+    p_bfs = subparsers.add_parser(
+        "build-fewshot",
+        help="Build a curated few-shot example file from accepted ai-normalize decisions",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Read data/intelligence/accepted_examples.jsonl, select a diverse subset\n"
+            "of high-quality examples, and write data/intelligence/fewshot_examples.jsonl.\n\n"
+            "The fewshot file is a snapshot — it is overwritten on each run.\n"
+            "Use --limit to control the target size.\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py build-fewshot\n"
+            "  python3 pipeline.py build-fewshot --limit 20\n"
+        ),
+    )
+    p_bfs.add_argument(
+        "--limit", metavar="N", type=int, default=30,
+        help="Maximum number of examples to include in the fewshot file. Default: 30",
+    )
+
+    # ----- metadata-enrich-online subcommand -----
+    p_meo = subparsers.add_parser(
+        "metadata-enrich-online",
+        help="Enrich track metadata from Spotify and Deezer (preview by default)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Look up track metadata from online music APIs and propose conservative\n"
+            "tag improvements: album name, record label, and ISRC.\n\n"
+            "Sources (in order):\n"
+            "  1. Spotify Web API  — ISRC lookup first, then artist+title search\n"
+            "                        Requires SPOTIFY_CLIENT_ID + SPOTIFY_CLIENT_SECRET\n"
+            "  2. Deezer API       — fallback when Spotify is unavailable or low-confidence\n"
+            "                        No credentials required\n\n"
+            "Safety rules:\n"
+            "  • Default mode is preview — no file changes without --apply\n"
+            "  • Artist is never written (owned by the artist-intelligence layer)\n"
+            "  • Existing version/remix info in the title is always preserved\n"
+            "  • Label only overwritten when current is empty (or conf >= 0.95)\n"
+            "  • Min confidence default 0.80 — ISRC exact matches always pass (0.98)\n\n"
+            "Credentials:\n"
+            "  export SPOTIFY_CLIENT_ID=your_id\n"
+            "  export SPOTIFY_CLIENT_SECRET=your_secret\n"
+            "  Obtain at: https://developer.spotify.com/dashboard\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py metadata-enrich-online --input ~/Music/inbox --dry-run\n"
+            "  python3 pipeline.py metadata-enrich-online --input ~/Music/inbox --limit 20\n"
+            "  python3 pipeline.py metadata-enrich-online --input ~/Music/inbox \\\n"
+            "      --apply --min-confidence 0.80\n"
+            "  python3 pipeline.py metadata-enrich-online --input ~/Music/inbox \\\n"
+            "      --output-json enrich_preview.json\n"
+        ),
+    )
+    p_meo.add_argument(
+        "--input", metavar="DIR", required=True,
+        help="Directory of audio files to enrich (scanned recursively)",
+    )
+    p_meo.add_argument(
+        "--dry-run", action="store_true",
+        help="Run API lookups and show diffs — write no files",
+    )
+    p_meo.add_argument(
+        "--apply", action="store_true",
+        help="Write high-confidence changes to audio file tags. Cannot combine with --dry-run.",
+    )
+    p_meo.add_argument(
+        "--limit", metavar="N", type=int, default=50,
+        help="Maximum number of files to process in this run. Default: 50",
+    )
+    p_meo.add_argument(
+        "--min-confidence", metavar="FLOAT", type=float,
+        default=config.ENRICH_ONLINE_MIN_CONFIDENCE,
+        dest="min_confidence",
+        help=(
+            f"Minimum confidence (0.0–1.0) required to apply a change. "
+            f"Default: {config.ENRICH_ONLINE_MIN_CONFIDENCE}"
+        ),
+    )
+    p_meo.add_argument(
+        "--spotify-client-id", metavar="ID",
+        default=None,
+        dest="spotify_client_id",
+        help="Spotify API client ID (overrides SPOTIFY_CLIENT_ID env var)",
+    )
+    p_meo.add_argument(
+        "--spotify-client-secret", metavar="SECRET",
+        default=None,
+        dest="spotify_client_secret",
+        help="Spotify API client secret (overrides SPOTIFY_CLIENT_SECRET env var)",
+    )
+    p_meo.add_argument(
+        "--output-json", metavar="FILE",
+        default=None,
+        dest="output_json",
+        help="Save full results to this JSON file for offline review",
+    )
+    p_meo.add_argument(
+        "--enable-traxsource", action="store_true", default=False,
+        dest="enable_traxsource",
+        help=(
+            "Enable Traxsource as a dance-music specialist fallback source. "
+            "Disabled by default — Traxsource's scraper is prone to 403 blocks "
+            "and adds latency. Enable manually when Spotify/Deezer results are "
+            "insufficient for house/Afro/deep tracks."
+        ),
+    )
+    p_meo.add_argument(
+        "--clean-junk-only", action="store_true", default=False,
+        dest="clean_junk_only",
+        help=(
+            "Run only the junk metadata cleaner — no API calls. "
+            "Detects and clears garbage album values (URLs, piracy watermarks, "
+            "filename artifacts). Use --apply to write changes; default is preview. "
+            "Example: python3 pipeline.py metadata-enrich-online "
+            "--input ~/Music/inbox --clean-junk-only --apply"
+        ),
+    )
+    p_meo.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Enable debug logging",
+    )
 
     # Warn if running outside a virtualenv (advisory only, non-fatal)
     _warn_if_no_venv()
@@ -3087,13 +3265,48 @@ def main() -> None:
     if args.command == "harmonic-suggest":
         sys.exit(run_harmonic_suggest(args))
 
+    if args.command == "metadata-sanitize":
+        from modules.metadata_sanitize import run_metadata_sanitize
+        sys.exit(run_metadata_sanitize(args))
+
     if args.command == "artist-intelligence":
-        from artist_intelligence.runner import run_artist_intelligence
+        from intelligence.artist.runner import run_artist_intelligence
         sys.exit(run_artist_intelligence(args))
 
     if args.command == "ai-normalize":
+        if getattr(args, "pre_sanitize", False):
+            import argparse as _ap
+            from modules.metadata_sanitize import run_metadata_sanitize
+            _san_args = _ap.Namespace(
+                input=args.input,
+                apply=getattr(args, "apply", False),
+                limit=getattr(args, "limit", None),
+                output_json=None,
+                verbose=getattr(args, "verbose", False),
+            )
+            _rc = run_metadata_sanitize(_san_args)
+            if _rc != 0:
+                sys.exit(_rc)
         from ai.normalizer import run_ai_normalize
         sys.exit(run_ai_normalize(args))
+
+    if args.command == "metadata-enrich-online":
+        from intelligence.enrichment.runner import run_metadata_enrich_online
+        sys.exit(run_metadata_enrich_online(args))
+
+    if args.command == "build-fewshot":
+        from ai.review_dataset import build_fewshot
+        n = build_fewshot(limit=args.limit)
+        if n > 0:
+            print(f"Wrote {n} example(s) to {config.AI_FEWSHOT_EXAMPLES}")
+            sys.exit(0)
+        else:
+            print(
+                "No examples written. Run 'ai-normalize --apply' first to accumulate "
+                "accepted_examples.jsonl.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
 
     if args.label_enrich_from_library:
         sys.exit(run_label_enrichment_from_library(args.verbose))

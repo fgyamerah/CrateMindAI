@@ -17,7 +17,64 @@ P3 = low
 ----------------------------------------------------------------------
 CURRENT FOCUS
 ----------------------------------------------------------------------
+[x] (P1) metadata-sanitize command — offline deterministic tag sanitation (2026-04-18)
+[x] (P1) metadata-sanitize → ai-normalize integration via --pre-sanitize flag (2026-04-19)
 [~] (P1) Artist Intelligence — Phase 1 complete; Phase 2 open (see below)
+
+
+----------------------------------------------------------------------
+ONLINE ENRICHMENT (completed 2026-04-18)
+----------------------------------------------------------------------
+[x] (P1) intelligence/enrichment/ package: schema, matcher, Spotify, Deezer, runner
+[x] (P1) metadata-enrich-online CLI subcommand wired into pipeline.py
+[x] (P1) config.py: SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, ENRICH_ONLINE_MIN_CONFIDENCE
+[x] (P1) Dataset JSONL logging: enrichment_queue, enrichment_accepted, enrichment_rejected
+[x] (P1) Lower default threshold 0.92 → 0.80 (config.py + runner.py + pipeline.py)
+[x] (P1) Version mismatch safeguard: block apply when both titles carry different version tokens
+         (metadata_matcher.py: _extract_version_label + best_match() safeguard block)
+[x] (P1) Scoring weights rebalanced: title 0.45→0.30, version 0.10→0.25
+[x] (P1) Hard safeguards: version mismatch cap 0.74, artist sim < 0.90 cap 0.74
+[x] (P1) Label alias boost: +0.05 when labels are known aliases (13 groups seeded)
+[x] (P2) Traxsource lookup (traxsource_lookup.py) — dance-music specialist fallback
+         Genre-aware trigger: house/Afro/deep/soulful → always try Traxsource
+         Confidence-based trigger: best_conf < 0.80 → try Traxsource
+[x] (P2) EnrichmentMatch.sources_tried — tracks which APIs were queried
+[x] (P2) EnrichmentCandidate.genre — Traxsource genre/subgenre field
+[x] (P2) Junk metadata cleaner pre-enrichment step (is_junk_album + _clean_junk_fields)
+[x] (P2) --clean-junk-only CLI flag (skip API, clean only)
+[ ] (P2) Deezer/Spotify album-detail call to retrieve record label
+[ ] (P3) Traxsource: verify CSS selectors against live site before production use
+         (selectors in _SEL_* constants in traxsource_lookup.py)
+[ ] (P3) Cache Spotify/Deezer/Traxsource results to avoid re-hitting APIs on re-runs
+[ ] (P3) ISRC → MusicBrainz lookup as a zero-credential fallback
+
+
+----------------------------------------------------------------------
+REPO STRUCTURE (completed 2026-04-18)
+----------------------------------------------------------------------
+[x] (P1) Move artist_intelligence/ → intelligence/artist/
+[x] (P1) Move label_intel/ → intelligence/label/
+[x] (P1) Update all imports: artist_intelligence.* → intelligence.artist.*
+[x] (P1) Update all imports: label_intel.* → intelligence.label.*
+[x] (P1) Remove djtoolkit_label_intelligence_feature/ (legacy scaffold)
+[x] (P1) Remove sample_codes/ (scratch files)
+[x] (P2) Remove preview.txt and root-level preview JSON files from tree
+
+
+----------------------------------------------------------------------
+REVIEW DATASET / FEW-SHOT PIPELINE (completed 2026-04-18)
+----------------------------------------------------------------------
+[x] (P1) ai/review_dataset.py — write_queue_entry, write_accepted, write_rejected,
+         build_fewshot, load_fewshot_examples
+[x] (P1) Stub JSONL files in data/intelligence/ (5 files)
+[x] (P1) config.py — AI_REVIEW_QUEUE, AI_ACCEPTED_EXAMPLES, AI_REJECTED_EXAMPLES,
+         AI_REVIEW_DECISIONS, AI_FEWSHOT_EXAMPLES paths
+[x] (P1) pipeline.py — build-fewshot subcommand
+[x] (P1) ai/normalizer.py — hooked dataset writes into run_ai_normalize (--apply mode)
+[ ] (P2) Inject fewshot_examples.jsonl into Ollama prompt via _build_prompt()
+[ ] (P2) build-fewshot: add --min-confidence filter flag
+[ ] (P3) Interactive review workflow: review_decisions.jsonl populated by a
+         future 'ai-review' CLI command
 
 
 ----------------------------------------------------------------------
