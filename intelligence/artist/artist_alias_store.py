@@ -39,7 +39,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from intelligence.artist.artist_normalizer import normalize_artist_string
 
@@ -161,6 +161,27 @@ class ArtistAliasStore:
             or self.lookup_normalized(name)
             or self.lookup_ci(name)
         )
+
+    def lookup_with_method(self, name: str) -> Optional[Tuple[str, str]]:
+        """
+        Try exact → normalized → ci lookups in order.
+        Returns (canonical, method) where method is one of "exact", "normalized", "ci".
+        Returns None if no match found.
+
+        Use this when the match method matters for confidence decisions:
+          "exact" / "normalized" → high-confidence match
+          "ci"                   → weaker match, consider review queue
+        """
+        result = self.lookup_exact(name)
+        if result is not None:
+            return result, "exact"
+        result = self.lookup_normalized(name)
+        if result is not None:
+            return result, "normalized"
+        result = self.lookup_ci(name)
+        if result is not None:
+            return result, "ci"
+        return None
 
     # ------------------------------------------------------------------
     # Mutations

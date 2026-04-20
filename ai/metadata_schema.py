@@ -14,7 +14,21 @@ from __future__ import annotations
 
 import unicodedata
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Dict, List, Optional
+
+
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
+MIN_AI_CONFIDENCE = 0.80
+
+# Structured rejection reason tokens — used in NormalizeResult and log messages
+REJECTION_LOW_CONFIDENCE  = "low_confidence"
+REJECTION_SCHEMA_INVALID  = "schema_invalid"
+REJECTION_GUARDRAIL       = "guardrail_violation"
+REJECTION_PARSED_CONFLICT = "parsed_conflict"
+REJECTION_AI_ERROR        = "ai_error"
 
 
 # ---------------------------------------------------------------------------
@@ -92,6 +106,7 @@ class NormalizedMetadata:
     featured_artists: List[str]      = field(default_factory=list)
     confidence:       float          = 0.0
     notes:            Optional[str]  = None
+    guardrail_fired:  bool           = False
 
     @classmethod
     def from_dict(cls, data: dict) -> "NormalizedMetadata":
@@ -121,4 +136,29 @@ class NormalizedMetadata:
             "featured_artists": self.featured_artists,
             "confidence":       self.confidence,
             "notes":            self.notes,
+            "guardrail_fired":  self.guardrail_fired,
         }
+
+
+# ---------------------------------------------------------------------------
+# Per-track normalization result (replaces raw 3-tuple)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class NormalizeResult:
+    """
+    Structured return type from _normalize_track().
+
+    Replaces the raw tuple (current_tags, proposed, error).
+    rejection_reason is always set when the result is a no-op — the error
+    field carries human-readable detail for ai_error / schema_invalid cases.
+    """
+    current_tags:     Dict[str, str]
+    proposed:         NormalizedMetadata
+    rejection_reason: Optional[str] = None   # one of the REJECTION_* constants
+    error:            Optional[str] = None   # machine-readable detail (ai / parse errors)
+
+    @property
+    def rejected(self) -> bool:
+        """True when this result is a no-op — do not apply any changes."""
+        return self.rejection_reason is not None

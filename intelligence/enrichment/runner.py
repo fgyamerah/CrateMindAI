@@ -45,6 +45,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import shutil
 import sys
 import uuid
 from datetime import datetime, timezone
@@ -55,7 +56,11 @@ import config
 from ai.normalizer import _collect_files, _apply_tags
 
 from intelligence.enrichment.enrichment_schema import EnrichmentCandidate, EnrichmentMatch
-from intelligence.enrichment.metadata_matcher import best_match
+from intelligence.enrichment.metadata_matcher import (
+    best_match,
+    THRESHOLD_APPLY,
+    THRESHOLD_REVIEW,
+)
 from intelligence.enrichment.spotify_lookup import SpotifyClient, SpotifyError
 from intelligence.enrichment.deezer_lookup import DeezerClient
 from intelligence.enrichment.traxsource_lookup import TraxsourceClient
@@ -64,6 +69,18 @@ log = logging.getLogger(__name__)
 
 _SEP_THICK = "=" * 72
 _SEP_THIN  = "-" * 72
+
+# ---------------------------------------------------------------------------
+# Operational paths (derived from existing config so config.py stays untouched)
+# ---------------------------------------------------------------------------
+
+# Persistent human-review queue for medium-confidence enrichment results.
+# Lives alongside the other enrichment JSONL files under data/intelligence/.
+_ENRICH_REVIEW_QUEUE: Path = config.AI_ENRICH_QUEUE.parent / "enrichment_review_queue.json"
+
+# Root directory for files that cannot be confidently enriched.
+# Structure under IGNORED mirrors the original library layout.
+_ENRICH_IGNORED_DIR: Path = Path("/home/koolkatdj/Music/music/IGNORED")
 
 # ---------------------------------------------------------------------------
 # Junk metadata detection
@@ -394,7 +411,7 @@ def _is_dance_genre(genre: str) -> bool:
 _FALLBACK_THRESHOLD    = 0.70
 # Traxsource fallback: triggered when best-so-far is below the apply threshold
 # OR the genre signals dance music
-_TRAXSOURCE_THRESHOLD  = 0.80  # mirrors config.ENRICH_ONLINE_MIN_CONFIDENCE default
+_TRAXSOURCE_THRESHOLD  = THRESHOLD_APPLY   # mirrors new apply threshold (0.90)
 
 
 def _search_with_fallback(
@@ -405,6 +422,7 @@ def _search_with_fallback(
     spotify_client: Optional[SpotifyClient],
     deezer_client: DeezerClient,
     traxsource_client: Optional[TraxsourceClient] = None,
+    canonical_artist: Optional[str] = None,
 ) -> EnrichmentMatch:
     """
     Query sources in priority order and return the highest-confidence match.
@@ -442,6 +460,7 @@ def _search_with_fallback(
             spotify_match = best_match(
                 candidates, current_tags, current_isrc,
                 sources_tried=list(sources_tried),
+                canonical_artist=canonical_artist,
             )
             log.debug(
                 "Spotify best: confidence=%.2f isrc_match=%s reason=%s",
@@ -464,6 +483,7 @@ def _search_with_fallback(
             deezer_match = best_match(
                 deezer_candidates, current_tags, current_isrc,
                 sources_tried=list(sources_tried),
+                canonical_artist=canonical_artist,
             )
             log.debug(
                 "Deezer best: confidence=%.2f reason=%s",
@@ -499,6 +519,7 @@ def _search_with_fallback(
             ts_match = best_match(
                 ts_candidates, current_tags, current_isrc,
                 sources_tried=list(sources_tried),
+                canonical_artist=canonical_artist,
             )
             log.debug(
                 "Traxsource best: confidence=%.2f reason=%s",
@@ -557,6 +578,7 @@ def _print_result(
             + (" [ISRC EXACT]" if match.isrc_matched else "")
         )
         print(f"  Sources tried : {sources_str}")
+        print(f"  Decision      : {match.decision_code}")
         _show("artist",  cand.artist  or "")
         _show("title",   cand.title   or "")
         _show("album",   cand.album   or "")
@@ -627,7 +649,14 @@ def _log_result(
     elif error:
         status = "error"
     elif skipped_reason:
-        status = "skipped"
+        # Map decision_code to a structured status for JSONL
+        dc = match.decision_code
+        if dc in ("skipped_artist_mismatch", "skipped_version_conflict", "skipped_low_score"):
+            status = dc
+        elif dc in ("review_ambiguous", "review"):
+            status = dc
+        else:
+            status = "skipped"
     elif not match.proposed_changes:
         status = "no_change"
     else:
@@ -660,33 +689,262 @@ def _log_result(
             "source_used":    match.source_used,
             "confidence":     match.confidence,
             "isrc_matched":   match.isrc_matched,
+            "decision_code":  match.decision_code,
             "written_fields": written_fields,
             "reason_codes":   ["auto_applied", "isrc_match" if match.isrc_matched
                                else "similarity_match"],
             "logged_at":      now,
         })
 
-    elif status in ("skipped", "error"):
-        reason_codes = []
-        if error:
-            reason_codes.append("error")
-        elif skipped_reason and "confidence" in skipped_reason:
-            reason_codes.append("low_confidence")
-        elif skipped_reason:
-            reason_codes.append("skipped")
-
+    elif status in (
+        "skipped", "error",
+        "skipped_artist_mismatch", "skipped_version_conflict", "skipped_low_score",
+        "review_ambiguous", "review",
+    ):
         _append_jsonl(config.AI_ENRICH_REJECTED, {
             "input":          {"filename": path.name, "current_tags": current_tags,
                                "current_isrc": current_isrc},
             "candidate":      match.candidate.to_dict() if match.candidate else None,
             "source_used":    match.source_used,
             "confidence":     match.confidence,
+            "decision_code":  match.decision_code,
             "decision":       status,
-            "reason_codes":   reason_codes,
             "skipped_reason": skipped_reason,
             "error":          error,
+            "match_reason":   match.reason,
             "logged_at":      now,
         })
+
+
+# ---------------------------------------------------------------------------
+# Review queue — persistent JSON list for medium-confidence results
+# ---------------------------------------------------------------------------
+
+def _load_review_queue(queue_path: Path) -> List[Dict[str, Any]]:
+    """Load enrichment review queue. Returns [] if absent or unreadable."""
+    if not queue_path.exists():
+        return []
+    try:
+        with open(queue_path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        return data if isinstance(data, list) else []
+    except Exception as exc:
+        log.warning("Could not load review queue %s: %s", queue_path.name, exc)
+        return []
+
+
+def _save_review_queue(queue_path: Path, entries: List[Dict[str, Any]]) -> None:
+    """Write review queue to JSON atomically via a temp file."""
+    queue_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        tmp = queue_path.with_suffix(".json.tmp")
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(entries, fh, indent=2, ensure_ascii=False)
+        tmp.replace(queue_path)
+    except Exception as exc:
+        log.warning("Could not save review queue %s: %s", queue_path.name, exc)
+
+
+def _enqueue_for_review(
+    queue_path: Path,
+    file_path: Path,
+    current_tags: Dict[str, str],
+    current_isrc: Optional[str],
+    match: "EnrichmentMatch",
+) -> None:
+    """
+    Add or update a file in the review queue.
+    Deduplicates by file_path — an existing entry for the same file is replaced
+    so repeat runs don't grow the queue with stale duplicates.
+    """
+    entries = _load_review_queue(queue_path)
+    fp_str = str(file_path)
+    new_entry: Dict[str, Any] = {
+        "id":               str(uuid.uuid4()),
+        "file_path":        fp_str,
+        "current_tags":     current_tags,
+        "current_isrc":     current_isrc,
+        "proposed_changes": match.proposed_changes,
+        "confidence":       match.confidence,
+        "decision_code":    match.decision_code,
+        "source_used":      match.source_used,
+        "reason":           match.reason,
+        "timestamp":        _now_iso(),
+    }
+    idx = next((i for i, e in enumerate(entries) if e.get("file_path") == fp_str), None)
+    if idx is not None:
+        entries[idx] = new_entry
+    else:
+        entries.append(new_entry)
+    _save_review_queue(queue_path, entries)
+    log.debug("Review queue: %s entry for %s", "updated" if idx is not None else "added",
+              file_path.name)
+
+
+def _print_review_entry(idx: int, entry: Dict[str, Any]) -> None:
+    """Print a single review-queue entry to stdout."""
+    tags   = entry.get("current_tags", {})
+    artist = tags.get("artist", "?")
+    title  = tags.get("title", "?")
+    conf   = entry.get("confidence", 0.0)
+    dc     = entry.get("decision_code", "?")
+    reason = entry.get("reason", "")
+    ts     = entry.get("timestamp", "")
+    print(f"\n[{idx}] {dc}  conf={conf:.2f}  {ts}")
+    print(f"     {artist} — {title}")
+    print(f"     {entry.get('file_path', '?')}")
+    print(f"     reason: {reason}")
+    proposed = entry.get("proposed_changes") or []
+    if proposed:
+        print("     changes:")
+        for ch in proposed:
+            old_d = f'"{ch["old"]}"' if ch.get("old") else "(empty)"
+            print(f"       {ch['field']:<12}: {old_d} → \"{ch['new']}\"")
+    else:
+        print("     (no changes proposed)")
+
+
+# ---------------------------------------------------------------------------
+# Move-to-IGNORED — operational sweep for unresolvable files
+# ---------------------------------------------------------------------------
+
+def _move_to_ignored(path: Path, ignored_root: Path) -> bool:
+    """
+    Move *path* into *ignored_root*, preserving the folder structure that exists
+    below ignored_root.parent (the "music root").
+
+    If the file is not under the music root (e.g. a test path), it is placed
+    directly in ignored_root with just the filename.
+
+    Appends _dup1, _dup2, … to the stem when the target already exists.
+    Returns True on success, False on any failure (logged; does not raise).
+    """
+    music_root = ignored_root.parent
+    try:
+        rel = path.relative_to(music_root)
+    except ValueError:
+        rel = Path(path.name)
+
+    target = ignored_root / rel
+
+    if target.resolve() == path.resolve():
+        log.warning("IGNORED dir overlaps source — skipping move: %s", path)
+        return False
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+
+    if target.exists():
+        stem, sfx, counter = target.stem, target.suffix, 1
+        while target.exists():
+            target = target.parent / f"{stem}_dup{counter}{sfx}"
+            counter += 1
+        log.warning("Target exists — using: %s", target.name)
+
+    try:
+        shutil.move(str(path), str(target))
+        log.info("MOVED to IGNORED: %s → %s", path.name, target)
+        return True
+    except Exception as exc:
+        log.error("Could not move %s: %s", path.name, exc)
+        return False
+
+
+# ---------------------------------------------------------------------------
+# Review-queue CLI entry point
+# ---------------------------------------------------------------------------
+
+def run_review_queue(args) -> int:
+    """
+    Entry point for the 'review-queue' subcommand.
+
+    Loads enrichment_review_queue.json and either lists all items (--list-only)
+    or runs an interactive loop allowing apply / skip / delete per item.
+
+    apply  — writes the proposed changes to the audio file, removes from queue.
+    skip   — removes the entry without writing.
+    delete — alias for skip.
+    """
+    import logging as _logging
+    _logging.basicConfig(level=_logging.INFO,
+                         format="%(asctime)s  %(levelname)-8s  %(message)s",
+                         datefmt="%H:%M:%S")
+
+    list_only = getattr(args, "list_only", False)
+    entries   = _load_review_queue(_ENRICH_REVIEW_QUEUE)
+
+    if not entries:
+        print("Review queue is empty.")
+        return 0
+
+    print(f"Review queue: {len(entries)} item(s)  [{_ENRICH_REVIEW_QUEUE}]")
+    print(_SEP_THICK)
+
+    if list_only:
+        for i, entry in enumerate(entries):
+            _print_review_entry(i, entry)
+        print()
+        return 0
+
+    # Interactive loop — process entries one at a time
+    i = 0
+    while i < len(entries):
+        _print_review_entry(i, entries[i])
+        print()
+        try:
+            raw = input("  Action (a=apply  s=skip  d=delete  n=next  q=quit): ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print("\nAborted.")
+            break
+
+        if raw in ("q", "quit"):
+            break
+
+        if raw in ("n", "next", ""):
+            i += 1
+            continue
+
+        if raw in ("s", "skip", "d", "delete"):
+            entries.pop(i)
+            _save_review_queue(_ENRICH_REVIEW_QUEUE, entries)
+            print("  Removed from queue.")
+            # don't increment — next entry slides into position i
+            continue
+
+        if raw in ("a", "apply"):
+            entry = entries[i]
+            fpath = Path(entry["file_path"])
+            if not fpath.exists():
+                print(f"  ERROR: file not found — {fpath}")
+                entries.pop(i)
+                _save_review_queue(_ENRICH_REVIEW_QUEUE, entries)
+                continue
+            proposed = entry.get("proposed_changes") or []
+            if not proposed:
+                print("  No changes to apply — removing from queue.")
+                entries.pop(i)
+                _save_review_queue(_ENRICH_REVIEW_QUEUE, entries)
+                continue
+            mock_match = EnrichmentMatch(
+                proposed_changes=proposed,
+                confidence=entry.get("confidence", 0.0),
+                source_used=entry.get("source_used", "review_queue"),
+                reason=entry.get("reason", ""),
+            )
+            ok, written = _apply_enrichment(fpath, mock_match, dry_run=False)
+            if ok:
+                print(f"  Applied: {list(written.keys())}")
+                entries.pop(i)
+                _save_review_queue(_ENRICH_REVIEW_QUEUE, entries)
+            else:
+                print("  ERROR: tag write failed — entry kept in queue.")
+                i += 1
+            continue
+
+        print("  Unknown action. Use a / s / d / n / q.")
+
+    remaining = len(entries)
+    print(f"\nQueue: {remaining} item(s) remaining.")
+    return 0
 
 
 # ---------------------------------------------------------------------------
@@ -718,6 +976,7 @@ def run_metadata_enrich_online(args) -> int:
     min_confidence  = args.min_confidence
     output_json     = getattr(args, "output_json", None)
     clean_junk_only = getattr(args, "clean_junk_only", False)
+    move_ignored    = getattr(args, "move_ignored", False)
 
     # Resolve credentials: CLI flags take priority over config (which reads env vars)
     spotify_id     = getattr(args, "spotify_client_id",     None) or config.SPOTIFY_CLIENT_ID
@@ -774,14 +1033,51 @@ def run_metadata_enrich_online(args) -> int:
         mode_label = "DRY-RUN" if dry_run else ("APPLY" if do_apply else "PREVIEW")
     print(f"Mode: {mode_label}  |  Min confidence: {min_confidence}\n")
 
+    # --- Load artist alias store (once) for canonical artist resolution ---
+    _alias_store = None
+    try:
+        from intelligence.artist.artist_alias_store import ArtistAliasStore
+        _alias_store = ArtistAliasStore()
+        if config.ARTIST_ALIAS_STORE.exists():
+            _alias_store.load(config.ARTIST_ALIAS_STORE)
+            log.debug("Artist alias store loaded (%s)", config.ARTIST_ALIAS_STORE)
+        else:
+            _alias_store = None
+    except Exception as exc:
+        log.debug("Could not load artist alias store: %s", exc)
+        _alias_store = None
+
+    def _resolve_canonical_artist(artist_str: str) -> Optional[str]:
+        """Return alias-resolved canonical artist string, or None on failure."""
+        if not artist_str:
+            return None
+        try:
+            from intelligence.artist.artist_parser import parse_artist_string
+            from intelligence.artist.artist_normalizer import normalize_artist_string
+            result = parse_artist_string(artist_str)
+            if not result.main_artists:
+                return None
+            parts = []
+            for entity in result.main_artists:
+                if _alias_store and _alias_store.is_loaded():
+                    canonical = _alias_store.lookup(entity.normalized)
+                    parts.append(canonical or entity.normalized)
+                else:
+                    parts.append(entity.normalized)
+            return " & ".join(parts) if parts else None
+        except Exception:
+            return None
+
     # --- Per-file loop ---
     results         = []
     n_applied       = 0
     n_skipped       = 0
+    n_review        = 0   # queued for human review (0.75–0.89 or ambiguous)
     n_errors        = 0
     n_no_change     = 0
     n_no_result     = 0
     n_junk_cleaned  = 0   # fields cleared by the junk cleaner (across all files)
+    n_moved         = 0   # files moved to IGNORED/ (--move-ignored only)
 
     for path in files:
         current_tags = _read_full_tags(path)
@@ -822,28 +1118,58 @@ def run_metadata_enrich_online(args) -> int:
         artist = (current_tags.get("artist") or "").strip()
         title  = (current_tags.get("title")  or "").strip()
 
+        # Resolve canonical artist via artist-intelligence layer
+        canonical_artist = _resolve_canonical_artist(artist)
+
         if not artist and not title and not current_isrc:
             log.debug("Skipping %s — no artist, title, or ISRC to search with", path.name)
-            match = EnrichmentMatch(source_used="none", reason="no searchable tags")
+            match = EnrichmentMatch(
+                source_used="none",
+                reason="no searchable tags",
+                decision_code="skipped_low_score",
+            )
             n_no_result += 1
         else:
             match = _search_with_fallback(
                 artist, title, current_isrc, current_tags,
                 spotify_client, deezer_client, traxsource_client,
+                canonical_artist=canonical_artist,
             )
 
         applied        = False
+        moved          = False
         written_fields: Dict[str, str] = {}
         skipped_reason: Optional[str]  = None
         error:          Optional[str]  = None
 
+        _dc = match.decision_code   # machine-readable decision from matcher
+
         if match.source_used == "none":
             n_no_result += 1 if artist or title else 0
+
+        elif _dc in ("skipped_artist_mismatch", "skipped_version_conflict", "skipped_low_score"):
+            # Hard rejection by matcher — log reason exactly
+            skipped_reason = _dc
+            n_skipped += 1
+            log.info("SKIPPED (%s): %s  conf=%.2f", _dc, path.name, match.confidence)
+            if move_ignored:
+                if _move_to_ignored(path, _ENRICH_IGNORED_DIR):
+                    n_moved += 1
+                    moved = True
+                    skipped_reason = f"{_dc} [moved_to_ignored]"
+
+        elif _dc in ("review_ambiguous", "review"):
+            # Needs human review — never auto-apply; persist to review queue
+            skipped_reason = _dc
+            n_review += 1
+            log.info("REVIEW (%s): %s  conf=%.2f", _dc, path.name, match.confidence)
+            _enqueue_for_review(_ENRICH_REVIEW_QUEUE, path, current_tags, current_isrc, match)
 
         elif not match.proposed_changes:
             n_no_change += 1
 
         elif do_apply:
+            # decision_code is "ready" — check confidence against user threshold
             if match.confidence < min_confidence:
                 skipped_reason = (
                     f"confidence {match.confidence:.2f} < {min_confidence} threshold"
@@ -854,14 +1180,17 @@ def run_metadata_enrich_online(args) -> int:
                 if ok:
                     applied = True
                     n_applied += 1
-                    log.info("APPLIED: %s  source=%s  conf=%.2f",
-                             path.name, match.source_used, match.confidence)
+                    log.info(
+                        "APPLIED: %s  source=%s  conf=%.2f  isrc=%s",
+                        path.name, match.source_used, match.confidence,
+                        "yes" if match.isrc_matched else "no",
+                    )
                 else:
                     error = "tag write failed"
                     n_errors += 1
 
         else:
-            # Preview / dry-run
+            # Preview / dry-run (decision_code == "ready")
             if match.confidence < min_confidence and match.proposed_changes:
                 skipped_reason = (
                     f"confidence {match.confidence:.2f} < {min_confidence} threshold"
@@ -881,15 +1210,17 @@ def run_metadata_enrich_online(args) -> int:
             )
 
         results.append({
-            "file":           str(path),
-            "current_tags":   current_tags,
-            "current_isrc":   current_isrc,
-            "match":          match.to_dict(),
-            "applied":        applied,
-            "written_fields": written_fields,
-            "skipped_reason": skipped_reason,
-            "error":          error,
-            "junk_changes":   junk_changes,
+            "file":               str(path),
+            "current_tags":       current_tags,
+            "current_isrc":       current_isrc,
+            "canonical_artist":   canonical_artist,
+            "match":              match.to_dict(),
+            "applied":            applied,
+            "moved_to_ignored":   moved,
+            "written_fields":     written_fields,
+            "skipped_reason":     skipped_reason,
+            "error":              error,
+            "junk_changes":       junk_changes,
         })
 
     # --- Summary ---
@@ -899,7 +1230,10 @@ def run_metadata_enrich_online(args) -> int:
     if not clean_junk_only:
         print(f"  Changes found   : {sum(1 for r in results if r['match']['proposed_changes'])}")
         print(f"  Applied         : {n_applied}")
-        print(f"  Skipped         : {n_skipped}  (confidence below threshold)")
+        print(f"  Skipped         : {n_skipped}  (hard reject or below threshold)")
+        print(f"  Review queue    : {n_review}  (see enrichment_review_queue.json)")
+        if move_ignored:
+            print(f"  Moved to IGNORED: {n_moved}")
         print(f"  No change       : {n_no_change}")
         print(f"  No API result   : {n_no_result}")
         print(f"  Errors          : {n_errors}")

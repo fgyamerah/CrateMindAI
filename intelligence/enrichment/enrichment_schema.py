@@ -78,6 +78,10 @@ class EnrichmentMatch:
     reason:           str                           = ""
     isrc_matched:     bool                          = False
     sources_tried:    List[str]                     = field(default_factory=list)
+    # Machine-readable decision from the matcher pipeline.
+    # One of: "ready" | "review" | "review_ambiguous"
+    #       | "skipped_low_score" | "skipped_artist_mismatch" | "skipped_version_conflict"
+    decision_code:    str                           = ""
 
     @property
     def match_reason(self) -> str:
@@ -93,4 +97,5 @@ class EnrichmentMatch:
             "match_reason":     self.reason,
             "isrc_matched":     self.isrc_matched,
             "sources_tried":    self.sources_tried,
+            "decision_code":    self.decision_code,
         }

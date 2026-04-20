@@ -241,6 +241,81 @@ def splice_readme_commands(readme_path: Path, new_section: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# COMMANDS.md generator
+# ---------------------------------------------------------------------------
+
+def _fmt_flags_md(flags: list[dict]) -> str:
+    """Render a flag list as a Markdown table."""
+    if not flags:
+        return ""
+    lines = [
+        "| Flag | Description |",
+        "|---|---|",
+    ]
+    for f in flags:
+        flag_str = f["flag"]
+        meta = f.get("meta")
+        if meta:
+            flag_str = f"{flag_str} {meta}"
+        desc = f.get("description", "")
+        default = f.get("default")
+        if default:
+            desc = f"{desc} Default: `{default}`."
+        lines.append(f"| `{flag_str}` | {desc} |")
+    return "\n".join(lines)
+
+
+def generate_commands_md(registry: list[dict], version: str = "1.5.0") -> str:
+    """Generate COMMANDS.md — a GitHub-friendly Markdown command reference."""
+    today = datetime.date.today().isoformat()
+
+    from modules.doc_registry import commands_by_category
+
+    lines: list[str] = [
+        "# CrateMindAI Commands",
+        "",
+        f"Version {version} &nbsp;·&nbsp; Updated {today}",
+        "",
+        "> Generated from `modules/doc_registry.py`.  ",
+        "> Run `python3 pipeline.py generate-docs` to refresh.",
+        "",
+        "---",
+        "",
+    ]
+
+    for cat, entries in commands_by_category().items():
+        lines += [f"## {cat.title()}", ""]
+        for entry in entries:
+            name = entry["name"]
+            desc = entry["description"]
+            usage = entry["usage"]
+            flags = entry.get("flags", [])
+            examples = entry.get("examples", [])
+            notes = entry.get("notes", "")
+
+            lines += [f"### `{name}`", "", desc, "", f"```bash", usage, "```", ""]
+
+            if notes:
+                for note_line in notes.splitlines():
+                    lines.append(f"> {note_line}")
+                lines.append("")
+
+            flags_md = _fmt_flags_md(flags)
+            if flags_md:
+                lines += [flags_md, ""]
+
+            if examples:
+                lines += ["**Examples**", "", "```bash"]
+                for ex in examples:
+                    lines.append(ex)
+                lines += ["```", ""]
+
+        lines += ["---", ""]
+
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
 # COMMANDS.html generator
 # ---------------------------------------------------------------------------
 

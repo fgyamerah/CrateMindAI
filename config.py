@@ -242,7 +242,7 @@ SPOTIFY_CLIENT_SECRET = os.environ.get("SPOTIFY_CLIENT_SECRET", "")
 # local model inference.  ISRC exact matches always score 0.98 and will
 # pass this threshold.
 ENRICH_ONLINE_MIN_CONFIDENCE = float(
-    os.environ.get("ENRICH_ONLINE_MIN_CONFIDENCE", "0.80")
+    os.environ.get("ENRICH_ONLINE_MIN_CONFIDENCE", "0.90")
 )
 
 # Dataset JSONL files for the enrichment pipeline

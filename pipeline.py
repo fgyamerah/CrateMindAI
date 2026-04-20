@@ -1576,6 +1576,8 @@ def run_generate_docs(args) -> int:
     if "txt" in formats:
         content = doc_gen.generate_commands_txt(registry, version)
         generated.append(("COMMANDS.txt", content))
+        content = doc_gen.generate_commands_md(registry, version)
+        generated.append(("COMMANDS.md", content))
 
     if "md" in formats:
         readme_path = out_root / "README.md"
@@ -3045,11 +3047,11 @@ def main() -> None:
     )
     p_ain.add_argument(
         "--min-confidence", metavar="FLOAT", type=float,
-        default=0.75,
+        default=0.80,
         dest="min_confidence",
         help=(
             "Minimum model confidence (0.0–1.0) required to apply a change. "
-            "Default: 0.75"
+            "Default: 0.80"
         ),
     )
     p_ain.add_argument(
@@ -3196,6 +3198,43 @@ def main() -> None:
         "--verbose", "-v", action="store_true",
         help="Enable debug logging",
     )
+    p_meo.add_argument(
+        "--move-ignored", action="store_true", default=False,
+        dest="move_ignored",
+        help=(
+            "Move low-confidence files (decision_code=skipped_low_score) to "
+            "/home/koolkatdj/Music/music/IGNORED/, preserving the original folder "
+            "structure. review items and matched files are never moved. "
+            "Use with --apply to combine enrichment writes with cleanup in one pass."
+        ),
+    )
+
+    # ----- review-queue subcommand -----
+    p_rq = subparsers.add_parser(
+        "review-queue",
+        help="Interactively review medium-confidence enrichment results",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Review items queued by metadata-enrich-online (confidence 0.75–0.89 or\n"
+            "ambiguous matches).  Each entry shows the proposed changes so you can\n"
+            "apply or discard them without re-running the full enrichment.\n\n"
+            "Queue file: data/intelligence/enrichment_review_queue.json\n\n"
+            "Actions (interactive mode):\n"
+            "  a / apply  — write proposed changes to the audio file, remove entry\n"
+            "  s / skip   — remove entry from queue without writing\n"
+            "  d / delete — alias for skip\n"
+            "  n / next   — leave entry in queue, move to next\n"
+            "  q / quit   — exit without further changes\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py review-queue\n"
+            "  python3 pipeline.py review-queue --list-only\n"
+        ),
+    )
+    p_rq.add_argument(
+        "--list-only", action="store_true", default=False,
+        dest="list_only",
+        help="Print all queued items and exit — do not prompt for actions",
+    )
 
     # Warn if running outside a virtualenv (advisory only, non-fatal)
     _warn_if_no_venv()
@@ -3293,6 +3332,10 @@ def main() -> None:
     if args.command == "metadata-enrich-online":
         from intelligence.enrichment.runner import run_metadata_enrich_online
         sys.exit(run_metadata_enrich_online(args))
+
+    if args.command == "review-queue":
+        from intelligence.enrichment.runner import run_review_queue
+        sys.exit(run_review_queue(args))
 
     if args.command == "build-fewshot":
         from ai.review_dataset import build_fewshot

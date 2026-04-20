@@ -29,7 +29,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import config
-from ai.metadata_schema import NormalizedMetadata
+from ai.metadata_schema import (
+    NormalizedMetadata, NormalizeResult,
+    MIN_AI_CONFIDENCE,
+    REJECTION_LOW_CONFIDENCE, REJECTION_SCHEMA_INVALID,
+    REJECTION_GUARDRAIL, REJECTION_PARSED_CONFLICT, REJECTION_AI_ERROR,
+)
 from ai.ollama_client import (
     OllamaClient, OllamaConnectionError, OllamaError, OllamaTimeoutError,
 )
@@ -373,20 +378,24 @@ def _extract_json(text: str) -> dict:
 def _normalize_track(
     path: Path,
     client: OllamaClient,
-) -> Tuple[Dict[str, str], NormalizedMetadata, Optional[str]]:
+    min_confidence: float = MIN_AI_CONFIDENCE,
+) -> NormalizeResult:
     """
     Run the full AI normalization flow for a single track.
 
-    Returns:
-        (current_tags, proposed_metadata, error_message)
-        On error, proposed_metadata will have confidence=0.0 and error_message is set.
+    Returns a NormalizeResult whose .rejected property is True when the result
+    is a no-op (rejection_reason will be one of the REJECTION_* constants).
+
+    Rejection order:
+      1. ai_error        — Ollama unreachable or model error
+      2. schema_invalid  — model returned unparseable JSON
+      3. low_confidence  — confidence below min_confidence threshold
+      4. parsed_conflict — AI version contradicts deterministic filename parse
+      5. guardrail_violation — AI artist contradicts current tag (model confused)
     """
     current_tags = _read_full_tags(path)
-
-    # Deterministic pre-cleanup — runs before the AI sees anything
     current_tags = _pre_clean_tags(current_tags)
 
-    # Deterministic filename parse (reuses existing parser module)
     from modules.parser import parse_filename_stem
     parsed = parse_filename_stem(path.stem)
 
@@ -395,18 +404,30 @@ def _normalize_track(
     try:
         response_text = client.generate(prompt)
     except (OllamaConnectionError, OllamaTimeoutError, OllamaError) as exc:
-        return current_tags, NormalizedMetadata(), str(exc)
+        err = str(exc)
+        log.info("REJECT [%s] %s — %s", REJECTION_AI_ERROR, path.name, err)
+        return NormalizeResult(
+            current_tags=current_tags,
+            proposed=NormalizedMetadata(),
+            rejection_reason=REJECTION_AI_ERROR,
+            error=err,
+        )
 
     try:
         raw_dict = _extract_json(response_text)
     except ValueError as exc:
-        log.debug("JSON extraction failed for %s: %s", path.name, exc)
-        return current_tags, NormalizedMetadata(), f"JSON parse error: {exc}"
+        err = f"JSON parse error: {exc}"
+        log.info("REJECT [%s] %s — %s", REJECTION_SCHEMA_INVALID, path.name, exc)
+        return NormalizeResult(
+            current_tags=current_tags,
+            proposed=NormalizedMetadata(),
+            rejection_reason=REJECTION_SCHEMA_INVALID,
+            error=err,
+        )
 
     proposed = NormalizedMetadata.from_dict(raw_dict)
 
-    # Apply existing sanitize_text() to proposed string fields to strip any
-    # residual junk the model may have included (URLs, DJ pool watermarks, etc.)
+    # Strip residual junk from AI output fields
     try:
         from modules.sanitizer import sanitize_text
         if proposed.artist:
@@ -418,11 +439,38 @@ def _normalize_track(
     except Exception as exc:
         log.debug("Sanitize pass failed for %s: %s", path.name, exc)
 
-    # Hard guards — model output is an untrusted suggestion; these rules
-    # are enforced in code regardless of what the model returned.
-    proposed = _apply_hard_guards(proposed, current_tags, path.name)
+    # Confidence gate — reject before any further processing
+    if proposed.confidence < min_confidence:
+        log.info(
+            "REJECT [%s] %s  confidence=%.2f < %.2f",
+            REJECTION_LOW_CONFIDENCE, path.name, proposed.confidence, min_confidence,
+        )
+        return NormalizeResult(
+            current_tags=current_tags,
+            proposed=proposed,
+            rejection_reason=REJECTION_LOW_CONFIDENCE,
+        )
 
-    return current_tags, proposed, None
+    # Parsed alignment check
+    align_reason = _check_parsed_alignment(proposed, parsed, current_tags)
+    if align_reason:
+        log.info("REJECT [%s] %s", align_reason, path.name)
+        return NormalizeResult(
+            current_tags=current_tags,
+            proposed=proposed,
+            rejection_reason=align_reason,
+        )
+
+    # Hard guards — enforced in code regardless of model output
+    proposed, guard_reason = _apply_hard_guards(proposed, current_tags, path.name)
+    if guard_reason:
+        log.info("REJECT [%s] %s", guard_reason, path.name)
+
+    return NormalizeResult(
+        current_tags=current_tags,
+        proposed=proposed,
+        rejection_reason=guard_reason,  # None in normal flow
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -503,7 +551,7 @@ def _apply_hard_guards(
     proposed: NormalizedMetadata,
     current_tags: Dict[str, str],
     filename: str,
-) -> NormalizedMetadata:
+) -> Tuple[NormalizedMetadata, Optional[str]]:
     """
     Enforce DJ-library-safe constraints on the model's proposed metadata.
 
@@ -517,16 +565,34 @@ def _apply_hard_guards(
                              AI title is discarded. Only proposed.version is
                              consulted (and only if present in filename).
       4. Label sanitation  — null out empty / placeholder label values.
+
+    Returns:
+        (proposed, guard_reason)
+        guard_reason is REJECTION_GUARDRAIL when the model proposed an artist
+        significantly different from the current tag (signal of model confusion).
+        None in all normal cases — artist lock / title reconstruct are expected.
     """
     current_artist = (current_tags.get("artist") or "").strip()
     current_title  = (current_tags.get("title")  or "").strip()
+    guard_reason: Optional[str] = None
 
     # ------------------------------------------------------------------
     # 1. HARD LOCK: artist field
     # AI artist output is ignored entirely — always overwrite with current tag.
     # Artist normalization is owned by the artist-intelligence layer.
+    # If the AI proposed a materially different artist, flag it — the model
+    # may be confused about track identity, which undermines its other proposals.
     # ------------------------------------------------------------------
+    ai_artist = (proposed.artist or "").strip()
     proposed.artist = current_artist or None
+
+    if ai_artist and current_artist and ai_artist.lower() != current_artist.lower():
+        proposed.guardrail_fired = True
+        guard_reason = REJECTION_GUARDRAIL
+        log.debug(
+            "Guard artist-lock: AI proposed %r but current tag is %r — flagging confusion",
+            ai_artist, current_artist,
+        )
 
     # ------------------------------------------------------------------
     # 2. Strip any feat suffix AI injected into the artist field.
@@ -555,7 +621,39 @@ def _apply_hard_guards(
     if not proposed.label or proposed.label.strip().lower() in _LABEL_PLACEHOLDERS:
         proposed.label = None
 
-    return proposed
+    return proposed, guard_reason
+
+
+# ---------------------------------------------------------------------------
+# Parsed-alignment check
+# ---------------------------------------------------------------------------
+
+def _check_parsed_alignment(
+    proposed: NormalizedMetadata,
+    parsed: Dict[str, Any],
+    current_tags: Dict[str, str],  # noqa: ARG001  (reserved for future checks)
+) -> Optional[str]:
+    """
+    Return a rejection reason if the AI proposal strongly contradicts the
+    deterministic filename parse. Returns None if the outputs are consistent.
+
+    Current checks:
+      - Version conflict: parsed detected a version token AND the AI proposed
+        a completely different version (neither string is a substring of the other).
+
+    Artist is not checked here — it is hard-locked in _apply_hard_guards
+    regardless of alignment.
+    """
+    parsed_version = str(parsed.get("version", "")).strip().lower()
+    if parsed_version and proposed.version:
+        ai_version = proposed.version.strip().lower()
+        if parsed_version not in ai_version and ai_version not in parsed_version:
+            log.debug(
+                "Parsed alignment mismatch — filename version %r vs AI version %r",
+                parsed_version, ai_version,
+            )
+            return REJECTION_PARSED_CONFLICT
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -877,59 +975,58 @@ def run_ai_normalize(args) -> int:
     # Per-file processing
     results = []
     n_applied = n_skipped = n_errors = n_no_change = 0
+    # Rejection reason breakdown counters
+    rejection_counts: Dict[str, int] = {}
 
     for path in files:
-        current_tags, proposed, error = _normalize_track(path, client)
+        result      = _normalize_track(path, client, min_confidence)
+        current_tags = result.current_tags
+        proposed     = result.proposed
         changes: List[Dict[str, str]] = []
-        applied = False
-        skipped_reason: Optional[str] = None
+        applied      = False
+        write_error: Optional[str] = None
 
-        if error:
+        if result.rejection_reason == REJECTION_AI_ERROR or (
+            result.rejection_reason == REJECTION_SCHEMA_INVALID
+        ):
             n_errors += 1
+            rejection_counts[result.rejection_reason] = (
+                rejection_counts.get(result.rejection_reason, 0) + 1
+            )
+        elif result.rejected:
+            n_skipped += 1
+            rejection_counts[result.rejection_reason] = (  # type: ignore[index]
+                rejection_counts.get(result.rejection_reason, 0) + 1  # type: ignore[arg-type]
+            )
         else:
             changes = compute_diff(current_tags, proposed)
-
             if not changes:
                 n_no_change += 1
             elif do_apply:
-                # Apply only if confidence meets the threshold
-                if proposed.confidence < min_confidence:
-                    skipped_reason = (
-                        f"confidence {proposed.confidence:.2f} < {min_confidence} threshold"
-                    )
-                    n_skipped += 1
+                ok = apply_normalized(path, proposed, changes, dry_run=False)
+                if ok:
+                    applied = True
+                    n_applied += 1
+                    log.info("APPLIED: %s", path.name)
                 else:
-                    ok = apply_normalized(path, proposed, changes, dry_run=False)
-                    if ok:
-                        applied = True
-                        n_applied += 1
-                        log.info("APPLIED: %s", path.name)
-                    else:
-                        error = "tag write failed"
-                        n_errors += 1
-            else:
-                # Preview / dry-run: count as pending
-                if proposed.confidence < min_confidence:
-                    skipped_reason = (
-                        f"confidence {proposed.confidence:.2f} < {min_confidence} threshold"
-                    )
-                    n_skipped += 1
+                    write_error = "tag write failed"
+                    n_errors += 1
 
         _print_file_result(
             path, current_tags, proposed, changes,
-            applied, skipped_reason, error,
+            applied, result.rejection_reason, write_error or result.error,
         )
 
         # Build structured result for JSON output
         results.append({
-            "file":          str(path),
-            "current_tags":  current_tags,
-            "proposed":      proposed.to_dict(),
-            "changes":       changes,
-            "confidence":    proposed.confidence,
-            "applied":       applied,
-            "skipped_reason": skipped_reason,
-            "error":         error,
+            "file":             str(path),
+            "current_tags":     current_tags,
+            "proposed":         proposed.to_dict(),
+            "changes":          changes,
+            "confidence":       proposed.confidence,
+            "applied":          applied,
+            "rejection_reason": result.rejection_reason,
+            "error":            write_error or result.error,
         })
 
     # Summary
@@ -937,11 +1034,16 @@ def run_ai_normalize(args) -> int:
     print(f"Summary: {len(files)} file(s) processed")
     print(f"  Changes found  : {sum(1 for r in results if r['changes'])}")
     print(f"  Applied        : {n_applied}")
-    print(f"  Skipped        : {n_skipped}  (confidence below threshold)")
+    if n_skipped:
+        breakdown = ", ".join(f"{k}: {v}" for k, v in sorted(rejection_counts.items())
+                              if k not in (REJECTION_AI_ERROR, REJECTION_SCHEMA_INVALID))
+        print(f"  Rejected       : {n_skipped}  ({breakdown})")
+    else:
+        print(f"  Rejected       : {n_skipped}")
     print(f"  No change      : {n_no_change}")
     print(f"  Errors         : {n_errors}")
     if preview_only and any(r["changes"] for r in results):
-        changeable = sum(1 for r in results if r["changes"] and not r["error"])
+        changeable = sum(1 for r in results if r["changes"] and not r["rejection_reason"])
         print(f"\n  {changeable} change(s) ready — re-run with --apply to write them.")
     print()
 
