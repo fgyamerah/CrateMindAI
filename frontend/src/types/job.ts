@@ -41,6 +41,7 @@ export const ALLOWED_COMMANDS = [
   'label-clean',
   'label-intel',
   'metadata-clean',
+  'metadata-sanitize',
   'playlists',
   'rekordbox-export',
   'set-builder',

@@ -33,8 +33,38 @@ _DEFAULT_SORT = "artist"
 # list_tracks
 # ---------------------------------------------------------------------------
 
+def _path_prefix_clauses(path_str: str) -> tuple[str, list]:
+    """
+    Build a SQL WHERE clause fragment and params for filepath prefix matching.
+    Tries both canonical and /music-symlink forms of the path so it works
+    regardless of whether the pipeline stored paths with or without symlink resolution.
+    """
+    from pathlib import Path as _Path
+    from ..core.config import MUSIC_ROOT as _MUSIC_ROOT
+
+    p = path_str.rstrip("/")
+    prefixes: set[str] = {p + "/"}
+    try:
+        resolved = str(_Path(path_str).resolve()).rstrip("/")
+        prefixes.add(resolved + "/")
+    except Exception:
+        pass
+    canon = str(_MUSIC_ROOT).rstrip("/")
+    symlink = "/music"
+    for pf in list(prefixes):
+        base = pf.rstrip("/")
+        if base.startswith(canon):
+            prefixes.add(symlink + base[len(canon):] + "/")
+        elif base.startswith(symlink):
+            prefixes.add(canon + base[len(symlink):] + "/")
+    pf_list = list(prefixes)
+    clause = "(" + " OR ".join(["filepath LIKE ?" for _ in pf_list]) + ")"
+    return clause, [pf + "%" for pf in pf_list]
+
+
 def list_tracks(
     *,
+    path: Optional[str] = None,
     q: Optional[str] = None,
     status: Optional[str] = None,
     artist: Optional[str] = None,
@@ -59,6 +89,18 @@ def list_tracks(
 
     where_clauses: List[str] = []
     params: List[object] = []
+
+    if path:
+        try:
+            from pathlib import Path as _Path
+            from ..core.config import MUSIC_ROOT as _MUSIC_ROOT
+            p = _Path(path).resolve()
+            if p == _MUSIC_ROOT or _MUSIC_ROOT in p.parents:
+                clause, pf_params = _path_prefix_clauses(path)
+                where_clauses.append(clause)
+                params.extend(pf_params)
+        except Exception:
+            pass
 
     if q:
         term = f"%{q}%"

@@ -61,6 +61,7 @@ async def get_track_issues(
 
 @router.get("/tracks", response_model=List[TrackSummary])
 async def list_tracks(
+    path:         Optional[str]   = Query(default=None, description="Filter by filesystem directory prefix (e.g. /music/inbox)"),
     q:            Optional[str]   = Query(default=None, description="Search artist, title, filename"),
     status:       Optional[str]   = Query(default=None, description="Filter by status (ok, error, …)"),
     artist:       Optional[str]   = Query(default=None, description="Exact artist match (case-insensitive)"),
@@ -78,10 +79,12 @@ async def list_tracks(
     List library tracks with optional filtering, full-text search, sorting,
     and pagination.
 
+    Pass ?path=/music/inbox to scope results to a specific directory.
     The response does not include total_count in the body; use
     GET /api/tracks/stats for aggregate numbers.
     """
     tracks, _total = track_service.list_tracks(
+        path=path,
         q=q,
         status=status,
         artist=artist,

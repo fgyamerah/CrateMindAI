@@ -102,22 +102,6 @@ body {
   overflow-y: auto;
 }
 
-.sidebar-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 18px 16px 14px;
-  font-weight: 600;
-  font-size: 15px;
-  letter-spacing: 0.01em;
-  border-bottom: 1px solid var(--border);
-}
-
-.sidebar-brand-icon {
-  color: var(--accent);
-  font-size: 13px;
-}
-
 .sidebar-nav {
   list-style: none;
   padding: 10px 0;
@@ -172,6 +156,74 @@ body {
   font-size: 11px;
   color: var(--text-muted);
   border-top: 1px solid var(--border);
+}
+
+/* ── Sidebar collapse ── */
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 12px;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-brand-name {
+  flex: 1;
+}
+
+.sidebar-brand-icon {
+  color: var(--accent);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.sidebar-collapse-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.sidebar-collapse-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.sidebar--collapsed {
+  width: 48px;
+}
+
+.sidebar--collapsed .sidebar-brand {
+  justify-content: center;
+  padding: 14px 8px;
+}
+
+.sidebar--collapsed .sidebar-nav li {
+  padding: 0 4px;
+}
+
+.sidebar--collapsed .sidebar-link {
+  justify-content: center;
+  padding: 9px;
+  gap: 0;
+}
+
+.sidebar--collapsed .sidebar-icon {
+  opacity: 0.7;
+}
+
+.sidebar-link-label {
+  /* no extra styles needed — just a wrapper to target in collapsed mode */
 }
 
 /* -------------------------------------------------------------------------
@@ -2193,5 +2245,887 @@ tr.row--selected td {
 
 .preview-dir-icon {
   color: var(--text-muted);
+}
+
+/* =========================================================================
+   Collection workspace — 4-panel layout
+   ========================================================================= */
+
+.collection-ws {
+  display: grid;
+  grid-template-rows: 40px 1fr auto;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* ── Toolbar ── */
+
+.collection-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+  flex-shrink: 0;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.toolbar-brand {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.toolbar-count {
+  font-size: 11px;
+}
+
+.toolbar-jobs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.toolbar-jobs-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-right: 4px;
+  white-space: nowrap;
+}
+
+.job-preset-btn {
+  gap: 4px;
+  font-size: 12px;
+  padding: 4px 10px;
+  color: var(--text-muted);
+}
+
+.job-preset-btn:hover {
+  color: var(--text);
+}
+
+.toolbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Body grid ── */
+
+.collection-body {
+  display: grid;
+  grid-template-columns: 200px 1fr 260px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Directory tree ── */
+
+.collection-tree {
+  border-right: 1px solid var(--border);
+  background: var(--bg-surface);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.tree-header {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding: 10px 12px 6px;
+}
+
+.dir-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  font-size: 12.5px;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-radius: 4px;
+  margin: 0 4px;
+  transition: background 0.1s, color 0.1s;
+  user-select: none;
+}
+
+.dir-tree-row:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.dir-tree-row--root {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dir-icon {
+  flex-shrink: 0;
+  color: var(--accent);
+  opacity: 0.7;
+}
+
+.dir-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dir-count {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* ── Center: analysis bar + table ── */
+
+.collection-main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.collection-analysis-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+  flex-shrink: 0;
+}
+
+.analysis-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.analysis-widget-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+/* Camelot wheel — 12 positions × A/B row */
+.camelot-wheel {
+  display: flex;
+  gap: 2px;
+}
+
+.camelot-segment {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.camelot-cell {
+  width: 28px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text-muted);
+  letter-spacing: 0;
+  transition: background 0.1s, color 0.1s;
+}
+
+.camelot-cell--a { background: rgba(74, 126, 255, 0.06); }
+.camelot-cell--b { background: rgba(74, 126, 255, 0.03); }
+
+.camelot-cell--active {
+  background: var(--accent) !important;
+  color: #fff !important;
+}
+
+.analysis-stats {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.analysis-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+}
+
+.analysis-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.analysis-stat-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+
+/* ── Track table ── */
+
+.collection-table-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  min-height: 0;
+}
+
+.collection-table {
+  font-size: 12.5px;
+}
+
+.collection-table .td-artist {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collection-table .td-title {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track-cover-art {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+
+/* ── Energy bar ── */
+
+.energy-bar {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.energy-pip {
+  width: 4px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--border);
+}
+
+.energy-pip--on {
+  background: var(--accent);
+  opacity: 0.9;
+}
+
+/* ── Stars ── */
+
+.star-rating {
+  font-size: 11px;
+  letter-spacing: -1px;
+}
+
+.star-on  { color: #fbbf24; }
+.star-off { color: var(--border); }
+
+/* ── Confidence chip ── */
+
+.conf-chip {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.conf--high { color: var(--status-succeeded); background: var(--badge-succeeded-bg); }
+.conf--mid  { color: #fbbf24;                 background: #2a1500; }
+.conf--low  { color: var(--status-failed);    background: var(--badge-failed-bg); }
+
+/* ── Column picker popover ── */
+
+.col-picker {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 200;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 0 6px;
+  min-width: 160px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.col-picker-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding: 0 12px 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.col-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  font-size: 12.5px;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.1s;
+}
+
+.col-picker-row:hover {
+  background: var(--bg-hover);
+}
+
+.col-picker-row input {
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ── Inspector panel ── */
+
+.collection-inspector {
+  border-left: 1px solid var(--border);
+  background: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.collection-inspector--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.inspector-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.inspector-cover {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.inspector-cover-art {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.inspector-track-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.inspector-artist {
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inspector-track-title {
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inspector-version {
+  font-size: 11px;
+}
+
+.inspector-section {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.inspector-section:last-child {
+  border-bottom: none;
+}
+
+.inspector-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+/* ── Maintenance panel ── */
+
+.maintenance-panel {
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+}
+
+.maintenance-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  user-select: none;
+}
+
+.maintenance-header:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
+.maintenance-header svg:last-child {
+  margin-left: auto;
+}
+
+.maintenance-actions {
+  padding: 6px 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.maintenance-btn {
+  justify-content: flex-start;
+  font-size: 11px;
+  padding: 5px 8px;
+  width: 100%;
+  text-align: left;
+}
+
+.maintenance-status {
+  font-size: 10px;
+  padding: 4px 2px 0;
+  line-height: 1.4;
+}
+
+.maintenance-status a {
+  text-decoration: none;
+}
+
+.maintenance-status a:hover {
+  text-decoration: underline;
+}
+
+/* ── Log panel ── */
+
+.collection-log {
+  border-top: 1px solid var(--border);
+  background: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  /* Fixed height so the auto grid row has a definite size and overflow-y on
+     the body actually scrolls rather than being clipped by overflow:hidden
+     on the parent .collection-ws */
+  height: 260px;
+  transition: height 0.15s ease;
+}
+
+.collection-log--collapsed {
+  height: 34px;
+  overflow: hidden;
+}
+
+.log-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.log-panel-header:hover .log-panel-title {
+  color: var(--text);
+}
+
+.log-panel-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.log-panel-header > svg {
+  margin-left: auto;
+  color: var(--text-muted);
+}
+
+.log-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  /* flex:1 inside a fixed-height .collection-log = scrollable up to ~220px */
+}
+
+.log-line {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: #c4cfe6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn--active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* =========================================================================
+   Collection workspace — Phase 3: job state buttons + apply toggle
+   ========================================================================= */
+
+/* Job-state variants for preset buttons */
+.btn--running {
+  color: var(--status-running) !important;
+  border-color: var(--status-running) !important;
+  opacity: 0.9;
+}
+
+.btn--succeeded {
+  color: var(--status-succeeded) !important;
+  border-color: var(--status-succeeded) !important;
+}
+
+.btn--failed {
+  color: var(--status-failed) !important;
+  border-color: var(--status-failed) !important;
+}
+
+/* Spinning indicator for the running state */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.btn-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+/* Apply toggle */
+.apply-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  padding: 0 8px;
+  border-left: 1px solid var(--border);
+  margin-left: 4px;
+  height: 100%;
+}
+
+.apply-toggle input {
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.apply-toggle--on {
+  color: var(--status-failed);
+  font-weight: 600;
+}
+
+/* Non-executable folder label — greyed out to signal no job can run */
+.dir-label--no-exec {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Path hint shown below the dir tree when a real path is selected */
+.tree-path-hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 6px 10px 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-top: 1px solid var(--border);
+  margin-top: 6px;
+  opacity: 0.7;
+}
+
+/* =========================================================================
+   Collection workspace — Phase 2 additions
+   ========================================================================= */
+
+/* ── Active directory row ── */
+
+.dir-tree-row--active {
+  background: var(--accent-dim) !important;
+  color: var(--accent) !important;
+}
+
+.dir-tree-row--active .dir-label {
+  color: var(--accent);
+}
+
+.dir-tree-row--active .dir-count {
+  color: var(--accent);
+  opacity: 0.75;
+}
+
+/* ── Toolbar inline search ── */
+
+.toolbar-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0 8px;
+  height: 26px;
+  transition: border-color 0.15s;
+}
+
+.toolbar-search:focus-within {
+  border-color: var(--accent);
+}
+
+.toolbar-search-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.toolbar-search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 12.5px;
+  font-family: var(--font-ui);
+  width: 160px;
+  min-width: 0;
+}
+
+.toolbar-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.toolbar-search-input::-webkit-search-cancel-button {
+  filter: invert(0.5);
+  cursor: pointer;
+}
+
+/* ── Pipeline progress (inspector) ── */
+
+.pipeline-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pipeline-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.35;
+}
+
+.pipeline-step--done {
+  opacity: 1;
+}
+
+.pipeline-step--current .pipeline-step-dot {
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.pipeline-step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  flex-shrink: 0;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.pipeline-step--done .pipeline-step-dot {
+  background: var(--accent);
+}
+
+.pipeline-step--current .pipeline-step-dot {
+  background: var(--status-running);
+}
+
+.pipeline-step-label {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.pipeline-step--done .pipeline-step-label {
+  color: var(--text);
+}
+
+.pipeline-step--current .pipeline-step-label {
+  color: var(--status-running);
+  font-weight: 600;
+}
+
+/* ── Log line colorization ── */
+
+.log-line--error {
+  color: var(--status-failed) !important;
+}
+
+.log-line--warn {
+  color: var(--status-pending) !important;
+}
+
+/* ── Analysis bar track label ── */
+
+.analysis-track-label {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+  align-self: center;
+  margin-left: auto;
+  padding-right: 12px;
+}
+
+.analysis-track-artist {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.analysis-track-title {
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Responsive breakpoints ── */
+
+@media (max-width: 1100px) {
+  .collection-body {
+    grid-template-columns: 180px 1fr 0;
+  }
+  .collection-inspector {
+    display: none;
+  }
+  .analysis-track-label {
+    display: none;
+  }
+}
+
+@media (max-width: 800px) {
+  .collection-ws {
+    grid-template-rows: 40px 1fr auto;
+  }
+  .collection-body {
+    grid-template-columns: 0 1fr 0;
+  }
+  .collection-tree {
+    display: none;
+  }
+  .toolbar-search-input {
+    width: 110px;
+  }
+  .toolbar-jobs {
+    display: none;
+  }
 }
 

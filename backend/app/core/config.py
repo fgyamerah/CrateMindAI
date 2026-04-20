@@ -52,6 +52,26 @@ def _resolve_pipeline_db() -> Path:
 
 PIPELINE_DB_PATH: Path = _resolve_pipeline_db()
 
+
+def _resolve_music_root() -> Path:
+    """Read MUSIC_ROOT from the toolkit's config.py and return its resolved canonical path."""
+    fallback = Path("/music").resolve()
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "_tk_config_for_music_root", str(TOOLKIT_ROOT / "config.py")
+        )
+        if spec is None or spec.loader is None:
+            return fallback
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)  # type: ignore[union-attr]
+        val = getattr(mod, "MUSIC_ROOT", None)
+        return Path(val).resolve() if val else fallback
+    except Exception:
+        return fallback
+
+
+MUSIC_ROOT: Path = _resolve_music_root()
+
 # ---------------------------------------------------------------------------
 # Runtime
 # ---------------------------------------------------------------------------

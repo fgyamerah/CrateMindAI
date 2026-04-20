@@ -29,7 +29,7 @@ import re
 from pathlib import Path
 from typing import Callable, Dict, FrozenSet, List
 
-from ..core.config import JOBS_LOG_DIR, PIPELINE_PY, PYTHON_BIN, TOOLKIT_ROOT
+from ..core.config import JOBS_LOG_DIR, MUSIC_ROOT, PIPELINE_PY, PYTHON_BIN, TOOLKIT_ROOT
 from . import process_registry
 
 log = logging.getLogger(__name__)
@@ -45,6 +45,7 @@ ALLOWED_COMMANDS: FrozenSet[str] = frozenset(
         "audit-quality",
         "analyze-missing",
         "metadata-clean",
+        "metadata-sanitize",
         "artist-merge",
         "artist-folder-clean",
         "rekordbox-export",
@@ -81,8 +82,19 @@ _ALLOWED_BOOL_FLAGS: FrozenSet[str] = frozenset(
     }
 )
 
+def _is_safe_input_path(v: str) -> bool:
+    """Accept only absolute paths that resolve inside MUSIC_ROOT."""
+    try:
+        p = Path(v).resolve()
+        root = MUSIC_ROOT  # already resolved at import time
+        return p == root or root in p.parents
+    except Exception:
+        return False
+
+
 # Value flags — each paired with a validator: (str) → bool
 _ALLOWED_VALUE_FLAGS: Dict[str, Callable[[str], bool]] = {
+    "--input":                 _is_safe_input_path,
     "--report-format":         lambda v: set(v.split(",")) <= {"csv", "json"},
     "--min-lossy-kbps":        lambda v: v.isdigit() and 0 < int(v) < 500,
     "--workers":               lambda v: v.isdigit() and 0 < int(v) <= 16,

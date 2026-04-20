@@ -3,20 +3,24 @@ import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import Jobs from './pages/Jobs'
 import Tracks from './pages/Tracks'
+import Collection from './pages/Collection'
 import BpmReview from './pages/BpmReview'
 import SetBuilder from './pages/SetBuilder'
 import Export from './pages/Export'
 import SsdSync from './pages/SsdSync'
 import Settings from './pages/Settings'
+import ErrorBoundary from './components/ErrorBoundary'
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<Dashboard />} />
+          <Route index element={<ErrorBoundary><Collection /></ErrorBoundary>} />
+          <Route path="dashboard" element={<Dashboard />} />
           <Route path="jobs" element={<Jobs />} />
           <Route path="tracks" element={<Tracks />} />
+          <Route path="collection" element={<ErrorBoundary><Collection /></ErrorBoundary>} />
           <Route path="bpm-review" element={<BpmReview />} />
           <Route path="set-builder" element={<SetBuilder />} />
           <Route path="export" element={<Export />} />

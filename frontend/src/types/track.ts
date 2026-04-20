@@ -65,6 +65,7 @@ export interface TrackIssueItem {
 }
 
 export interface TrackListParams {
+  path?:         string
   q?:            string
   status?:       string
   artist?:       string

@@ -20,6 +20,7 @@ from .api.routes import analysis as analysis_router
 from .api.routes import exports as exports_router
 from .api.routes import health as health_router
 from .api.routes import jobs as jobs_router
+from .api.routes import library as library_router
 from .api.routes import playlists as playlists_router
 from .api.routes import sync as sync_router
 from .api.routes import tracks as tracks_router
@@ -90,6 +91,7 @@ API_PREFIX = "/api"
 
 app.include_router(health_router.router,     prefix=API_PREFIX)
 app.include_router(jobs_router.router,       prefix=API_PREFIX)
+app.include_router(library_router.router,    prefix=API_PREFIX)
 app.include_router(tracks_router.router,     prefix=API_PREFIX)
 app.include_router(analysis_router.router,   prefix=API_PREFIX)
 app.include_router(playlists_router.router,  prefix=API_PREFIX)
