@@ -136,3 +136,16 @@ ollama_models/
 *_run.txt
 preview.txt
 sample_codes/
+
+# Assistant / workflow files
+CLAUDE.md
+DJToolkit_CONTEXT.txt
+PROJECT_CONTEXT.txt
+
+# Scratch / preview
+preview.txt
+sample_codes/
+djtoolkit_label_intelligence_feature/
+
+# Local service files if not meant for repo
+systemd/
