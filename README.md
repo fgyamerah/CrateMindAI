@@ -1,108 +1,105 @@
-<div align="center">
+# CrateMindAI
 
-# 🎧 CrateMindAI
+A local-first DJ library automation toolkit. Transforms messy audio downloads into a clean, structured, Rekordbox-ready library using a hybrid approach: deterministic metadata cleaning, AI-assisted normalization, and multi-source enrichment.
 
-**Your DJ library, finally under control.**
-
-*A local-first metadata intelligence engine for serious music collections.*
-
-CrateMindAI transforms messy downloads into a **clean, structured, Rekordbox-ready library** using a hybrid approach — deterministic metadata cleaning, AI-assisted normalization, and multi-source enrichment.
-
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
-[![Platform: Linux](https://img.shields.io/badge/Platform-Linux-orange?style=flat-square&logo=linux&logoColor=white)](https://ubuntu.com/)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square)](https://www.python.org/)
+[![Platform: Linux](https://img.shields.io/badge/Platform-Linux-orange?style=flat-square)](https://ubuntu.com/)
 [![Ollama](https://img.shields.io/badge/AI-Ollama-black?style=flat-square)](https://ollama.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-
-</div>
 
 ---
 
-## ✨ Why CrateMindAI
-
-**Rules handle the obvious. AI handles the rest.**
-
-Before any AI runs, your files are cleaned using strict deterministic rules:
-
-- Remove junk metadata (URLs, emails, DJ pool tags)
-- Fix broken tags and malformed ISRCs
-- Normalize structure safely
-
-Then AI refines what remains — with strict safeguards. No hallucinated credits, no silent overwrites, no surprise.
-
----
-
-## 🛡️ Safety First
-
-CrateMindAI is **not** an automation tool. It is a **decision-support system**.
-
-| Safeguard | Detail |
-|---|---|
-| Preview mode | Default on every command — nothing writes without `--apply` |
-| Confidence thresholds | AI suggestions below threshold are skipped, not applied |
-| Audit log | Every change is logged with before/after values |
-| Idempotent | Re-running produces no drift — safe to run repeatedly |
-
----
-
-## ⚙️ Pipeline
+## Pipeline
 
 ```
 Raw audio downloads
         │
         ▼
 ┌─────────────────────┐
-│  metadata-sanitize  │  ← offline, deterministic cleaning
+│  metadata-sanitize  │  offline, deterministic cleaning
 └─────────────────────┘
         │
         ▼
 ┌─────────────────────┐
-│    ai-normalize     │  ← local AI suggestions via Ollama
+│    ai-normalize     │  local AI proposals via Ollama
 └─────────────────────┘
         │
         ▼
 ┌─────────────────────┐
-│ artist-intelligence │  ← alias + identity resolution
+│ artist-intelligence │  alias + identity resolution
 └─────────────────────┘
         │
         ▼
 ┌──────────────────────────┐
-│  metadata-enrich-online  │  ← Spotify / Deezer scoring
+│  metadata-enrich-online  │  Spotify / Deezer scoring
 └──────────────────────────┘
         │
         ▼
 ┌─────────────────────┐
-│ label-intelligence  │  ← label parsing + enrichment
+│ label-intelligence  │  label parsing + enrichment (evolving)
 └─────────────────────┘
         │
         ▼
   Rekordbox-ready output
 ```
 
-> Each stage is standalone. Run one, or compose the full pipeline.
+Each stage is standalone. Run one, or compose the full pipeline.
 
 ---
 
-## 🚀 Features
+## Safety Philosophy
 
-| Area | Capability |
+**Preview by default.** Nothing writes without `--apply`.
+
+| Principle | Detail |
 |---|---|
-| 🧼 **Sanitize** | Removes junk tags, invalid ISRCs, promo text |
-| 🤖 **AI Normalize** | Local LLM improves artist / title / version fields |
-| 🧠 **Artist Intelligence** | Alias resolution + identity consistency |
-| 🔎 **Enrichment** | Spotify + Deezer matching with confidence scoring |
-| 🏷️ **Label Intelligence** | Beatport / Traxsource label extraction |
-| 🎚️ **Quality Audit** | Classify tracks: `LOSSLESS` / `HIGH` / `MEDIUM` / `LOW` |
-| 📁 **Export** | Rekordbox XML + M3U playlists |
+| Deterministic before AI | Rules clean first; AI fills gaps |
+| AI before enrichment | Identity normalized before online lookup |
+| Enrichment only when proven | No guessing on artist mismatches or version conflicts |
+| MIK-first | BPM, key, and cue data are never modified (Mixed In Key owns these) |
+| Idempotent | Safe to re-run at any stage |
+| Full audit log | Every change logged with before/after values |
+
+### Enrichment operational states
+
+| State | Condition | Action |
+|---|---|---|
+| **APPLY** | conf ≥ 0.80, all safety rules pass | Written with `--apply` |
+| **REVIEW** | 0.70 ≤ conf < 0.80 | Added to review queue |
+| **SKIP** | Hard safety block fires | Moved to IGNORED with `--move-ignored` |
+
+Hard blocks (always enforced regardless of confidence):
+- Artist field: **never proposed**
+- Version mismatch: conflicting version tokens → cap at 0.74
+- Low artist similarity (< 0.90, no ISRC anchor): cap at 0.74
+- ISRC exact match: overrides formula → confidence 0.98
+
+IGNORED quarantine path: `/home/koolkatdj/Music/music/IGNORED/`
 
 ---
 
-## 🧪 Installation
+## Current Status
+
+| Stage | Status |
+|---|---|
+| metadata-sanitize | Production-ready |
+| ai-normalize | Production-ready |
+| artist-intelligence | Production-ready |
+| metadata-enrich-online | Production-ready |
+| label-intelligence | In development |
+| review-queue CLI | Production-ready |
+| Web app (jobs + library) | Production-ready |
+| Web app (Collection workspace) | UI only — CLI is source of truth |
+
+---
+
+## Installation
 
 ### Requirements
 
 - Python 3.10+
-- Linux (Ubuntu recommended)
+- Linux (Ubuntu Studio 24 recommended)
 - [Ollama](https://ollama.com/) — for AI features
+- External tools: `ffprobe`, `ffmpeg`, `aubio`, `keyfinder-cli` (for analysis)
 
 ### Setup
 
@@ -115,7 +112,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Install Ollama
+### Ollama (for ai-normalize)
 
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh
@@ -123,76 +120,103 @@ ollama serve
 ollama pull qwen2.5-coder:3b
 ```
 
----
-
-## 🔧 Usage
-
-### 1. Clean metadata (safe, offline)
-
-Preview first — nothing writes without `--apply`:
+### Spotify credentials (for metadata-enrich-online)
 
 ```bash
-python3 pipeline.py metadata-sanitize --input ~/Music/inbox
+export SPOTIFY_CLIENT_ID=your_id
+export SPOTIFY_CLIENT_SECRET=your_secret
 ```
 
-Apply changes:
+---
+
+## Core Commands
+
+
+<!-- COMMANDS:START -->
+
+### 1. metadata-sanitize
+
+Deterministic offline cleaning of all metadata fields.
 
 ```bash
+# Preview (no writes)
+python3 pipeline.py metadata-sanitize --input ~/Music/inbox
+
+# Apply
 python3 pipeline.py metadata-sanitize --input ~/Music/inbox --apply
 ```
 
-### 2. AI normalize
+### 2. ai-normalize
+
+Local AI (Ollama) metadata proposals for artist, title, version, label, remixers, and featured artists.
 
 ```bash
-python3 pipeline.py ai-normalize --input ~/Music/inbox --apply
+# Preview
+python3 pipeline.py ai-normalize --input ~/Music/inbox --pre-sanitize
+
+# Apply
+python3 pipeline.py ai-normalize --input ~/Music/inbox --pre-sanitize --apply
 ```
 
-### 3. Full pipeline (recommended)
+### 3. artist-intelligence
 
-```bash
-python3 pipeline.py ai-normalize \
-  --input ~/Music/inbox \
-  --pre-sanitize \
-  --apply
-```
-
-### 4. Continue pipeline
+Deterministic artist normalization, alias resolution, and identity consistency across the library.
 
 ```bash
 python3 pipeline.py artist-intelligence --input ~/Music/inbox --apply
-python3 pipeline.py metadata-enrich-online --input ~/Music/inbox --apply
-python3 pipeline.py rekordbox-export
 ```
 
----
+### 4. metadata-enrich-online
 
-## 📸 Demo
-
-> *Add GIFs here to show the pipeline in action.*
-
-| Stage | Preview |
-|---|---|
-| Sanitize | `docs/gifs/sanitize.gif` |
-| AI Normalize | `docs/gifs/ai-normalize.gif` |
-| Web UI | `docs/gifs/ui.gif` |
-
----
-
-## 🧪 Testing
+Fill missing album, label, and ISRC via Spotify + Deezer matching with confidence scoring.
 
 ```bash
-# Generate test fixtures
-python3 tests/create_sanitize_fixtures.py
+# Preview
+python3 pipeline.py metadata-enrich-online --input ~/Music/inbox
 
-# Run sanitize against fixtures
-python3 pipeline.py metadata-sanitize \
-  --input tests/fixtures/metadata_sanitize \
-  --apply
+# Apply (with IGNORED quarantine for unresolvable files)
+python3 pipeline.py metadata-enrich-online --input ~/Music/inbox --apply --move-ignored
 ```
+
+### 5. review-queue
+
+Review and resolve medium-confidence enrichment results interactively.
+
+```bash
+python3 pipeline.py review-queue
+python3 pipeline.py review-queue --list-only
+```
+
+> Full reference: [COMMANDS.md](COMMANDS.md) | [COMMANDS.html](COMMANDS.html)
+
+<!-- COMMANDS:END -->
 
 ---
 
-## 📁 Project Structure
+## Additional Commands
+
+```bash
+# Library maintenance
+python3 pipeline.py dedupe --dry-run
+python3 pipeline.py analyze-missing
+python3 pipeline.py audit-quality
+python3 pipeline.py artist-merge --apply
+python3 pipeline.py tag-normalize
+
+# Audio conversion
+python3 pipeline.py convert-audio --src /downloads/m4a --dst /music/inbox --archive /archive
+
+# Playlists and sets
+python3 pipeline.py playlists
+python3 pipeline.py set-builder --vibe peak --duration 90
+python3 pipeline.py harmonic-suggest --key 8A --bpm 128
+```
+
+Full command reference: [COMMANDS.txt](COMMANDS.txt) | [COMMANDS.html](COMMANDS.html)
+
+---
+
+## Project Structure
 
 ```
 CrateMindAI/
@@ -200,47 +224,46 @@ CrateMindAI/
 ├── config.py
 ├── db.py
 │
-├── modules/
-│   └── metadata_sanitize.py
-│
-├── ai/
-│   └── normalizer.py
+├── modules/            Core pipeline modules
+├── ai/                 AI normalize (Ollama interface)
 │
 ├── intelligence/
-│   ├── artist/
-│   ├── label/
-│   └── enrichment/
+│   ├── artist/         Artist normalization + alias store
+│   ├── enrichment/     Online metadata enrichment
+│   └── label/          Label intelligence (evolving)
 │
+├── backend/            FastAPI web backend
+├── frontend/           React + Vite web UI
+├── data/intelligence/  Dataset logs (JSONL)
 └── tests/
 ```
 
 ---
 
-## 🧭 Roadmap
+## Testing
 
-- [ ] Cue points (Mixed In Key integration)
-- [ ] Set / playlist builder
-- [ ] SSD sync automation
-- [ ] Label graph intelligence
-- [ ] Improved scoring engine
+```bash
+python3 -m pytest tests/ -v
+python3 -m pytest tests/test_artist_intelligence.py -v
+```
 
 ---
 
-## 🧠 Philosophy
+## Philosophy
 
-- **Local-first** — your data stays on your machine
+- **Local-first** — your data stays on your machine; no mandatory cloud
 - **Deterministic + AI hybrid** — rules run first, AI fills the gaps
-- **No silent data corruption** — every change is visible and reversible
-- **Reproducible results** — idempotent by design
+- **No silent overwrites** — every change is visible, logged, and reversible
+- **Reproducible** — idempotent by design; re-running produces no drift
 
 ---
 
-## 👤 Author
+## Author
 
 **fgyamerah** — [github.com/fgyamerah](https://github.com/fgyamerah)
 
 ---
 
-## 📜 License
+## License
 
-[MIT](LICENSE) — free to use, modify, and distribute.
+[MIT](LICENSE)

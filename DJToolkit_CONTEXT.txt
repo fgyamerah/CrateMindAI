@@ -1,441 +1,313 @@
 ======================================================================
-DJTOOLKIT (TrackIQ) — PROJECT CONTEXT
-Version : 1.7.0 (backend v0.6.2 web app)
+CrateMindAI — PROJECT CONTEXT
+Version : 2.0.0
 Platform: Ubuntu Studio 24 (Linux)
-Updated : 2026-04-18
+Updated : 2026-04-20
 ======================================================================
 
 
 ----------------------------------------------------------------------
 PURPOSE
 ----------------------------------------------------------------------
-Automated DJ library preparation:
-Raw audio → clean metadata → BPM/key → playlists → Rekordbox export
+CrateMindAI is a local-first, pipeline-based DJ library automation toolkit.
+
+Transforms raw audio downloads into:
+- Clean, structured metadata
+- BPM / key (MIK-compliant)
+- Organized library
+- Rekordbox-compatible exports
+
+Platform: Ubuntu Studio 24 → Windows-compatible DJ drive output.
 
 Design principles:
-- Local-first
-- Idempotent
-- Rekordbox-compatible output
-- MIK-first: Mixed In Key is the authoritative source of BPM, key, and cues
-- Backend API: FastAPI wrapper around the CLI (Phase 1 complete)
+- Local-first: no mandatory cloud dependency
+- Deterministic before AI: rules run first, AI fills gaps
+- AI before enrichment: normalize identity before online lookup
+- Enrichment only when identity is proven: no guessing
+- Preview by default: nothing writes without --apply
+- Idempotent: safe to re-run at any point in the pipeline
+- MIK-first: Mixed In Key is the authoritative source for BPM, key, and cues
 
 
 ----------------------------------------------------------------------
-CRITICAL ISSUES (ACTIVE)
+INTELLIGENCE PIPELINE (primary workflow)
 ----------------------------------------------------------------------
-1. BPM scaling inconsistency (lower priority now — MIK is authoritative)
-   Some tracks analyzed as ~12 BPM instead of ~120 BPM via aubio.
-   Since MIK is now the authoritative source, this only affects tracks that
-   MIK has not yet processed.
-   Status: LOWER PRIORITY (MIK mitigates this for analyzed tracks)
+Pipeline order (each stage is standalone; compose as needed):
 
-2. _read_existing_analysis() needs validation against real MIK files
-   The tag read logic is implemented but not yet tested against production
-   MIK-tagged files. Verify TKEY/TBPM read correctly for MP3/FLAC/M4A.
-   Status: NEEDS TESTING
+  1. metadata-sanitize      Deterministic offline cleaning
+  2. ai-normalize           Local Ollama AI proposals
+  3. artist-intelligence    Canonical artist normalization
+  4. metadata-enrich-online Spotify + Deezer metadata enrichment
+  5. label-intelligence     Label parsing + enrichment (evolving)
+
+Each stage: preview by default, --apply to write.
 
 
 ----------------------------------------------------------------------
 ARCHITECTURE
 ----------------------------------------------------------------------
-ENTRYPOINT:
-- pipeline.py
+ENTRY POINT:
+  pipeline.py — single entry point for all subcommands
 
-MODULES:
-- qc, dedupe, organizer, parser, sanitizer
-- analyzer (BPM + key)
-- tagger
-- playlists / rekordbox_export
-- cue_suggest
-- set_builder / harmonic
-- label_intel (external data enrichment)
-- convert_audio (.m4a → .aiff with parallel ffmpeg, metadata preservation, archive)
-- audit_quality (codec/bitrate audit; quality tier classification; CSV/JSON reports)
-- artist_merge (consolidate artist folder spelling variants; three-category classification)
+INTELLIGENCE MODULES (intelligence/):
+  intelligence/artist/
+    artist_normalizer.py   Name normalization rules
+    artist_parser.py       Artist string parsing + collab extraction
+    artist_alias_store.py  Persistent alias store (JSON)
+    runner.py              Orchestrator for artist-intelligence subcommand
 
-DATA FLOW:
-Audio → QC → Dedup → Organize → Sanitize → Analyze → Tag → Playlists → Export
+  intelligence/enrichment/
+    enrichment_schema.py   EnrichmentCandidate, EnrichmentMatch dataclasses
+    metadata_matcher.py    Weighted similarity scoring + ISRC match + change policy
+    runner.py              Orchestrator: search → score → preview/apply → log
 
+  intelligence/label/
+    (evolving — label parsing and enrichment)
 
-----------------------------------------------------------------------
-CORE LOGIC
-----------------------------------------------------------------------
-HARMONIC MIXING:
-- Camelot system
-- Strict mode enforces compatible transitions
+AI MODULES (ai/):
+  normalizer.py            Ollama LLM interface + prompt construction
+  metadata_schema.py       Proposal schema + validation
+  review_dataset.py        Dataset logging (queue/accepted/rejected/fewshot)
 
-BPM / KEY HANDLING (MIK-FIRST):
-- Mixed In Key is the authoritative source. The pipeline NEVER overwrites
-  existing BPM or key values.
-- analyzer._read_existing_analysis() reads TBPM/TKEY (MP3), BPM/INITIALKEY
-  (FLAC), tmpo/©key (M4A) before running aubio / keyfinder-cli.
-- aubio (→ librosa fallback) only runs when BPM is absent in both DB and tags.
-- keyfinder-cli only runs when Camelot key is absent in both DB and tags.
+CORE MODULES (modules/):
+  qc.py, dedupe.py, organizer.py, parser.py, sanitizer.py
+  analyzer.py, tagger.py, playlists.py, reporter.py
+  audit_quality.py, convert_audio.py
+  artist_merge.py, artist_folder_clean.py
+  rekordbox_export.py, cue_suggest.py, set_builder.py, harmonic.py
+  label_intel.py, label_clean.py, metadata_clean.py
+  doc_registry.py, doc_gen.py
 
-CUE POINTS:
-- Cue suggest is DISABLED by default (MIK owns cues).
-- --force-cue-suggest enables it for non-MIK workflows only.
+BACKEND (backend/):
+  FastAPI wrapper around the CLI. Web UI for job management + library view.
+  Entry: uvicorn backend.app.main:app --reload --port 8000
+  Frontend: React + Vite + TypeScript (port 5173, proxies /api/* → 8000)
+  NOTE: Web app Collection workspace is NOT the source of truth. CLI pipeline
+  remains authoritative.
 
-REKORDBOX XML:
-- XML export is DISABLED by default (MIK writes cues into Rekordbox XML).
-- --force-xml enables it with a warning. Use only when MIK is not in use.
-- M3U playlist generation is always enabled (safe, does not affect MIK state).
-
-SANITIZER (sanitize_text):
-- Step 0: strip leading track-index junk before first pipe
-  Pattern: `^[^\w\s]*(?:\d+|[A-Za-z])\s*\|\s*`
-  Removes "2 | ", "A | ", "***3 | " etc. at start of string only.
-  Mid-string pipes and multi-letter words before pipe are untouched.
-- Steps 1–9: URL removal, promo phrases, symbol cleanup, artifact cleanup.
-
-IDEMPOTENCY:
-- TXXX:PROCESSED=1
-- DB status='ok'
+DATABASE (SQLite):
+  processed.db     Main pipeline DB (tracks, track_history, pipeline_runs,
+                   duplicate_groups, cue_points)
+  jobs.db          Backend job DB (jobs, bpm_anomalies)
 
 
 ----------------------------------------------------------------------
-CLI OVERVIEW
+MIK-FIRST POLICY (NON-NEGOTIABLE)
 ----------------------------------------------------------------------
-Main:
-- pipeline.py
+Mixed In Key is the authoritative source for BPM, key, and cue data.
 
-Key subcommands:
-- set-builder
-- harmonic-suggest
-- playlists
-- rekordbox-export        (M3U only by default; --force-xml for XML)
-- analyze-missing
-- dedupe
-- convert-audio           (new v1.2.0: .m4a → .aiff with parallel ffmpeg)
-- audit-quality           (new v1.4.0: codec/bitrate audit, classify, CSV/JSON report, optional move/tag)
-- label-intel
-- cue-suggest             (disabled in pipeline by default; --force-cue-suggest)
-- metadata-clean
-- artist-merge / artist-folder-clean
-- ai-normalize            (local Ollama LLM metadata proposals; --apply to write; 0.75 min-confidence)
-                          --pre-sanitize: run metadata-sanitize before inference so model sees clean tags;
-                          respects --apply (both steps preview without it; both write with it)
-- artist-intelligence     (deterministic artist normalization + alias store; intelligence/artist/)
-- metadata-enrich-online  (Spotify + Deezer enrichment; 0.80 min-confidence; intelligence/enrichment/)
-- build-fewshot           (curate few-shot examples from accepted ai-normalize decisions)
-- tag-normalize
-- db-prune-stale
-- label-clean
-- generate-docs           (new v1.5.0: regenerate COMMANDS.txt / README.md / COMMANDS.html from registry)
-- validate-docs           (new v1.5.0: check docs are in sync with registry; --strict for CI)
+NEVER:
+- Overwrite existing BPM
+- Overwrite existing key
+- Overwrite cue points
+- Re-analyze if data already exists
 
-DEV ENVIRONMENT (v1.6.0):
-- .envrc — direnv auto-activates .venv on cd; warns if .venv missing.
-  Install: sudo apt install direnv; add hook to shell; run: direnv allow .
-- requirements.txt — runtime deps (mutagen, numpy, librosa, tqdm, argcomplete, anthropic, requests, bs4)
-- requirements-dev.txt — -r requirements.txt + pytest>=7.4.0
-- pipeline.py startup: _warn_if_no_venv() advisory stderr if no venv detected (non-fatal)
-- pipeline.py autocomplete: PYTHON_ARGCOMPLETE_OK marker + argcomplete.autocomplete(parser)
-  Activate: eval "$(register-python-argcomplete pipeline.py)"
-  Or globally: activate-global-python-argcomplete
+ALWAYS:
+1. Check DB and file tags first (_read_existing_analysis())
+2. Preserve existing values
+3. Only fill missing data
 
-DOCUMENTATION SYSTEM (v1.5.0):
-- modules/doc_registry.py — COMMAND_REGISTRY is the single source of truth for all
-  CLI commands, flags, descriptions, and examples.
-- modules/doc_gen.py      — Generators for COMMANDS.txt, README.md sections, COMMANDS.html.
-- generate-docs / validate-docs subcommands in pipeline.py.
-- Optional pre-commit hook: scripts/pre_commit_validate_docs.sh
-  Install: cp scripts/pre_commit_validate_docs.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
-- README.md Subcommands section is now between <!-- COMMANDS:START --> / <!-- COMMANDS:END --> markers.
-- When adding a new subcommand: update doc_registry.py, then run generate-docs.
+XML:
+- Disabled by default
+- Only use --force-xml if MIK is not used
 
-Important flags:
---duration
---strategy
---max-bpm-jump
---strict-harmonic
---genre
+M3U:
+- Always safe
 
 
 ----------------------------------------------------------------------
-BACKEND API (backend/ — v0.6.x)
+ENRICHMENT SAFETY MODEL (metadata-enrich-online)
 ----------------------------------------------------------------------
-FastAPI backend wrapper around the existing CLI. Full feature set as of 2026-04-12.
-
-Run:
-  pip install -r backend/requirements.txt
-  uvicorn backend.app.main:app --reload --port 8000
-
-Job lifecycle: pending → running → succeeded / failed / cancelled
-Log files:    backend/data/logs/{job_id}.log (written live by subprocess)
-Jobs DB:      backend/data/jobs.db (separate SQLite, NOT the pipeline processed.db)
-
-Security model:
-  - ALLOWED_COMMANDS frozenset (18 subcommands)
-  - Boolean flags: _ALLOWED_BOOL_FLAGS frozenset
-  - Value flags: _ALLOWED_VALUE_FLAGS dict with per-flag validators
-  - subprocess always built as an argument list (shell=False enforced)
-  - Bad input → HTTP 422 with exact disallowed token named
-
-Job model extra fields (added v0.5):
-  pid, progress_current, progress_total, progress_percent, progress_message
-  Added via _add_column_safe() migration in init_db() (idempotent, safe on existing DB)
-
-Process registry (backend/app/services/process_registry.py):
-  Shared dict[job_id → asyncio.subprocess.Process] + set[cancelling_ids].
-  POST /api/jobs/{id}/cancel calls request_cancel() → SIGTERM.
-  Background tasks check is_cancelling() to choose 'cancelled' vs 'failed'.
-
-Route files (backend/app/api/routes/):
-  health.py      GET /api/health, GET /api/version
-  jobs.py        POST/GET /api/jobs, GET/GET /api/jobs/{id}/logs, POST /api/jobs/{id}/cancel
-  tracks.py      GET /api/tracks, /api/tracks/{id}, /api/tracks/stats, /api/tracks/issues
-  analysis.py    POST /api/analysis/bpm-check, GET /api/analysis/bpm-anomalies,
-                 PATCH /api/analysis/bpm-anomalies/{id}, POST /api/analysis/reanalyze
-  playlists.py   POST /api/playlists/set-builder, GET /api/playlists, GET /api/playlists/{id}
-  exports.py     POST /api/exports/validate, POST /api/exports/run,
-                 GET /api/exports, GET /api/exports/{id}
-  sync.py        GET /api/sync/config, POST /api/sync/preview, POST /api/sync/run,
-                 GET /api/sync, GET /api/sync/{id}
-
-SSD Sync (backend/app/services/rsync_runner.py):
-  Source: SYNC_SOURCE_MAP = {"library": ..., "inbox": ...} — never raw user paths.
-  Dest: SYNC_DEST_SSD = /mnt/music_ssd/KKDJ/ — not user-configurable.
-  No --delete by default; user must enable allow_delete=True.
-  Progress: parses rsync --info=progress2 (to-chk=remaining/total), throttled 1s DB writes.
-
-BPM analysis (backend/app/services/bpm_analysis.py):
-  Stores anomalies in bpm_anomalies table in jobs.db.
-  Anomaly reasons: missing_bpm, too_low_10x, likely_halved, likely_doubled, too_high.
-  Review statuses: pending, reviewed, ignored, requeued, resolved.
-
-Frontend (React + Vite + TypeScript):
-  Dev server: cd frontend && npm install && npm run dev  (port 5173)
-  Proxy:      vite.config.ts forwards /api/* → http://localhost:8000
-  Build:      npm run build → frontend/dist/
-  Pages:      Dashboard, Jobs, Tracks, BpmReview, SetBuilder, Export, SsdSync, Settings
-  Icons:      lucide-react@1.8.0
-
-Files:
-  backend/app/main.py
-  backend/app/core/config.py, db.py, pipeline_db.py
-  backend/app/models/job.py
-  backend/app/schemas/job.py, track.py, playlist.py, bpm_analysis.py, export.py, sync.py
-  backend/app/services/job_service.py, toolkit_runner.py, track_service.py,
-                        playlist_service.py, bpm_analysis.py, export_validation.py,
-                        rsync_runner.py, process_registry.py
-  backend/app/api/routes/health.py, jobs.py, tracks.py, analysis.py,
-                          playlists.py, exports.py, sync.py
-  frontend/src/pages/{Dashboard,Jobs,Tracks,BpmReview,SetBuilder,Export,SsdSync,Settings}.tsx
-  frontend/src/components/{Sidebar,PageHeader,Layout,LogModal,StatusBadge,ErrorBanner,TrackPanel}.tsx
-
-----------------------------------------------------------------------
-AUDIT QUALITY (modules/audit_quality.py — v1.4.0)
-----------------------------------------------------------------------
-audit-quality subcommand: classify every audio file by codec/bitrate.
-
-Quality tiers:
-  LOSSLESS  FLAC / ALAC / WAV / AIFF (codec-based; bitrate ignored)
-  HIGH      lossy >= 256 kbps
-  MEDIUM    lossy 192–255 kbps  (lower bound: --min-lossy-kbps, default 192)
-  LOW       lossy < 192 kbps
-  UNKNOWN   ffprobe failure or unrecognized codec
-
-Default behavior: non-destructive (probe + classify + report; no moves, no tag writes)
-
-Optional actions:
-  --move-low-quality DIR   move only LOW files; relative folder structure preserved
-  --write-tags             write QUALITY tag per file
-    MP3  : TXXX:QUALITY (ID3v2.3)
-    FLAC : QUALITY Vorbis comment
-    M4A  : ----:com.apple.iTunes:QUALITY MP4 freeform atom
-    AIFF/WAV: skipped safely
-  --dry-run                log intentions; no file writes; no report files
-
-Report output: logs/reports/audit_quality/audit_quality_TIMESTAMP.{csv,json}
-DB: quality_tier TEXT column added to tracks table via migration in init_db()
-
-
-----------------------------------------------------------------------
-ONLINE METADATA ENRICHMENT (intelligence/enrichment/ — 2026-04-18)
-----------------------------------------------------------------------
-metadata-enrich-online subcommand: fill missing album/label/ISRC tags via
-Spotify Web API (primary) and Deezer API (fallback). Preview-first; --apply
-to write. Never writes artist field.
-
-Package layout (intelligence/enrichment/):
-  enrichment_schema.py  — EnrichmentCandidate, EnrichmentMatch dataclasses
-  metadata_matcher.py   — weighted similarity scoring + ISRC exact match + change policy
-  spotify_lookup.py     — SpotifyClient (client credentials OAuth2, token cache)
-  deezer_lookup.py      — DeezerClient (public API, no auth)
-  runner.py             — orchestrator: search → score → preview/apply → log
-
-Scoring weights:
-  artist_sim  0.35   title_sim (base, version stripped)  0.30
-  version_sim 0.25   label_sim  0.10
-  ISRC exact match → confidence 0.98 (overrides formula)
-  Label alias boost: +0.05 when current + candidate labels are in the same alias group
-
-Min confidence threshold: ENRICH_ONLINE_MIN_CONFIDENCE = 0.80 (was 0.92)
-  - Overridable via ENRICH_ONLINE_MIN_CONFIDENCE env var or --min-confidence flag
-
-Hard safeguards (metadata_matcher.best_match — applied after scoring):
-  1. Version mismatch: if BOTH titles carry explicit but DIFFERENT version tokens:
-       confidence capped at 0.74, proposed_changes cleared, reason prefixed
-       "VERSION MISMATCH BLOCKED".  Missing version on either side → NOT a mismatch.
-  2. Low artist similarity: if artist_sim < 0.90 (and no ISRC anchor):
-       confidence capped at 0.74.  Proposed changes KEPT for preview.
-       Reason prefixed "LOW ARTIST SIM (x.xx) — auto-apply blocked".
-  Neither safeguard fires when an ISRC exact match (0.98) anchors the result.
-
-Change policy (safety rules):
-  artist       : NEVER proposed
-  title        : only if current is blank, or ISRC matched + base differs
-  album        : if current is empty, or ISRC matched
-  label        : if current is empty; or ISRC matched + conf >= 0.95
-  isrc         : only if not already set
-
-Dataset logging:
-  AI_ENRICH_QUEUE    = data/intelligence/enrichment_queue.jsonl    (every result)
-  AI_ENRICH_ACCEPTED = data/intelligence/enrichment_accepted.jsonl (applied only)
-  AI_ENRICH_REJECTED = data/intelligence/enrichment_rejected.jsonl (skipped/errors)
-
-Source priority (runner._search_with_fallback):
-  1. Spotify ISRC       — most precise; skipped when file has no ISRC
+Source priority:
+  1. Spotify ISRC       (most precise; skipped if no ISRC on file)
   2. Spotify artist+title
-  3. Deezer             — fallback when Spotify conf < 0.70
-  4. Traxsource         — dance-music specialist fallback; triggered when:
-                          a) best-so-far < 0.80, OR
-                          b) genre tag contains house/afro/deep/soulful/amapiano/etc.
-  Winning = highest confidence across all sources tried.
-  EnrichmentMatch.sources_tried records which APIs were queried.
+  3. Deezer             (fallback when Spotify conf < 0.70)
+  4. Traxsource         (dance-music specialist; when best < 0.80 or genre
+                         matches house/afro/deep/amapiano etc.)
 
-Extension points (not yet implemented):
-  - Album-detail API call for Spotify/Deezer to retrieve record label
-  - Traxsource CSS selectors should be verified against live site before production
+Operational states per track:
+  APPLY   conf >= 0.80; all safety rules pass -> written with --apply
+  REVIEW  0.70 <= conf < 0.80 -> added to review-queue
+  SKIP    hard safety block fires -> moved to IGNORED with --move-ignored
 
-Config keys:
-  SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET (env var backed)
-  ENRICH_ONLINE_MIN_CONFIDENCE = 0.80
-  AI_ENRICH_{QUEUE,ACCEPTED,REJECTED}
+Hard blocks (always enforced):
+  - artist field: NEVER proposed
+  - Version mismatch: conflicting version tokens -> cap at 0.74
+  - Low artist similarity (< 0.90, no ISRC): cap at 0.74
+  - ISRC exact match: confidence 0.98, bypasses formula limits
+
+Change policy:
+  title     : only if current is blank, or ISRC matched + base differs
+  album     : if current is empty, or ISRC matched
+  label     : if current is empty; or ISRC matched + conf >= 0.95
+  isrc      : only if not already set
+
+IGNORED quarantine path: /home/koolkatdj/Music/music/IGNORED/
+  Preserves relative folder structure. Collision: appends _dup1, _dup2 …
+  Triggered by --move-ignored flag only (off by default).
 
 
 ----------------------------------------------------------------------
-AI NORMALIZE (ai/ — 2026-04-15)
+REVIEW QUEUE
 ----------------------------------------------------------------------
-ai-normalize subcommand: local Ollama LLM proposals for artist/title/version/
-label/remixers/featured_artists. Preview-first; --apply to write.
+CLI: python3 pipeline.py review-queue [--list-only]
 
-Review dataset pipeline (ai/review_dataset.py):
-  write_queue_entry()    — called after every file (preview + apply modes)
-  write_accepted()       — called when changes are auto-applied
-  write_rejected()       — called when skipped or errored
-  build_fewshot(limit)   — curates diverse subset from accepted_examples.jsonl
-  load_fewshot_examples()— helper for future prompt injection (not yet wired)
+Queue file: data/intelligence/enrichment_review_queue.json
+Populated by metadata-enrich-online for REVIEW-state results.
+Deduplicated by file_path — repeat runs refresh entries, not grow queue.
 
-JSONL dataset files (data/intelligence/):
+Interactive actions:
+  a = apply proposed changes + remove entry
+  s = skip (keep in queue)
+  d = delete entry without applying
+  n = next
+  q = quit
+
+
+----------------------------------------------------------------------
+AI NORMALIZE (ai/)
+----------------------------------------------------------------------
+Subcommand: ai-normalize
+Local Ollama LLM proposals for: artist, title, version, label,
+remixers, featured_artists.
+
+Preview by default; --apply to write.
+Min confidence: 0.75 (--min-confidence flag).
+--pre-sanitize: runs metadata-sanitize before inference (recommended).
+
+Dataset logging (data/intelligence/):
   review_queue.jsonl, accepted_examples.jsonl, rejected_examples.jsonl,
   review_decisions.jsonl, fewshot_examples.jsonl
 
 Config keys:
   OLLAMA_BASE_URL, OLLAMA_DEFAULT_MODEL, OLLAMA_TIMEOUT
-  AI_REVIEW_{QUEUE,ACCEPTED_EXAMPLES,REJECTED_EXAMPLES,DECISIONS,FEWSHOT_EXAMPLES}
-
-Min confidence: 0.75 (--min-confidence flag)
-Dataset logging is non-fatal; import failure does not break ai-normalize.
 
 
 ----------------------------------------------------------------------
-ARTIST MERGE (modules/artist_merge.py — v1.7.0)
+ARTIST INTELLIGENCE (intelligence/artist/)
 ----------------------------------------------------------------------
-artist-merge subcommand: consolidate artist folder spelling variants.
+Subcommand: artist-intelligence
+Deterministic artist normalization + alias store.
 
-Three-category classification:
-  SAFE_ALIAS          Difference is formatting/punctuation/casing only.
-                      Examples: "Heavy-K"/"Heavy K", "H.O.S.H"/"HOSH",
-                      "Rosalie"/"Rosalie.", "culoe de song"/"Culoe De Song"
-  SAME_PRIMARY_COLLAB Primary artist matches after normalization; ≥1 folder
-                      has a feat/ft/comma collab suffix.
-                      Examples: "Heavy-K"/"Heavy-K feat. Davido"
-  AMBIGUOUS           Primary artists differ after full normalization.
-                      Never auto-merged; written to review report only.
+Three-category merge classification (also used by artist-merge):
+  SAFE_ALIAS           Formatting/casing/punctuation difference only
+  SAME_PRIMARY_COLLAB  Primary matches; >=1 folder has feat/ft suffix
+  AMBIGUOUS            Primary artists differ after normalization -> never merged
 
-Both SAFE_ALIAS and SAME_PRIMARY_COLLAB are applied in --apply mode.
-AMBIGUOUS groups are always skipped.
-
-Normalization for comparison (_normalize_primary_for_compare):
-  NFC unicode → lowercase → strip periods/apostrophes/quotes → hyphen/underscore→space
-  → collapse spaces. This is applied AFTER extract_primary_artist() so collab suffixes
-  do not affect the comparison.
-
-Canonical name selection (_pick_canonical):
-  Most files wins. Tiebreakers: penalise all-uppercase (HOSH < H.O.S.H),
-  penalise all-lowercase (culoe < Culoe De Song), then alphabetical.
-  Collab folder names are never chosen as canonical.
-
-Report: logs/reports/artist_merge/artist_merge_{dry_run|applied}.json
-  Sections: safe_alias_merges, same_primary_collab_merges, ambiguous_merges
-
-Tests: tests/test_artist_merge.py — 77 tests
+Canonical name selection: most files wins. Tiebreakers: penalize
+all-uppercase, all-lowercase; then alphabetical.
 
 
 ----------------------------------------------------------------------
-DATABASE
+BACKEND API (backend/ — v0.6.x)
 ----------------------------------------------------------------------
-SQLite tables:
-- tracks          (quality_tier TEXT column added v1.4.0 via migration)
-- track_history
-- pipeline_runs
-- duplicate_groups
-- cue_points
+Run:
+  pip install -r backend/requirements.txt
+  uvicorn backend.app.main:app --reload --port 8000
 
+Job lifecycle: pending → running → succeeded / failed / cancelled
+Log files:    backend/data/logs/{job_id}.log
+Jobs DB:      backend/data/jobs.db (separate from pipeline processed.db)
 
-----------------------------------------------------------------------
-KEY ASSUMPTIONS
-----------------------------------------------------------------------
-- Rekordbox compatibility > theoretical correctness
-- BPM must be DJ-usable
-- Genre must exist before BPM correction
-- Pipeline order should not be altered casually
+Security model:
+  ALLOWED_COMMANDS frozenset (whitelisted subcommands only)
+  subprocess always built as argument list (shell=False enforced)
+  Bad input → HTTP 422
 
+Route files (backend/app/api/routes/):
+  health.py, jobs.py, tracks.py, analysis.py, playlists.py,
+  exports.py, sync.py, library.py
 
-----------------------------------------------------------------------
-CONVERT AUDIO
-----------------------------------------------------------------------
-convert-audio subcommand: .m4a → .aiff, parallel ffmpeg workers.
+Frontend pages:
+  Dashboard, Jobs, Tracks, BpmReview, SetBuilder, Export, SsdSync,
+  Settings, Collection (workspace only — not source of truth)
 
-Workflow:
-  scan --src for .m4a → ffprobe validate → ffmpeg pcm_s16be → verify → move to --archive
-
-Key behaviors:
-  - Output codec: pcm_s16be (16-bit big-endian PCM AIFF)
-  - Metadata copied via -map_metadata 0
-  - Relative folder structure preserved in both --dst and --archive
-  - Duration verification: abs(dst_dur - src_dur) <= --verify-tolerance-sec (default 1.0s)
-  - On failure: original left untouched, broken output deleted
-  - Archive move only happens after verification passes
-  - Parallelism: ThreadPoolExecutor, N workers (default 4)
-  - Progress: tqdm if installed, graceful fallback
-
-Config:
-  FFMPEG_BIN  = os.environ.get("FFMPEG_BIN",  "ffmpeg")   # new in v1.2.0
-  FFPROBE_BIN = os.environ.get("FFPROBE_BIN", "ffprobe")  # existing
+SSD Sync:
+  Source locked to SYNC_SOURCE_MAP (no raw user paths)
+  Dest locked to /mnt/music_ssd/KKDJ/
+  No --delete by default
 
 
 ----------------------------------------------------------------------
-ENVIRONMENT
+CLI OVERVIEW
 ----------------------------------------------------------------------
-- Python 3
-- Ubuntu Studio 24
-- External tools:
-  ffprobe, ffmpeg, aubio, keyfinder-cli, rmlint, beets
+Intelligence pipeline (primary):
+  metadata-sanitize
+  ai-normalize            (--pre-sanitize, --apply, --min-confidence 0.75)
+  artist-intelligence     (--apply)
+  metadata-enrich-online  (--apply, --move-ignored, --min-confidence 0.80)
+  review-queue            (--list-only)
+
+Library maintenance:
+  dedupe, metadata-clean, tag-normalize, analyze-missing
+  audit-quality, artist-merge, artist-folder-clean, db-prune-stale
+
+Audio / export:
+  convert-audio (.m4a → .aiff, parallel ffmpeg)
+  playlists, rekordbox-export (M3U default; --force-xml not recommended with MIK)
+  cue-suggest (disabled in pipeline by default; --force-cue-suggest to enable)
+  set-builder, harmonic-suggest
+
+Label:
+  label-intel, label-clean
+
+Build pipeline (secondary/legacy):
+  python3 pipeline.py [FLAGS]
+  Full 9-step inbox pipeline: QC → dedupe → organize → sanitize
+  → analyze → tag → cue → playlists → report
+
+Docs:
+  generate-docs, validate-docs
+
+
+----------------------------------------------------------------------
+DATASET LOGGING PATHS (data/intelligence/)
+----------------------------------------------------------------------
+AI normalize:
+  review_queue.jsonl, accepted_examples.jsonl, rejected_examples.jsonl
+
+Enrichment:
+  enrichment_queue.jsonl, enrichment_accepted.jsonl,
+  enrichment_rejected.jsonl, enrichment_review_queue.json
+
+
+----------------------------------------------------------------------
+CONFIGURATION
+----------------------------------------------------------------------
+config.py       All paths, thresholds, binary names
+config_local.py Local overrides (git-ignored)
+.envrc          direnv auto-activates .venv
+
+Key env vars:
+  DJ_MUSIC_ROOT, OLLAMA_BASE_URL, OLLAMA_DEFAULT_MODEL
+  SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
+  ENRICH_ONLINE_MIN_CONFIDENCE (default 0.80)
+  FFMPEG_BIN, FFPROBE_BIN
+
+
+----------------------------------------------------------------------
+CRITICAL ISSUES (ACTIVE)
+----------------------------------------------------------------------
+1. BPM scaling inconsistency (lower priority — MIK is authoritative)
+   Some tracks analyzed as ~12 BPM instead of ~120 BPM via aubio.
+   Status: LOWER PRIORITY (MIK mitigates for analyzed tracks)
+
+2. _read_existing_analysis() not yet validated against real MIK-tagged files
+   TKEY/TBPM read logic implemented but not production-tested for MP3/FLAC/M4A.
+   Status: NEEDS TESTING
+
+3. Traxsource CSS selectors should be verified against live site before
+   production use in metadata-enrich-online.
+   Status: NEEDS VERIFICATION
 
 
 ----------------------------------------------------------------------
 KNOWN ISSUES
 ----------------------------------------------------------------------
 - Beets bypasses routing logic
-- Route tracks appear under '#' grouping in letter playlists
-- Filename parsing fallback is imperfect
+- Route tracks appear under '#' in letter playlists (cosmetic)
 - keyfinder-cli has no fallback (failure = no key detected)
-- Cue points not written to Rekordbox XML (blocked by MIK-first policy;
-  see NEXT_TASKS.txt — any future cue write-back must not overwrite MIK data)
-- _read_existing_analysis() not yet validated against real MIK-tagged files
+- Cue points not written to Rekordbox XML (MIK-first policy)
 
 
 ======================================================================
