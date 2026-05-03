@@ -458,17 +458,79 @@ def _write_artist_tag(path: Path, new_artist: str) -> bool:
 # Review queue
 # ---------------------------------------------------------------------------
 
+def _load_queue(queue_path: Path) -> List[dict]:
+    """Load queue from disk; returns [] when missing or unreadable."""
+    if not queue_path.exists():
+        return []
+    try:
+        with open(queue_path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        return data if isinstance(data, list) else []
+    except Exception as exc:
+        log.warning("Could not load review queue %s: %s", queue_path, exc)
+        return []
+
+
+def _save_queue(queue_path: Path, entries: List[dict]) -> None:
+    """Save queue to disk, creating parent dirs as needed."""
+    queue_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(queue_path, "w", encoding="utf-8") as fh:
+        json.dump(entries, fh, indent=2, ensure_ascii=False)
+
+
+def _approve_entry(entries: List[dict], index: int) -> bool:
+    """Mark entries[index] approved=True, rejected=False. Returns False if out of range."""
+    if not (0 <= index < len(entries)):
+        return False
+    entries[index]["approved"] = True
+    entries[index]["rejected"] = False
+    return True
+
+
+def _reject_entry(entries: List[dict], index: int) -> bool:
+    """Mark entries[index] rejected=True, approved=False. Returns False if out of range."""
+    if not (0 <= index < len(entries)):
+        return False
+    entries[index]["rejected"] = True
+    entries[index]["approved"] = False
+    return True
+
+
+def _print_queue(entries: List[dict]) -> None:
+    pending  = sum(1 for e in entries if not e.get("approved") and not e.get("rejected"))
+    approved = sum(1 for e in entries if e.get("approved") and not e.get("applied"))
+    rejected = sum(1 for e in entries if e.get("rejected"))
+    applied  = sum(1 for e in entries if e.get("applied"))
+    print(
+        f"REVIEW QUEUE — {len(entries)} entries  "
+        f"(pending: {pending}  approved: {approved}  rejected: {rejected}  applied: {applied})"
+    )
+    print()
+    for i, entry in enumerate(entries):
+        if entry.get("applied"):
+            status = "APPLIED"
+        elif entry.get("approved"):
+            status = "APPROVED"
+        elif entry.get("rejected"):
+            status = "REJECTED"
+        else:
+            status = "PENDING"
+        conf = entry.get("confidence", 0)
+        print(f"  [{i}] {status}")
+        print(f"    FILE    : {entry.get('file', '')}")
+        print(f"    CURRENT : {entry.get('original_artist', '')!r}")
+        print(f"    PROPOSED: {entry.get('proposed_artist', '')!r}")
+        print(f"    CONF    : {conf:.2f}  REASON: {entry.get('reason', '')}")
+        print()
+
+
 def _update_review_queue(queue_path: Path, entries: List[dict]) -> None:
-    """Merge new entries into the queue, dedup by (file, original_artist)."""
-    existing: List[dict] = []
-    if queue_path.exists():
-        try:
-            with open(queue_path, "r", encoding="utf-8") as fh:
-                data = json.load(fh)
-            if isinstance(data, list):
-                existing = data
-        except Exception:
-            pass
+    """
+    Merge new entries into the queue, dedup by (file, original_artist).
+    Preserves human-set approved/rejected/applied state when updating an existing entry.
+    New entries default to approved=False, rejected=False.
+    """
+    existing: List[dict] = _load_queue(queue_path)
 
     key_index: Dict[tuple, int] = {
         (e.get("file"), e.get("original_artist")): i
@@ -477,13 +539,17 @@ def _update_review_queue(queue_path: Path, entries: List[dict]) -> None:
     for entry in entries:
         key = (entry.get("file"), entry.get("original_artist"))
         if key in key_index:
-            existing[key_index[key]] = entry
+            idx = key_index[key]
+            # Carry forward human approval state so a re-scan doesn't wipe decisions.
+            for flag in ("approved", "rejected", "applied"):
+                entry.setdefault(flag, existing[idx].get(flag, False))
+            existing[idx] = entry
         else:
+            entry.setdefault("approved", False)
+            entry.setdefault("rejected", False)
             existing.append(entry)
 
-    queue_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(queue_path, "w", encoding="utf-8") as fh:
-        json.dump(existing, fh, indent=2, ensure_ascii=False)
+    _save_queue(queue_path, existing)
 
 
 # ---------------------------------------------------------------------------
@@ -602,6 +668,8 @@ def run_artist_repair(args) -> int:
                 "reason":          cand.reason,
                 "source_field":    cand.source_field,
                 "apply_blocked":   True,
+                "approved":        False,
+                "rejected":        False,
                 "run_date":        datetime.now(timezone.utc).isoformat(),
             })
             print("    → QUEUED for review (confidence below apply threshold)")
@@ -699,4 +767,120 @@ def run_artist_repair(args) -> int:
         f"{flagged_count} flagged, {applied_count} applied, "
         f"{review_count} queued, {moved_count} moved → {input_path}"
     )
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# artist-repair-review CLI entry point
+# ---------------------------------------------------------------------------
+
+def run_artist_repair_review(args) -> int:
+    """Called by pipeline.py dispatch for the artist-repair-review subcommand."""
+    from modules.textlog import log_action
+
+    queue_path_raw = getattr(config, "ARTIST_REPAIR_QUEUE",
+                             "data/intelligence/artist_repair_queue.json")
+    queue_path = Path(queue_path_raw)
+
+    do_list       = getattr(args, "list",          False)
+    do_apply      = getattr(args, "apply_approved", False)
+    approve_idx   = getattr(args, "approve",        None)
+    reject_idx    = getattr(args, "reject",         None)
+
+    entries = _load_queue(queue_path)
+
+    if not entries:
+        print(f"Review queue is empty: {queue_path}")
+        return 0
+
+    # Default: show list when no action flags given
+    if do_list or (not do_apply and approve_idx is None and reject_idx is None):
+        _print_queue(entries)
+        print(f"Queue file: {queue_path}")
+        print("Commands:")
+        print("  --approve INDEX        mark entry approved")
+        print("  --reject  INDEX        mark entry rejected")
+        print("  --apply-approved       write approved repairs to audio file tags")
+        return 0
+
+    # --approve INDEX
+    if approve_idx is not None:
+        if not _approve_entry(entries, approve_idx):
+            print(
+                f"ERROR: index {approve_idx} is out of range "
+                f"(queue has {len(entries)} entries)",
+                file=sys.stderr,
+            )
+            return 1
+        entry = entries[approve_idx]
+        print(f"[{approve_idx}] APPROVED")
+        print(f"  {entry.get('original_artist')!r}  →  {entry.get('proposed_artist')!r}")
+        _save_queue(queue_path, entries)
+
+    # --reject INDEX
+    if reject_idx is not None:
+        if not _reject_entry(entries, reject_idx):
+            print(
+                f"ERROR: index {reject_idx} is out of range "
+                f"(queue has {len(entries)} entries)",
+                file=sys.stderr,
+            )
+            return 1
+        entry = entries[reject_idx]
+        print(f"[{reject_idx}] REJECTED")
+        print(f"  {entry.get('original_artist')!r}")
+        _save_queue(queue_path, entries)
+
+    # --apply-approved
+    if do_apply:
+        eligible = [(i, e) for i, e in enumerate(entries)
+                    if e.get("approved") and not e.get("applied")]
+        if not eligible:
+            print("No approved (unapplied) entries to apply.")
+            return 0
+
+        print(f"Applying {len(eligible)} approved repair(s)...")
+        print()
+
+        n_applied = n_skipped = n_missing = n_error = 0
+
+        for idx, entry in eligible:
+            path      = Path(entry["file"])
+            original  = entry.get("original_artist", "")
+            proposed  = entry.get("proposed_artist", "")
+
+            if not path.exists():
+                print(f"  [{idx}] SKIP_MISSING: {path}")
+                n_missing += 1
+                continue
+
+            current = _read_artist_tag(path)
+            if current != original:
+                print(f"  [{idx}] SKIP_CHANGED: {path.name}")
+                print(f"    current  : {current!r}")
+                print(f"    original : {original!r}")
+                n_skipped += 1
+                continue
+
+            ok = _write_artist_tag(path, proposed)
+            if ok:
+                entries[idx]["applied"] = True
+                n_applied += 1
+                print(f"  [{idx}] APPLIED: {path.name}")
+                print(f"    {original!r}  →  {proposed!r}")
+                log_action(
+                    f"ARTIST-REPAIR-REVIEW APPLIED: {path.name} | "
+                    f"{original!r} → {proposed!r}"
+                )
+            else:
+                n_error += 1
+                print(f"  [{idx}] ERROR: write failed for {path.name}", file=sys.stderr)
+
+        _save_queue(queue_path, entries)
+        print()
+        print(f"Applied  : {n_applied}")
+        print(f"Skipped  : {n_skipped}  (tag changed since queue entry was created)")
+        print(f"Missing  : {n_missing}")
+        print(f"Errors   : {n_error}")
+
     return 0

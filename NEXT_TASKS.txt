@@ -17,6 +17,11 @@ P3 = low
 ----------------------------------------------------------------------
 CURRENT FOCUS
 ----------------------------------------------------------------------
+[x] (P1) artist-repair-review — human approval workflow; queue state persistence; 158 tests (2026-05-03)
+[x] (P1) bare-number guard v6 — numeric/ordinal second token preserved; 71 tests (2026-05-03)
+[x] (P1) title-number-recover — filename-based recovery for bad bare-number strips; number>=10 guard; v5 rules (2026-05-03)
+[x] (P1) metadata-sanitize-rollback — revert bad title_bare_number_stripped with bare-number guard (2026-05-03)
+         _BARE_NUM_PROTECTED_WORDS guard; v4 rules; run_metadata_sanitize_rollback; 8 new tests
 [x] (P1) metadata-sanitize — new title rules: bare number strip, trailing BPM, domain tokens, label suffix, feat casing (2026-05-02)
          _strip_label_suffix() helper; protected-paren guard; 37 new tests in test_metadata_sanitize.py
 [x] (P1) artist-repair subcommand — detect merged artist names before artist-intelligence (2026-05-02)

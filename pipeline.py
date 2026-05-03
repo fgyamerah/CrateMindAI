@@ -3343,6 +3343,94 @@ def main() -> None:
         help="Clear processed-state tracking for this stage before running.",
     )
 
+    # ----- metadata-sanitize-rollback subcommand -----
+    p_msr = subparsers.add_parser(
+        "metadata-sanitize-rollback",
+        help="Revert bad title_bare_number_stripped changes using a sanitize JSON log",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Roll back title changes made by metadata-sanitize that stripped a leading\n"
+            "number from titles where the number was actually part of the real title\n"
+            "(e.g. '4 You' → 'You', '15 Minutes' → 'Minutes').\n\n"
+            "Reads a JSON log produced by:\n"
+            "  python3 pipeline.py metadata-sanitize --output-json <logfile>\n\n"
+            "Safe by design:\n"
+            "  • Preview is the default — no files modified without --apply\n"
+            "  • --only-suspicious limits reverts to known false-positive patterns\n"
+            "  • Every revert is logged with a reason code\n\n"
+            "Suspicious patterns (first word of stripped title):\n"
+            "  You, Me, Us, Them, Minutes, Hours, Days, Seconds,\n"
+            "  Love, Life, One, Two\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py metadata-sanitize-rollback --jsonl sanitize_log.json\n"
+            "  python3 pipeline.py metadata-sanitize-rollback --jsonl sanitize_log.json --only-suspicious\n"
+            "  python3 pipeline.py metadata-sanitize-rollback --jsonl sanitize_log.json --only-suspicious --apply\n"
+        ),
+    )
+    p_msr.add_argument(
+        "--jsonl", metavar="FILE", required=True,
+        help="JSON log file produced by metadata-sanitize --output-json.",
+    )
+    p_msr.add_argument(
+        "--rule", metavar="RULE", default="title_bare_number_stripped",
+        help="Rule code to filter for revert (default: title_bare_number_stripped).",
+    )
+    p_msr.add_argument(
+        "--preview", action="store_true", default=True,
+        help="Show what would be reverted without writing (default).",
+    )
+    p_msr.add_argument(
+        "--apply", action="store_true",
+        help="Write reverted titles to audio file tags.",
+    )
+    p_msr.add_argument(
+        "--only-suspicious", action="store_true", dest="only_suspicious",
+        help="Only revert cases where the stripped result is a known false-positive pattern.",
+    )
+
+    # ----- title-number-recover subcommand -----
+    p_tnr = subparsers.add_parser(
+        "title-number-recover",
+        help="Recover title tags damaged by over-aggressive bare-number stripping",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Scan audio files and recover title tags where a leading number was\n"
+            "incorrectly stripped from a real title (e.g. '15 Minutes' → 'Minutes').\n\n"
+            "Detection:\n"
+            "  1. Parse title from filename using 'Artist - Title.ext' convention.\n"
+            "  2. Read current embedded title tag.\n"
+            "  3. If filename title starts with N<space>rest and current tag == rest,\n"
+            "     propose restoring the full filename title.\n\n"
+            "Recovery is only proposed for suspicious cases:\n"
+            "  • rest starts with a known title word (You/Me/Minutes/Hours/Days/Love…)\n"
+            "  • OR leading number is >= 10 (two-digit numbers rarely appear as track indices)\n\n"
+            "Obvious track-index junk (single-digit + unprotected word) is silently skipped.\n\n"
+            "Safe by design:\n"
+            "  • Preview is the default — no files modified without --apply\n"
+            "  • Only writes the title tag — no filename renames\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py title-number-recover --input /mnt/music_ssd/KKDJ\n"
+            "  python3 pipeline.py title-number-recover --input /mnt/music_ssd/KKDJ --verbose\n"
+            "  python3 pipeline.py title-number-recover --input /mnt/music_ssd/KKDJ --apply\n"
+        ),
+    )
+    p_tnr.add_argument(
+        "--input", metavar="DIR", required=True,
+        help="Directory of audio files to scan (recursive).",
+    )
+    p_tnr.add_argument(
+        "--apply", action="store_true",
+        help="Write recovered titles to audio file tags. Without this flag, changes are only previewed.",
+    )
+    p_tnr.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Show skipped files and no-match details.",
+    )
+    p_tnr.add_argument(
+        "--limit", metavar="N", type=int, default=None,
+        help="Maximum number of files to process.",
+    )
+
     # ----- artist-repair subcommand -----
     p_arep = subparsers.add_parser(
         "artist-repair",
@@ -3407,6 +3495,50 @@ def main() -> None:
     p_arep.add_argument(
         "--log-dir", metavar="DIR", default=None, dest="log_dir",
         help="Directory for run logs. Default: logs/artist-repair/",
+    )
+
+    # ----- artist-repair-review subcommand -----
+    p_arr = subparsers.add_parser(
+        "artist-repair-review",
+        help="Review, approve, reject, or apply queued artist repairs",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Human approval workflow for artist repairs that could not be auto-applied.\n\n"
+            "Queue file: data/intelligence/artist_repair_queue.json\n\n"
+            "Workflow:\n"
+            "  1. Run artist-repair to populate the queue with MEDIUM/LOW-confidence candidates.\n"
+            "  2. Use --list to inspect queued entries with their index numbers.\n"
+            "  3. Use --approve INDEX / --reject INDEX to mark decisions.\n"
+            "  4. Use --apply-approved to write only approved repairs to audio file tags.\n\n"
+            "Safety:\n"
+            "  • --list and --approve/--reject only modify the JSON queue file, not audio tags.\n"
+            "  • --apply-approved is the only flag that touches audio file tags.\n"
+            "  • Missing files are silently skipped.\n"
+            "  • Tags changed since queue creation are skipped with a warning.\n"
+            "  • Entries are never auto-approved — human decision required.\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py artist-repair-review --list\n"
+            "  python3 pipeline.py artist-repair-review --approve 0\n"
+            "  python3 pipeline.py artist-repair-review --reject 1\n"
+            "  python3 pipeline.py artist-repair-review --apply-approved\n"
+            "  python3 pipeline.py artist-repair-review --approve 2 --apply-approved\n"
+        ),
+    )
+    p_arr.add_argument(
+        "--list", action="store_true",
+        help="Show all queued entries with index numbers and approval status.",
+    )
+    p_arr.add_argument(
+        "--approve", metavar="INDEX", type=int, default=None,
+        help="Mark the entry at INDEX as approved.",
+    )
+    p_arr.add_argument(
+        "--reject", metavar="INDEX", type=int, default=None,
+        help="Mark the entry at INDEX as rejected.",
+    )
+    p_arr.add_argument(
+        "--apply-approved", action="store_true", dest="apply_approved",
+        help="Write all approved (unapplied) repairs to audio file tags.",
     )
 
     # ----- artist-intelligence subcommand -----
@@ -3840,11 +3972,23 @@ def main() -> None:
         _rl.finish(exit_code=_rc)
         sys.exit(_rc)
 
+    if args.command == "metadata-sanitize-rollback":
+        from modules.metadata_sanitize import run_metadata_sanitize_rollback
+        sys.exit(run_metadata_sanitize_rollback(args))
+
+    if args.command == "title-number-recover":
+        from modules.metadata_sanitize import run_title_number_recover
+        sys.exit(run_title_number_recover(args))
+
     if args.command == "artist-repair":
         db.init_db()
         from modules.artist_repair import run_artist_repair
         _rc = run_artist_repair(args)
         sys.exit(_rc)
+
+    if args.command == "artist-repair-review":
+        from modules.artist_repair import run_artist_repair_review
+        sys.exit(run_artist_repair_review(args))
 
     if args.command == "artist-intelligence":
         db.init_db()

@@ -8,6 +8,147 @@ Rules:
 - Focus on WHY, not just WHAT
 
 ----------------------------------------------------------------------
+[2026-05-03] — feat: artist-repair-review command — human approval workflow for queued repairs
+----------------------------------------------------------------------
+TYPE: Feature
+SUMMARY: New artist-repair-review subcommand adds safe human approval/rejection
+         workflow for MEDIUM/LOW-confidence artist repairs that were blocked from
+         auto-apply. Queue entries now persist approved/rejected state across re-scans.
+
+DETAILS:
+  modules/artist_repair.py
+    - Added _load_queue, _save_queue (queue I/O helpers).
+    - Added _approve_entry, _reject_entry (in-memory queue state mutators).
+    - Added _print_queue (formatted list display with status/index).
+    - Updated _update_review_queue: preserves approved/rejected/applied state on
+      re-scan (new entries default to approved=False, rejected=False).
+    - Updated run_artist_repair: new entries include approved/rejected fields.
+    - Added run_artist_repair_review(args) entry point:
+        --list               show queue with index numbers and status
+        --approve INDEX      mark entry approved (clears rejected)
+        --reject  INDEX      mark entry rejected (clears approved)
+        --apply-approved     write ONLY approved (unapplied) entries to audio tags
+                             skips missing files and tags changed since scan.
+
+  pipeline.py
+    - Registered artist-repair-review subcommand with full argparse help.
+    - Dispatch block (no db.init_db needed — queue is JSON-only).
+
+  tests/test_artist_repair.py
+    - Added imports: _load_queue, _save_queue, _approve_entry, _reject_entry, _update_review_queue.
+    - Added _make_entry() helper.
+    - Added TestReviewQueueCreation (7 tests): defaults, roundtrip, dedup, state preservation.
+    - Added TestApproveEntry (5 tests): set, clear-rejected, out-of-range, index-0.
+    - Added TestRejectEntry (3 tests): set, clear-approved, out-of-range.
+    - Added TestApplyApprovedLogic (5 tests): eligibility filter, already-applied skip,
+      skip-changed logic.
+
+FILES: modules/artist_repair.py, pipeline.py, tests/test_artist_repair.py
+IMPACT: 158 tests pass. Queue file gains approved/rejected fields; existing entries
+        without these fields default to False on next load (setdefault pattern).
+
+----------------------------------------------------------------------
+[2026-05-03] — fix: bare-number stripping guard — numeric/ordinal second token preserved
+----------------------------------------------------------------------
+TYPE: Bugfix
+SUMMARY: Extended bare-number strip guard to also preserve titles where the token
+         immediately following the leading number is itself numeric or ordinal
+         (e.g. "3 13th Friday", "4 100 Sure"). Rules version bumped to v6.
+
+DETAILS:
+  modules/metadata_sanitize.py
+    - Added third guard condition to _sanitize_title step 2:
+        _first_is_numeric_or_ordinal = re.match(r'^\d', bare_words[0])
+      When this fires the strip is skipped and reason code
+      "title_leading_number_preserved_ambiguous" is emitted via log.debug.
+    - _SANITIZE_RULES_VERSION bumped v5 → v6.
+
+  tests/test_metadata_sanitize.py
+    - TestBareNumberGuard: added test_3_13th_friday_unchanged, test_4_100_sure_unchanged.
+    - TestBareNumberGuard: added test_2_africa_feat_luzolo_still_stripped.
+
+FILES: modules/metadata_sanitize.py, tests/test_metadata_sanitize.py
+IMPACT: 71 tests pass. v6 invalidates stale no_change DB records for re-evaluation.
+
+----------------------------------------------------------------------
+[2026-05-03] — feat: title-number-recover + extended bare-number guards (number>=10, years)
+----------------------------------------------------------------------
+TYPE: Feature + Bugfix
+SUMMARY: New filename-based title recovery tool; bare-number stripping guard extended to
+         two-digit+ numbers and "years"; rules version bumped to v5.
+
+DETAILS:
+  modules/metadata_sanitize.py
+    - Added "years" to _BARE_NUM_PROTECTED_WORDS.
+    - Extended _sanitize_title step 2 guard: also skips stripping when leading number >= 10.
+      Previously only protected-word first-word was checked.
+    - _SANITIZE_RULES_VERSION bumped v4 → v5.
+    - Added _RE_RECOVER_NUM_PREFIX, _parse_filename_title(), _is_suspicious_recovery().
+    - Added run_title_number_recover(args) entry point:
+        --input DIR     recursive audio file scan
+        --apply         write recovered title tags (preview is default)
+        --verbose       show skipped/no-match details
+        --limit N       cap files processed
+      Detection: if filename is "Artist - N Rest.ext" and current tag == "Rest",
+      proposes restoring "N Rest" when suspicious (protected word OR number >= 10).
+      Single-digit + unprotected-word cases are silently skipped as track-index junk.
+
+  pipeline.py
+    - Registered title-number-recover subcommand with full argparse help.
+    - Dispatch block calls run_title_number_recover.
+
+  tests/test_metadata_sanitize.py
+    - Updated test_two_digit_prefix → split into test_two_digit_prefix_unchanged
+      (10 Tracks Away now unchanged) and test_single_digit_non_protected_stripped.
+    - Added TestBareNumberGuard: test_10_tracks_away_unchanged, test_99_problems_unchanged.
+    - Added TestSuspiciousRecovery (11 tests covering all DO/DO-NOT recover examples).
+    - Added _is_suspicious_recovery to imports.
+
+FILES: modules/metadata_sanitize.py, pipeline.py, tests/test_metadata_sanitize.py
+IMPACT: v5 rules invalidates stale no_change DB records; files with two-digit stripped
+        titles (e.g. "10 Tracks Away" → "Tracks Away") will now be left unchanged on
+        future metadata-sanitize runs. Use title-number-recover to fix already-damaged files.
+NOTES: Recovery reads filename title — requires "Artist - Title.ext" naming convention.
+       Pass --verbose to see files skipped due to no-separator or no-match.
+
+----------------------------------------------------------------------
+[2026-05-03] — feat: metadata-sanitize-rollback + bare-number guard for protected title words
+----------------------------------------------------------------------
+TYPE: Feature + Bugfix
+SUMMARY: Rollback command for bad title_bare_number_stripped changes; guard prevents stripping
+         real titles like "4 You" or "15 Minutes" going forward.
+
+DETAILS:
+  modules/metadata_sanitize.py
+    - Added _BARE_NUM_PROTECTED_WORDS frozenset (you/me/us/them/minutes/hours/days/
+      seconds/love/life/one/two) — if the first remaining word is in this set the
+      bare-number strip is skipped entirely.
+    - _SANITIZE_RULES_VERSION bumped v3 → v4 to invalidate stale no_change records.
+    - Added rollback helpers: _load_rollback_records (JSON + JSONL), _is_suspicious_revert,
+      _read_current_title, _write_title_tag.
+    - Added run_metadata_sanitize_rollback(args) entry point:
+        --jsonl FILE           JSON log from --output-json
+        --rule RULE            default title_bare_number_stripped
+        --preview / --apply    preview is default
+        --only-suspicious      limit to first-word-in-suspicious-set hits
+
+  pipeline.py
+    - Registered metadata-sanitize-rollback subcommand with full argparse parser.
+    - Dispatch block calls run_metadata_sanitize_rollback.
+
+  tests/test_metadata_sanitize.py
+    - Added TestBareNumberGuard (8 tests):
+        "4 You", "15 Minutes", "24 Hours" → unchanged
+        "4 You (Original Mix)" → unchanged
+        "2 Love", "3 Days" → unchanged
+        "2 Sada (...)", "3 Afro" → still stripped
+
+FILES: modules/metadata_sanitize.py, pipeline.py, tests/test_metadata_sanitize.py
+IMPACT: Safe — all 55 tests pass; v4 rules version forces re-scan of previously-processed files.
+NOTES: Rollback reads --output-json log; pass --output-json on the original sanitize run to get
+       the log file.
+
+----------------------------------------------------------------------
 [2026-05-02] — feat: metadata-sanitize new title rules + artist-repair subcommand
 ----------------------------------------------------------------------
 TYPE: Feature

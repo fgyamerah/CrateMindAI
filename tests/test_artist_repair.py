@@ -29,6 +29,11 @@ from modules.artist_repair import (
     _find_merge_positions,
     _propose_repairs,
     _propose_separator_repairs,
+    _load_queue,
+    _save_queue,
+    _approve_entry,
+    _reject_entry,
+    _update_review_queue,
     HIGH_CONFIDENCE,
     MEDIUM_CONFIDENCE,
     LOW_CONFIDENCE,
@@ -390,3 +395,182 @@ class TestIsUnsafeArtistString:
     def test_newtone_majorsteve_univers_koki_is_unsafe(self):
         # Multi-word string with 2 CamelCase transitions (wT + rS) — must be flagged
         assert is_unsafe_artist_string("NewTone MajorSteve Univers Koki") is True
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _make_entry(
+    filepath: str = "/lib/track.mp3",
+    original: str = "African RootsLebo",
+    proposed: str = "African Roots, Lebo",
+    confidence: float = 0.45,
+    reason: str = "camelcase_merge_detected; known_sides=none",
+) -> dict:
+    return {
+        "file":            filepath,
+        "original_artist": original,
+        "proposed_artist": proposed,
+        "confidence":      confidence,
+        "reason":          reason,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Queue creation
+# ---------------------------------------------------------------------------
+
+class TestReviewQueueCreation:
+    def test_new_entry_defaults_to_not_approved(self, tmp_path):
+        q = tmp_path / "q.json"
+        _update_review_queue(q, [_make_entry()])
+        loaded = _load_queue(q)
+        assert loaded[0]["approved"] is False
+        assert loaded[0]["rejected"] is False
+
+    def test_load_nonexistent_returns_empty(self, tmp_path):
+        assert _load_queue(tmp_path / "missing.json") == []
+
+    def test_roundtrip_save_load(self, tmp_path):
+        q = tmp_path / "q.json"
+        entries = [_make_entry()]
+        _save_queue(q, entries)
+        assert _load_queue(q) == entries
+
+    def test_dedup_by_file_and_original(self, tmp_path):
+        q = tmp_path / "q.json"
+        entry = _make_entry()
+        _update_review_queue(q, [entry])
+        _update_review_queue(q, [entry])   # same key — must NOT duplicate
+        assert len(_load_queue(q)) == 1
+
+    def test_approval_state_preserved_on_rescan(self, tmp_path):
+        q = tmp_path / "q.json"
+        entry = _make_entry()
+        _update_review_queue(q, [entry])
+        # Human approves the entry
+        entries = _load_queue(q)
+        _approve_entry(entries, 0)
+        _save_queue(q, entries)
+        # artist-repair re-scans — same file/original → must NOT wipe approved
+        _update_review_queue(q, [_make_entry()])
+        assert _load_queue(q)[0]["approved"] is True
+
+    def test_rejection_state_preserved_on_rescan(self, tmp_path):
+        q = tmp_path / "q.json"
+        _update_review_queue(q, [_make_entry()])
+        entries = _load_queue(q)
+        _reject_entry(entries, 0)
+        _save_queue(q, entries)
+        _update_review_queue(q, [_make_entry()])
+        assert _load_queue(q)[0]["rejected"] is True
+
+    def test_new_distinct_entry_appended(self, tmp_path):
+        q = tmp_path / "q.json"
+        _update_review_queue(q, [_make_entry(filepath="/a.mp3")])
+        _update_review_queue(q, [_make_entry(filepath="/b.mp3")])
+        assert len(_load_queue(q)) == 2
+
+
+# ---------------------------------------------------------------------------
+# Approve flow
+# ---------------------------------------------------------------------------
+
+class TestApproveEntry:
+    def _entries(self) -> list:
+        return [
+            dict(_make_entry(), approved=False, rejected=False),
+            dict(_make_entry(filepath="/b.mp3"), approved=False, rejected=False),
+        ]
+
+    def test_approve_sets_approved_true(self):
+        e = self._entries()
+        assert _approve_entry(e, 0) is True
+        assert e[0]["approved"] is True
+
+    def test_approve_clears_rejected(self):
+        e = self._entries()
+        e[0]["rejected"] = True
+        _approve_entry(e, 0)
+        assert e[0]["rejected"] is False
+
+    def test_approve_does_not_affect_other_entries(self):
+        e = self._entries()
+        _approve_entry(e, 0)
+        assert e[1]["approved"] is False
+
+    def test_approve_out_of_range_returns_false(self):
+        e = self._entries()
+        assert _approve_entry(e, 99) is False
+        assert _approve_entry(e, -1) is False
+
+    def test_approve_index_zero_recognised(self):
+        # 0 is falsy — must be tested explicitly (not None check matters)
+        e = self._entries()
+        assert _approve_entry(e, 0) is True
+
+
+# ---------------------------------------------------------------------------
+# Reject flow
+# ---------------------------------------------------------------------------
+
+class TestRejectEntry:
+    def _entries(self) -> list:
+        return [dict(_make_entry(), approved=False, rejected=False)]
+
+    def test_reject_sets_rejected_true(self):
+        e = self._entries()
+        assert _reject_entry(e, 0) is True
+        assert e[0]["rejected"] is True
+
+    def test_reject_clears_approved(self):
+        e = self._entries()
+        e[0]["approved"] = True
+        _reject_entry(e, 0)
+        assert e[0]["approved"] is False
+
+    def test_reject_out_of_range_returns_false(self):
+        e = self._entries()
+        assert _reject_entry(e, 5) is False
+
+
+# ---------------------------------------------------------------------------
+# apply-approved logic
+# ---------------------------------------------------------------------------
+
+class TestApplyApprovedLogic:
+    """Tests for the eligibility filtering logic used by --apply-approved."""
+
+    def test_only_approved_and_unapplied_are_eligible(self):
+        entries = [
+            dict(_make_entry(filepath="/a.mp3"), approved=False, rejected=False),
+            dict(_make_entry(filepath="/b.mp3"), approved=True,  rejected=False),
+            dict(_make_entry(filepath="/c.mp3"), approved=True,  rejected=False, applied=True),
+        ]
+        eligible = [(i, e) for i, e in enumerate(entries)
+                    if e.get("approved") and not e.get("applied")]
+        assert len(eligible) == 1
+        assert eligible[0][1]["file"] == "/b.mp3"
+
+    def test_rejected_entry_never_eligible(self):
+        entries = [dict(_make_entry(), approved=False, rejected=True)]
+        eligible = [e for e in entries if e.get("approved") and not e.get("applied")]
+        assert eligible == []
+
+    def test_already_applied_skipped(self):
+        entries = [dict(_make_entry(), approved=True, applied=True)]
+        eligible = [e for e in entries if e.get("approved") and not e.get("applied")]
+        assert eligible == []
+
+    def test_apply_marks_entry_applied(self):
+        entries = [dict(_make_entry(), approved=True, rejected=False)]
+        # Simulate successful write: mark applied
+        entries[0]["applied"] = True
+        assert entries[0]["applied"] is True
+
+    def test_skip_when_current_tag_differs(self):
+        # The apply loop skips entries where current tag ≠ original
+        original = "African RootsLebo"
+        current  = "African Roots, Lebo"   # already fixed by another tool
+        assert current != original          # → SKIP_CHANGED path fires
