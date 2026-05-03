@@ -14,7 +14,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from modules.metadata_sanitize import _sanitize_title, _strip_label_suffix
+from modules.metadata_sanitize import (
+    _sanitize_title,
+    _strip_label_suffix,
+    _is_suspicious_recovery,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -133,7 +137,7 @@ class TestLabelSuffix:
 
 
 # ---------------------------------------------------------------------------
-# Bare leading track-number
+# Bare leading track-number — stripping (junk track-index prefixes)
 # ---------------------------------------------------------------------------
 
 class TestBareNumberPrefix:
@@ -147,8 +151,14 @@ class TestBareNumberPrefix:
         assert result == "Sada (N'Dinga Gaba Diplomacy Soul Remix)"
         assert reason == "title_bare_number_stripped"
 
-    def test_two_digit_prefix(self):
+    def test_two_digit_prefix_unchanged(self):
+        # Two-digit leading number (>= 10) is now a guard — never stripped.
         result, reason = _sanitize_title("10 Tracks Away")
+        assert result == "10 Tracks Away"
+        assert reason == ""
+
+    def test_single_digit_non_protected_stripped(self):
+        result, reason = _sanitize_title("5 Tracks Away")
         assert result == "Tracks Away"
         assert reason == "title_bare_number_stripped"
 
@@ -156,9 +166,137 @@ class TestBareNumberPrefix:
         # Result would be < 2 chars — should not strip
         result, reason = _sanitize_title("2 A")
         # "A" is only 1 char — guard should block stripping
-        # (or the BPM rule may not fire at all; this depends on guard)
         # Main assertion: no crash, result not empty
         assert result  # non-empty
+
+
+# ---------------------------------------------------------------------------
+# Bare leading track-number — guard: protected first words must NOT be stripped
+# ---------------------------------------------------------------------------
+
+class TestBareNumberGuard:
+    def test_4_you_unchanged(self):
+        result, reason = _sanitize_title("4 You")
+        assert result == "4 You"
+        assert reason == ""
+
+    def test_15_minutes_unchanged(self):
+        result, reason = _sanitize_title("15 Minutes")
+        assert result == "15 Minutes"
+        assert reason == ""
+
+    def test_24_hours_unchanged(self):
+        result, reason = _sanitize_title("24 Hours")
+        assert result == "24 Hours"
+        assert reason == ""
+
+    def test_protected_with_paren_suffix_unchanged(self):
+        result, reason = _sanitize_title("4 You (Original Mix)")
+        assert result == "4 You (Original Mix)"
+        assert reason == ""
+
+    def test_2_love_unchanged(self):
+        result, reason = _sanitize_title("2 Love")
+        assert result == "2 Love"
+        assert reason == ""
+
+    def test_3_days_unchanged(self):
+        result, reason = _sanitize_title("3 Days")
+        assert result == "3 Days"
+        assert reason == ""
+
+    def test_10_tracks_away_unchanged(self):
+        # number >= 10 guard — two-digit numbers are never stripped
+        result, reason = _sanitize_title("10 Tracks Away")
+        assert result == "10 Tracks Away"
+        assert reason == ""
+
+    def test_99_problems_unchanged(self):
+        result, reason = _sanitize_title("99 Problems")
+        assert result == "99 Problems"
+        assert reason == ""
+
+    def test_3_13th_friday_unchanged(self):
+        # Second token "13th" starts with a digit — numeric/ordinal guard fires
+        result, reason = _sanitize_title("3 13th Friday")
+        assert result == "3 13th Friday"
+        assert reason == ""
+
+    def test_4_100_sure_unchanged(self):
+        # Second token "100" starts with a digit — numeric guard fires
+        result, reason = _sanitize_title("4 100 Sure")
+        assert result == "4 100 Sure"
+        assert reason == ""
+
+    def test_2_sada_still_stripped(self):
+        # "Sada" is not a protected word — track-index stripping must still fire
+        result, reason = _sanitize_title("2 Sada (N'Dinga Gaba Diplomacy Soul Remix)")
+        assert result == "Sada (N'Dinga Gaba Diplomacy Soul Remix)"
+        assert reason == "title_bare_number_stripped"
+
+    def test_3_afro_still_stripped(self):
+        # "Afro" is not a protected word — track-index stripping must still fire
+        result, reason = _sanitize_title("3 Afro")
+        assert result == "Afro"
+        assert reason == "title_bare_number_stripped"
+
+    def test_2_africa_feat_luzolo_still_stripped(self):
+        # Multi-word but "Africa" is not protected and not numeric
+        result, reason = _sanitize_title("2 Africa Feat. Luzolo")
+        assert result == "Africa Feat. Luzolo"
+        assert reason == "title_bare_number_stripped"
+
+
+# ---------------------------------------------------------------------------
+# _is_suspicious_recovery — title-number-recover detection logic
+# ---------------------------------------------------------------------------
+
+class TestSuspiciousRecovery:
+    def test_4_you_suspicious(self):
+        ok, reason = _is_suspicious_recovery(4, "You")
+        assert ok
+        assert "You" in reason
+
+    def test_15_minutes_suspicious(self):
+        ok, reason = _is_suspicious_recovery(15, "Minutes")
+        assert ok
+
+    def test_24_hours_suspicious(self):
+        # "hours" is in the protected word list AND number >= 10 — either guard fires
+        ok, reason = _is_suspicious_recovery(24, "Hours")
+        assert ok
+
+    def test_10_tracks_suspicious(self):
+        # number >= 10 makes this suspicious even though "Tracks" is not in the list
+        ok, reason = _is_suspicious_recovery(10, "Tracks Away")
+        assert ok
+        assert "10" in reason
+
+    def test_2_sada_not_suspicious(self):
+        ok, reason = _is_suspicious_recovery(2, "Sada")
+        assert not ok
+        assert "track_index" in reason
+
+    def test_3_afro_not_suspicious(self):
+        ok, reason = _is_suspicious_recovery(3, "Afro")
+        assert not ok
+
+    def test_2_africa_not_suspicious(self):
+        ok, reason = _is_suspicious_recovery(2, "Africa")
+        assert not ok
+
+    def test_3_faith_not_suspicious(self):
+        ok, reason = _is_suspicious_recovery(3, "Faith")
+        assert not ok
+
+    def test_1_agora_not_suspicious(self):
+        ok, reason = _is_suspicious_recovery(1, "Agora")
+        assert not ok
+
+    def test_3_years_suspicious(self):
+        # "years" is in the protected word list
+        ok, reason = _is_suspicious_recovery(3, "Years")
+        assert ok
 
 
 # ---------------------------------------------------------------------------

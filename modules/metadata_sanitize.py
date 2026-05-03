@@ -97,6 +97,14 @@ _RE_TITLE_BARE_NUM_PREFIX = re.compile(
     re.UNICODE,
 )
 
+# Words that, when they follow a bare leading number, indicate the number is part
+# of the real title ("4 You", "15 Minutes", "3 Years") and must NOT be stripped.
+_BARE_NUM_PROTECTED_WORDS: frozenset = frozenset({
+    "you", "me", "us", "them",
+    "minutes", "hours", "days", "seconds", "years",
+    "love", "life", "one", "two",
+})
+
 # Domain / piracy tokens in any parenthetical:
 # "(fordjonly.com)", "(hulkshare.com)", "(htpthahouse-lovers.blogspot.com)" etc.
 _RE_TITLE_DOMAIN_PAREN = re.compile(
@@ -136,7 +144,7 @@ _KNOWN_STRIP_LABELS: frozenset = frozenset({
 # Version token stored in processed-state reason for "no_change" records.
 # Bump this string whenever title-cleanup rules are added or changed so that
 # stale "no_change" records are invalidated and all files are re-evaluated.
-_SANITIZE_RULES_VERSION = "v3"
+_SANITIZE_RULES_VERSION = "v6"
 _RULES_REASON = f"rules:{_SANITIZE_RULES_VERSION}"
 
 # Maps _sanitize_title() reason codes to named debug counters for the run summary.
@@ -444,12 +452,29 @@ def _sanitize_title(value: str) -> Tuple[str, str]:
         reasons.append("title_prefix_removed")
 
     # 2. Bare numeric prefix — no separator ("2 Sada" → "Sada", "3 Afro" → "Afro")
-    bare = _RE_TITLE_BARE_NUM_PREFIX.sub("", result)
-    if bare != result:
-        bare = bare.strip()
-        if len(bare) >= 2:
+    #    Preserve (do NOT strip) when any guard fires:
+    #      (a) leading number >= 10  ("15 Minutes", "24 Hours")
+    #      (b) first remaining word is in _BARE_NUM_PROTECTED_WORDS  ("4 You")
+    #      (c) first remaining word itself starts with a digit — numeric/ordinal token
+    #          ("3 13th Friday" → "13th", "4 100 Sure" → "100")
+    #    Reason code logged on preservation: title_leading_number_preserved_ambiguous
+    _m_bare = re.match(r'^(\d{1,3})\s+(?=[A-Za-z(])', result)
+    if _m_bare:
+        _leading_num = int(_m_bare.group(1))
+        bare = result[_m_bare.end():].strip()
+        _bare_words = bare.split()
+        _bare_first = _bare_words[0].lower() if _bare_words else ""
+        _first_is_numeric_or_ordinal = bool(_bare_words and re.match(r'^\d', _bare_words[0]))
+        _preserve = (
+            _leading_num >= 10
+            or _bare_first in _BARE_NUM_PROTECTED_WORDS
+            or _first_is_numeric_or_ordinal
+        )
+        if len(bare) >= 2 and not _preserve:
             result = bare
             reasons.append("title_bare_number_stripped")
+        elif len(bare) >= 2 and _preserve:
+            log.debug("title_leading_number_preserved_ambiguous: %r", result)
 
     # 3. Domain / piracy paren tokens — strip globally
     cleaned = _RE_TITLE_DOMAIN_PAREN.sub("", result).strip()
@@ -845,5 +870,317 @@ def run_metadata_sanitize(args) -> int:
         }
         _write_json_log(output_json, all_results, _summary)
         print(f"JSON log written to: {output_json}")
+
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Rollback helpers
+# ---------------------------------------------------------------------------
+
+# Same words used by the forward guard — first-word match triggers a suspicious revert.
+_SUSPICIOUS_REVERT_WORDS: frozenset = _BARE_NUM_PROTECTED_WORDS
+
+
+def _load_rollback_records(path: Path, rule_filter: str) -> List[dict]:
+    """
+    Parse a metadata-sanitize log (JSON from --output-json, or JSONL) and return
+    a list of {file, before, after} dicts whose title change matches rule_filter.
+    """
+    records: List[dict] = []
+    content = path.read_text(encoding="utf-8")
+
+    # --- JSON format from _write_json_log ---
+    try:
+        data = json.loads(content)
+        if isinstance(data, dict) and "tracks" in data:
+            for track in data["tracks"]:
+                for change in track.get("changes", []):
+                    if change.get("field") == "title" and change.get("reason") == rule_filter:
+                        records.append({
+                            "file":   track["file"],
+                            "before": change["old"],
+                            "after":  change["new"],
+                        })
+            return records
+    except json.JSONDecodeError:
+        pass
+
+    # --- JSONL: one JSON object per line ---
+    for line in content.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            obj = json.loads(line)
+            if obj.get("field") == "title" and obj.get("reason") == rule_filter:
+                records.append({
+                    "file":   obj["file"],
+                    "before": obj["old"],
+                    "after":  obj["new"],
+                })
+        except (json.JSONDecodeError, KeyError):
+            continue
+
+    return records
+
+
+def _is_suspicious_revert(before: str, after: str) -> Tuple[bool, str]:
+    """Return (is_suspicious, reason) for a candidate rollback record."""
+    after_words = after.split()
+    first_word = after_words[0].lower() if after_words else ""
+    if first_word in _SUSPICIOUS_REVERT_WORDS:
+        return True, f"after_starts_with_known_title_word ({after_words[0]!r})"
+    return False, "looks_like_track_index_junk"
+
+
+def _read_current_title(path: Path) -> str:
+    read = _read_tags(path)
+    if read is None:
+        return "(unreadable)"
+    tags, _ = read
+    return tags.get("title", "(no title tag)")
+
+
+def _write_title_tag(path: Path, title: str) -> bool:
+    try:
+        from mutagen import File as MFile
+        audio = MFile(str(path), easy=True)
+        if audio is None:
+            return False
+        audio["title"] = [title]
+        audio.save()
+        return True
+    except Exception as exc:
+        log.error("Failed to write title to %s: %s", path.name, exc)
+        return False
+
+
+# ---------------------------------------------------------------------------
+# Rollback CLI entry point
+# ---------------------------------------------------------------------------
+
+def run_metadata_sanitize_rollback(args) -> int:
+    """Called by pipeline.py dispatch for metadata-sanitize-rollback."""
+    jsonl_path = Path(args.jsonl).expanduser().resolve()
+    rule_filter = getattr(args, "rule", "title_bare_number_stripped")
+    preview = not getattr(args, "apply", False)
+    only_suspicious = getattr(args, "only_suspicious", False)
+
+    if not jsonl_path.exists():
+        print(f"ERROR: Log file does not exist: {jsonl_path}", file=sys.stderr)
+        return 1
+
+    records = _load_rollback_records(jsonl_path, rule_filter)
+    if not records:
+        print(f"No title changes found in log matching rule: {rule_filter}")
+        return 0
+
+    mode_label = "PREVIEW" if preview else "APPLY"
+    filter_label = " [--only-suspicious]" if only_suspicious else ""
+    print(f"metadata-sanitize-rollback [{mode_label}]{filter_label}")
+    print(f"Rule   : {rule_filter}")
+    print(f"Log    : {jsonl_path}")
+    print(f"Found  : {len(records)} candidate(s)")
+    print()
+
+    n_would_revert = 0
+    n_skip = 0
+    n_applied = 0
+    n_error = 0
+
+    for rec in records:
+        filepath = rec["file"]
+        before = rec["before"]
+        after = rec["after"]
+
+        suspicious, susp_reason = _is_suspicious_revert(before, after)
+
+        if only_suspicious and not suspicious:
+            action = "SKIP"
+            display_reason = "not_suspicious"
+        else:
+            action = "WOULD_REVERT" if preview else "REVERT"
+            display_reason = susp_reason if suspicious else "all_reverts_requested"
+
+        current_title = _read_current_title(Path(filepath))
+        stale_note = ""
+        if current_title not in ("(unreadable)", "(no title tag)") and current_title != after:
+            stale_note = "  [NOTE: current title differs from log — may have changed since run]"
+
+        print(f"  {action}")
+        print(f"    file    : {filepath}")
+        print(f"    current : {current_title!r}{stale_note}")
+        print(f"    before  : {before!r}")
+        print(f"    after   : {after!r}")
+        print(f"    reason  : {display_reason}")
+        print()
+
+        if action == "SKIP":
+            n_skip += 1
+            continue
+
+        n_would_revert += 1
+
+        if not preview:
+            ok = _write_title_tag(Path(filepath), before)
+            if ok:
+                n_applied += 1
+                log_action(
+                    f"ROLLBACK: {Path(filepath).name} | title | "
+                    f"{after!r} → {before!r} | {rule_filter}"
+                )
+            else:
+                n_error += 1
+                print(f"    [ERROR] failed to write {filepath}", file=sys.stderr)
+
+    print(f"Candidates   : {len(records)}")
+    print(f"Would revert : {n_would_revert}")
+    print(f"Skipped      : {n_skip}")
+    if not preview:
+        print(f"Applied      : {n_applied}")
+        print(f"Errors       : {n_error}")
+    if preview and n_would_revert:
+        print()
+        print("Dry-run mode — pass --apply to write reverted titles.")
+
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Title-number recovery helpers
+# ---------------------------------------------------------------------------
+
+_RE_RECOVER_NUM_PREFIX = re.compile(r'^(\d{1,3})\s+(.+)$', re.UNICODE)
+
+
+def _parse_filename_title(path: Path) -> Optional[str]:
+    """
+    Extract the title portion from an 'Artist - Title.ext' filename.
+    Returns None when no ' - ' separator is present.
+    """
+    idx = path.stem.find(" - ")
+    if idx == -1:
+        return None
+    candidate = path.stem[idx + 3:].strip()
+    return candidate or None
+
+
+def _is_suspicious_recovery(leading_num: int, rest: str) -> Tuple[bool, str]:
+    """
+    Return (is_suspicious, reason) where True means the number was likely part
+    of the real title and the stripped tag should be restored.
+
+    Suspicious when: rest starts with a known protected word, or number >= 10.
+    NOT suspicious (track-index junk): single-digit number + non-protected first word.
+    """
+    first_word = rest.split()[0].lower() if rest.split() else ""
+    if first_word in _BARE_NUM_PROTECTED_WORDS:
+        return True, f"rest_is_known_title_word ({rest.split()[0]!r})"
+    if leading_num >= 10:
+        return True, f"two_or_more_digit_number ({leading_num})"
+    return False, "single_digit_track_index"
+
+
+# ---------------------------------------------------------------------------
+# Title-number-recover CLI entry point
+# ---------------------------------------------------------------------------
+
+def run_title_number_recover(args) -> int:
+    """Called by pipeline.py dispatch for title-number-recover."""
+    input_path = Path(args.input).expanduser().resolve()
+    apply_mode = getattr(args, "apply", False)
+    verbose = getattr(args, "verbose", False)
+    limit = getattr(args, "limit", None)
+
+    if not input_path.exists():
+        print(f"ERROR: Input path does not exist: {input_path}", file=sys.stderr)
+        return 1
+
+    files = _collect_files(input_path, limit)
+    if not files:
+        print(f"No audio files found under {input_path}")
+        return 0
+
+    mode_label = "APPLY" if apply_mode else "PREVIEW"
+    print(f"title-number-recover [{mode_label}] — {len(files)} file(s)")
+    print()
+
+    n_candidates = 0
+    n_skipped_index = 0
+    n_recovered = 0
+    n_error = 0
+
+    for path in files:
+        filename_title = _parse_filename_title(path)
+        if not filename_title:
+            if verbose:
+                print(f"  SKIP_NO_SEPARATOR: {path.name}")
+            continue
+
+        m = _RE_RECOVER_NUM_PREFIX.match(filename_title)
+        if not m:
+            continue
+
+        leading_num = int(m.group(1))
+        rest = m.group(2).strip()
+
+        current_title = _read_current_title(path)
+        if current_title in ("(unreadable)", "(no title tag)"):
+            if verbose:
+                print(f"  SKIP_UNREADABLE: {path.name}")
+            n_error += 1
+            continue
+
+        if current_title != rest:
+            if verbose:
+                print(f"  NO_MATCH: {path.name}")
+                print(f"    filename_title : {filename_title!r}")
+                print(f"    current_title  : {current_title!r}")
+                print(f"    expected_rest  : {rest!r}")
+            continue
+
+        suspicious, reason = _is_suspicious_recovery(leading_num, rest)
+
+        if not suspicious:
+            n_skipped_index += 1
+            if verbose:
+                print(f"  SKIP_OBVIOUS_INDEX:")
+                print(f"    FILE   : {path}")
+                print(f"    REASON : {reason}")
+                print()
+            continue
+
+        n_candidates += 1
+        action = "RECOVER" if apply_mode else "WOULD_RECOVER"
+        print(f"  {action}:")
+        print(f"    FILE          : {path}")
+        print(f"    CURRENT TITLE : {current_title!r}")
+        print(f"    RESTORED TITLE: {filename_title!r}")
+        print(f"    REASON        : {reason}")
+        print()
+
+        if apply_mode:
+            ok = _write_title_tag(path, filename_title)
+            if ok:
+                n_recovered += 1
+                log_action(
+                    f"RECOVER: {path.name} | title | "
+                    f"{current_title!r} → {filename_title!r} | title_number_recover"
+                )
+            else:
+                n_error += 1
+                print(f"    [ERROR] failed to write {path}", file=sys.stderr)
+
+    print(f"Files scanned          : {len(files)}")
+    print(f"Recovery candidates    : {n_candidates}")
+    if apply_mode:
+        print(f"Recovered              : {n_recovered}")
+    print(f"Skipped (obvious index): {n_skipped_index}")
+    print(f"Errors                 : {n_error}")
+
+    if not apply_mode and n_candidates:
+        print()
+        print("Dry-run mode — pass --apply to write recovered titles.")
 
     return 0
