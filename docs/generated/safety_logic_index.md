@@ -1,0 +1,2383 @@
+# Generated Safety Logic Index
+
+## `ai/metadata_schema.py`
+- Line 8: `- Clamps confidence to [0.0, 1.0]`
+- Line 24: `MIN_AI_CONFIDENCE = 0.80`
+- Line 27: `REJECTION_LOW_CONFIDENCE  = "low_confidence"`
+- Line 73: `def _clamp_confidence(value: object) -> float:`
+- Line 74: `"""Parse confidence to float and clamp to [0.0, 1.0]."""`
+- Line 98: `confidence       Model's confidence in the proposal, 0.0–1.0`
+- Line 107: `confidence:       float          = 0.0`
+- Line 124: `confidence=_clamp_confidence(data.get("confidence", 0.0)),`
+- Line 137: `"confidence":       self.confidence,`
+- Line 163: `"""True when this result is a no-op — do not apply any changes."""`
+
+## `ai/normalizer.py`
+- Line 10: `→ print_preview()                            (human-readable terminal output)`
+- Line 11: `→ apply_normalized() if --apply              (write back via mutagen easy tags)`
+- Line 14: `- Dry-run / preview is the default`
+- Line 15: `- apply requires explicit --apply flag AND confidence >= --min-confidence`
+- Line 35: `MIN_AI_CONFIDENCE,`
+- Line 36: `REJECTION_LOW_CONFIDENCE, REJECTION_SCHEMA_INVALID,`
+- Line 111: `# Tag writing (apply step — mutagen easy mode, same pattern as sanitizer.py)`
+- Line 114: `def _apply_tags(path: Path, fields: Dict[str, str], dry_run: bool) -> bool:`
+- Line 119: `In dry_run mode, validates the file is readable but writes nothing.`
+- Line 121: `if dry_run:`
+- Line 135: `# Some formats don't support all easy tag keys — skip gracefully`
+- Line 150: `Apply deterministic cleanup to a title tag before AI normalization.`
+- Line 283: `- Lower confidence instead of guessing.`
+- Line 284: `- Return null for any field you cannot determine with high confidence from the provided data.`
+- Line 291: `7. CONFIDENCE rules:`
+- Line 292: `- Set confidence >= 0.85 ONLY when the proposed change is obvious and deterministic from the provided data.`
+- Line 293: `- Set confidence 0.5–0.7 for uncertain or partially-inferred cases.`
+- Line 294: `- Set confidence < 0.5 when guessing. Prefer returning the original value instead.`
+- Line 324: `"confidence": 0.0,`
+- Line 382: `min_confidence: float = MIN_AI_CONFIDENCE,`
+- Line 393: `3. low_confidence  — confidence below min_confidence threshold`
+- Line 443: `# Confidence gate — reject before any further processing`
+- Line 444: `if proposed.confidence < min_confidence:`
+- Line 446: `"REJECT [%s] %s  confidence=%.2f < %.2f",`
+- Line 447: `REJECTION_LOW_CONFIDENCE, path.name, proposed.confidence, min_confidence,`
+- Line 452: `rejection_reason=REJECTION_LOW_CONFIDENCE,`
+- Line 466: `proposed, guard_reason = _apply_hard_guards(proposed, current_tags, path.name)`
+- Line 516: `title output is ignored entirely.`
+- Line 551: `def _apply_hard_guards(`
+- Line 563: `1. Artist lock       — always use current artist tag; AI artist ignored.`
+- Line 582: `# AI artist output is ignored entirely — always overwrite with current tag.`
+- Line 645: `Artist is not checked here — it is hard-locked in _apply_hard_guards`
+- Line 653: `"Parsed alignment mismatch — filename version %r vs AI version %r",`
+- Line 661: `# Build effective apply-time tag values from a NormalizedMetadata`
+- Line 783: `# Apply step`
+- Line 786: `def apply_normalized(`
+- Line 790: `dry_run: bool,`
+- Line 819: `return _apply_tags(path, field_map, dry_run)`
+- Line 823: `# Terminal preview output`
+- Line 836: `skipped_reason: Optional[str],`
+- Line 855: `conf_str = f"{proposed.confidence:.2f}"`
+- Line 856: `print(f"AI proposal  (confidence: {conf_str}):")`
+- Line 887: `elif skipped_reason:`
+- Line 888: `print(f"Status: SKIPPED  ({skipped_reason})")`
+- Line 892: `print("Status: PREVIEW  (pass --apply to write changes)")`
+- Line 908: `3. For each file: normalize → diff → preview`
+- Line 909: `4. If --apply: write high-confidence diffs`
+- Line 924: `dry_run       = args.dry_run`
+- Line 925: `do_apply      = getattr(args, "apply", False)`
+- Line 926: `min_confidence = args.min_confidence`
+- Line 929: `# --apply and --dry-run are mutually exclusive`
+- Line 930: `if do_apply and dry_run:`
+- Line 931: `print("ERROR: --apply and --dry-run are mutually exclusive.", file=sys.stderr)`
+- Line 934: `# Default mode is preview (neither --apply nor --dry-run passed)`
+- Line 935: `preview_only = not do_apply and not dry_run`
+- Line 973: `mode_label = "DRY-RUN" if dry_run else ("APPLY" if do_apply else "PREVIEW")`
+- Line 974: `print(f"Mode: {mode_label}  |  Model: {model}  |  Min confidence: {min_confidence}\n")`
+- Line 983: `_rl.set_counter("applied", do_apply)`
+- Line 987: `n_applied = n_skipped = n_errors = n_no_change = 0`
+- Line 995: `n_skip_unchanged = 0`
+- Line 998: `if not _force and not dry_run and _proc.should_skip(_stage, path):`
+- Line 999: `n_skip_unchanged += 1`
+- Line 1003: `result      = _normalize_track(path, client, min_confidence)`
+- Line 1014: `if not dry_run:`
+- Line 1029: `n_skipped += 1`
+- Line 1030: `if not dry_run:`
+- Line 1031: `_proc.record(_stage, path, "skipped", result.rejection_reason or "")`
+- Line 1036: `_rl.inc("skipped")`
+- Line 1038: `"skipped", str(path),`
+- Line 1047: `conf = proposed.confidence`
+- Line 1049: `_rl.inc("high_confidence")`
+- Line 1051: `_rl.inc("medium_confidence")`
+- Line 1053: `_rl.inc("low_confidence")`
+- Line 1057: `if not dry_run:`
+- Line 1061: `elif do_apply:`
+- Line 1062: `ok = apply_normalized(path, proposed, changes, dry_run=False)`
+- Line 1082: `# preview / dry-run — changes found but not written`
+- Line 1086: `"modified", str(path), "preview",`
+- Line 1101: `"confidence":       proposed.confidence,`
+- Line 1112: `if n_skipped:`
+- Line 1115: `print(f"  Rejected       : {n_skipped}  ({breakdown})")`
+- Line 1117: `print(f"  Rejected       : {n_skipped}")`
+- Line 1120: `if n_skip_unchanged:`
+- Line 1121: `print(f"  Skipped unchanged: {n_skip_unchanged}")`
+- Line 1122: `if preview_only and any(r["changes"] for r in results):`
+- Line 1124: `print(f"\n  {changeable} change(s) ready — re-run with --apply to write them.")`
+- Line 1134: `print(f"Preview saved to: {out_path}")`
+
+## `ai/review_dataset.py`
+- Line 2: `ai/review_dataset.py — Capture ai-normalize decisions as training-ready JSONL datasets.`
+- Line 5: `review_queue.jsonl      — one entry per file processed by ai-normalize (all outcomes)`
+- Line 7: `rejected_examples.jsonl — rejected / skipped / errored results (training negatives)`
+- Line 8: `review_decisions.jsonl  — reserved for future manual review decisions`
+- Line 12: `write_queue_entry(path, model_name, current_tags, proposed_dict,`
+- Line 53: `log.warning("review_dataset: could not write to %s: %s", path, exc)`
+- Line 57: `"""Read all valid JSON objects from a JSONL file. Skips malformed lines."""`
+- Line 69: `log.debug("review_dataset: skipped malformed line %d in %s: %s", lineno, path, exc)`
+- Line 89: `# Public: write review_queue entry`
+- Line 92: `def write_queue_entry(`
+- Line 101: `Append one record to review_queue.jsonl for a file processed by ai-normalize.`
+- Line 103: `status values: "applied", "preview", "skipped", "error", "no_change"`
+- Line 117: `_append_jsonl(config.AI_REVIEW_QUEUE, record)`
+- Line 134: `Append one record to accepted_examples.jsonl when --apply writes a change.`
+- Line 144: `"reviewed_at":    _now_iso(),`
+- Line 166: `decision: "rejected", "skipped", "error"`
+- Line 175: `"reviewed_at":    _now_iso(),`
+- Line 190: `from each bucket sorted by confidence descending.`
+- Line 207: `# Sort each bucket by confidence descending`
+- Line 210: `key=lambda e: e.get("model_output", {}).get("confidence", 0.0),`
+- Line 238: `"confidence":     ex.get("model_output", {}).get("confidence", 0.0),`
+
+## `backend/app/api/routes/analysis.py`
+- Line 7: `PATCH /api/analysis/bpm-anomalies/{id}     — update review status`
+- Line 8: `POST  /api/analysis/reanalyze              — queue an analyze-missing job`
+- Line 50: `using heuristic rules, and upsert the results into the anomaly review table.`
+- Line 54: `- Human review decisions (reviewed / ignored / requeued) are preserved`
+- Line 92: `"Filter by review_status. "`
+- Line 93: `"One of: pending | reviewed | ignored | requeued | resolved | all. "`
+- Line 126: `Update the review status of a BPM anomaly record.`
+- Line 129: `reviewed  — operator has verified the BPM (accepted as-is)`
+- Line 130: `ignored   — dismiss the flag (won't appear in the default list)`
+- Line 131: `requeued  — mark that a re-analysis job has been requested`
+- Line 132: `pending   — reset to unreviewed`
+- Line 137: `review_status=body.review_status,`
+- Line 138: `review_note=body.review_note,`
+- Line 169: `if body.dry_run:`
+- Line 170: `args.append("--dry-run")`
+
+## `backend/app/api/routes/exports.py`
+- Line 64: `if body.dry_run:`
+- Line 65: `args.append("--dry-run")`
+- Line 66: `if body.skip_m3u:`
+- Line 88: `if body.dry_run:`
+- Line 89: `flags.append("dry-run")`
+- Line 90: `if body.skip_m3u:`
+- Line 97: `msg = "Export job queued"`
+
+## `backend/app/api/routes/library.py`
+- Line 8: `GET /api/library/runs/{command}/{prefix}/detail/{g}/{p} — paged detail file (modified/skipped/errors)`
+- Line 33: `_SKIP_ROOT_NAMES: frozenset = frozenset({`
+- Line 90: `if entry.name in _SKIP_ROOT_NAMES:`
+- Line 196: `skipped:          Optional[int] = None`
+- Line 198: `review_count:     Optional[int] = None`
+- Line 199: `moved_to_ignored: Optional[int] = None`
+- Line 306: `for group in ("modified", "skipped", "errors"):`
+- Line 324: `skipped=data.get("skipped"),`
+- Line 326: `review_count=data.get("review_count"),`
+- Line 327: `moved_to_ignored=data.get("moved_to_ignored"),`
+- Line 350: `if group not in ("modified", "skipped", "errors"):`
+
+## `backend/app/api/routes/playlists.py`
+- Line 62: `if body.dry_run:`
+- Line 63: `args.append("--dry-run")`
+- Line 82: `message=f"Set-builder job queued. vibe={body.vibe} duration={body.duration}min strategy={body.strategy}",`
+
+## `backend/app/api/routes/sync.py`
+- Line 5: `POST /api/sync/preview       — dry-run rsync, return list of would-be changes`
+- Line 20: `SyncPreviewRequest,`
+- Line 21: `SyncPreviewResponse,`
+- Line 42: `user if the SSD is not available before they attempt a preview or sync.`
+- Line 48: `# POST /api/sync/preview`
+- Line 51: `@router.post("/sync/preview", response_model=SyncPreviewResponse)`
+- Line 52: `async def preview_sync(body: SyncPreviewRequest) -> SyncPreviewResponse:`
+- Line 54: `Run rsync --dry-run and return a structured list of files that would be`
+- Line 57: `Use this to review pending changes before committing a full sync run.`
+- Line 59: `return await rsync_runner.preview_sync(body)`
+- Line 95: `message = f"Sync job queued ({', '.join(flags)})",`
+
+## `backend/app/api/routes/tracks.py`
+- Line 51: `missing BPM, missing key, missing artist/title, low quality, error, needs_review.`
+- Line 53: `Results are ordered: errors first, then needs_review, then by artist.`
+
+## `backend/app/core/config.py`
+- Line 25: `# Backend-specific storage (git-ignored; created on first run)`
+
+## `backend/app/core/db.py`
+- Line 42: `-- BPM anomaly review state.`
+- Line 44: `-- review_status: pending | reviewed | ignored | requeued | resolved`
+- Line 56: `review_status       TEXT    NOT NULL DEFAULT 'pending',`
+- Line 58: `reviewed_at         TEXT,`
+- Line 59: `review_note         TEXT,`
+- Line 64: `CREATE INDEX IF NOT EXISTS idx_bpm_anomalies_status ON bpm_anomalies(review_status);`
+- Line 115: `Create tables if they don't exist and apply any pending column migrations.`
+
+## `backend/app/models/track.py`
+- Line 82: `elif t.status == "needs_review":`
+- Line 83: `issues.append("needs_review")`
+
+## `backend/app/schemas/bpm_analysis.py`
+- Line 2: `Pydantic schemas for the BPM analysis / review API.`
+- Line 24: `review_status:      str`
+- Line 26: `reviewed_at:        Optional[str] = None`
+- Line 27: `review_note:        Optional[str] = None`
+- Line 52: `review_status must be one of: reviewed | ignored | requeued | pending`
+- Line 55: `review_status: str`
+- Line 56: `review_note:   Optional[str] = None`
+- Line 58: `@field_validator("review_status")`
+- Line 61: `allowed = {"reviewed", "ignored", "requeued", "pending"}`
+- Line 63: `raise ValueError(f"review_status must be one of {sorted(allowed)}")`
+- Line 74: `dry_run=True adds --dry-run (no writes).`
+- Line 78: `dry_run: bool = False`
+
+## `backend/app/schemas/export.py`
+- Line 12: `dry_run:          bool = Field(False, description="Preview only — no files written")`
+- Line 13: `skip_m3u:         bool = Field(False, description="Skip M3U playlist generation")`
+
+## `backend/app/schemas/job.py`
+- Line 29: `Example: ["--dry-run", "--verbose"]`
+
+## `backend/app/schemas/playlist.py`
+- Line 28: `dry_run: bool = Field(False, description="Preview only — no files or DB records written")`
+
+## `backend/app/schemas/sync.py`
+- Line 12: `# Preview (dry-run)`
+- Line 15: `class SyncPreviewRequest(BaseModel):`
+- Line 31: `class SyncPreviewResponse(BaseModel):`
+- Line 35: `files:        List[SyncFileChange]   # up to MAX_PREVIEW_FILES entries`
+
+## `backend/app/services/bpm_analysis.py`
+- Line 2: `bpm_analysis — BPM anomaly detection and review-state management.`
+- Line 6: `Mirrors the heuristics in modules/analyzer.py _apply_bpm_correction() so`
+- Line 23: `Review statuses`
+- Line 25: `pending   — newly detected, awaiting review`
+- Line 26: `reviewed  — operator has verified the BPM (accepted as-is or manually corrected)`
+- Line 27: `ignored   — operator has dismissed this flag (won't appear in default view)`
+- Line 28: `requeued  — a re-analysis job has been submitted for this track`
+- Line 69: `reviews it).  It is None for missing_bpm since no suggestion is possible.`
+- Line 137: `"SELECT track_id FROM bpm_anomalies WHERE review_status != 'resolved'"`
+- Line 154: `SET review_status='resolved', reviewed_at=?`
+- Line 155: `WHERE track_id=? AND review_status NOT IN ('reviewed','ignored')""",`
+- Line 168: `# Don't overwrite human review decisions (reviewed/ignored/requeued).`
+- Line 172: `suggested_bpm, reason, review_status, detected_at)`
+- Line 183: `-- Only reset to pending if not already in a human review state`
+- Line 184: `review_status = CASE`
+- Line 185: `WHEN review_status IN ('reviewed', 'ignored', 'requeued')`
+- Line 186: `THEN review_status`
+- Line 205: `WHERE review_status != 'resolved'`
+- Line 241: `clauses.append("review_status = ?")`
+- Line 244: `clauses.append("review_status != 'resolved'")`
+- Line 271: `# Update review status`
+- Line 276: `review_status: str,`
+- Line 277: `review_note: Optional[str] = None,`
+- Line 281: `Update the review status of an anomaly record.`
+- Line 284: `valid_statuses = {"reviewed", "ignored", "requeued", "pending", "resolved"}`
+- Line 285: `if review_status not in valid_statuses:`
+- Line 287: `f"Invalid review_status {review_status!r}. "`
+- Line 295: `fields = ["review_status = ?", "reviewed_at = ?"]`
+- Line 296: `values: list = [review_status, now]`
+- Line 298: `if review_note is not None:`
+- Line 299: `fields.append("review_note = ?")`
+- Line 300: `values.append(review_note)`
+- Line 335: `"""Return counts grouped by review_status."""`
+- Line 338: `"SELECT review_status, COUNT(*) AS cnt FROM bpm_anomalies GROUP BY review_status"`
+- Line 340: `return {r["review_status"]: r["cnt"] for r in rows}`
+- Line 344: `"""Return counts grouped by review_status and by reason."""`
+- Line 347: `r["review_status"]: r["cnt"]`
+- Line 349: `"SELECT review_status, COUNT(*) AS cnt FROM bpm_anomalies GROUP BY review_status"`
+- Line 378: `review_status=row["review_status"],`
+- Line 380: `reviewed_at=row["reviewed_at"],`
+- Line 381: `review_note=row["review_note"],`
+
+## `backend/app/services/rsync_runner.py`
+- Line 42: `SyncPreviewRequest,`
+- Line 43: `SyncPreviewResponse,`
+- Line 49: `# Maximum number of file entries returned in a preview response`
+- Line 50: `_MAX_PREVIEW_FILES = 500`
+- Line 113: `# Dry-run preview`
+- Line 116: `async def preview_sync(req: SyncPreviewRequest) -> SyncPreviewResponse:`
+- Line 118: `Run rsync --dry-run and return a structured preview of what would change.`
+- Line 138: `return SyncPreviewResponse(`
+- Line 151: `"--dry-run",`
+- Line 156: `log.info("preview_sync: %s", " ".join(cmd))`
+- Line 172: `return SyncPreviewResponse(`
+- Line 177: `warnings    = ["Preview timed out after 60 seconds — library may be very large."],`
+- Line 181: `return SyncPreviewResponse(`
+- Line 194: `files, summary, warnings = _parse_dry_run_output(output)`
+- Line 202: `truncated  = len(only_files) > _MAX_PREVIEW_FILES`
+- Line 204: `return SyncPreviewResponse(`
+- Line 208: `files       = only_files[:_MAX_PREVIEW_FILES],`
+- Line 216: `def _parse_dry_run_output(`
+- Line 220: `Parse rsync --dry-run output.`
+
+## `backend/app/services/toolkit_runner.py`
+- Line 68: `"--dry-run",`
+- Line 77: `"--skip-beets",`
+- Line 78: `"--apply",`
+- Line 80: `"--no-m3u",                   # rekordbox-export: skip M3U generation`
+- Line 154: `i += 1  # skip the value token`
+
+## `backend/app/services/track_service.py`
+- Line 291: `OR status IN ('error', 'needs_review')`
+- Line 295: `WHEN 'needs_review' THEN 1`
+
+## `config.py`
+- Line 13: `# Operational/maintenance storage root — intentionally hidden so scanners skip it.`
+- Line 38: `# Quarantine folder for corrupt/unreadable audio files.`
+- Line 96: `# Quality thresholds`
+- Line 130: `LABEL_CLEAN_THRESHOLD = 0.85    # minimum confidence for automatic tag write-back`
+- Line 141: `CUE_SUGGEST_MIN_CONFIDENCE = 0.4      # ignore cues below this confidence when writing to DB`
+- Line 150: `# Enrichment move-to-ignored destination (was hardcoded in enrichment runner).`
+- Line 151: `IGNORED_DIR = BIN_DIR / "IGNORED"`
+- Line 155: `DEDUPE_QUARANTINE_DIR = BIN_DIR / "QUARANTINE"`
+- Line 160: `# Exact directory-name components that scanners must skip.`
+- Line 162: `MAINTENANCE_SKIP_DIRS: frozenset = frozenset({`
+- Line 164: `"QUARANTINE", "IGNORED", "CORRUPT", "DUPLICATES", "REJECTED",`
+- Line 168: `# Note: scanners also skip any path component that starts with "." (hidden dirs),`
+- Line 171: `# filename-normalize subcommand — extends MAINTENANCE_SKIP_DIRS with output dirs`
+- Line 173: `FILENAME_NORMALIZE_SKIP_DIRS: frozenset = MAINTENANCE_SKIP_DIRS | frozenset({`
+- Line 178: `LIBRARY_ORGANIZE_SKIP_DIRS: frozenset = MAINTENANCE_SKIP_DIRS | frozenset({`
+- Line 229: `# Deterministic normalization, alias resolution, and review queue.`
+- Line 235: `ARTIST_REVIEW_QUEUE = _INTEL_DIR / "artist_review_queue.json"`
+- Line 247: `# Review dataset (ai-normalize → training data pipeline)`
+- Line 251: `AI_REVIEW_QUEUE      = _INTEL_DIR / "review_queue.jsonl"`
+- Line 254: `AI_REVIEW_DECISIONS  = _INTEL_DIR / "review_decisions.jsonl"`
+- Line 272: `# Minimum confidence to auto-apply an online enrichment change.`
+- Line 274: `# local model inference.  ISRC exact matches always score 0.98 and will`
+- Line 275: `# pass this threshold.`
+- Line 276: `ENRICH_ONLINE_MIN_CONFIDENCE = float(`
+- Line 277: `os.environ.get("ENRICH_ONLINE_MIN_CONFIDENCE", "0.90")`
+- Line 281: `AI_ENRICH_QUEUE    = _INTEL_DIR / "enrichment_queue.jsonl"`
+- Line 289: `# Local overrides (git-ignored, create config_local.py to override anything)`
+
+## `config_local.py`
+- Line 1: `# Local config overrides — this file is git-ignored.`
+
+## `db.py`
+- Line 53: `dry_run         INTEGER NOT NULL DEFAULT 0,`
+- Line 84: `confidence   REAL    DEFAULT 0.5,`
+- Line 227: `dry_run: bool = False,`
+- Line 234: `so they are excluded from future exports and can be reviewed.`
+- Line 238: `dry_run:  if True, report but do not write any changes`
+- Line 271: `if not dry_run:`
+- Line 295: `include_untracked: When False, skip the disk→DB scan (faster, DB-only audit).`
+- Line 306: `skip = _config.MAINTENANCE_SKIP_DIRS`
+- Line 311: `any(part in skip for part in parts)`
+- Line 321: `# Exclude quarantine/ignored rows from both categories so they never`
+- Line 335: `# so it is immune to trailing-slash and separator mismatches.`
+- Line 352: `if any(part in skip for part in p.parts):`
+- Line 365: `def start_run(dry_run: bool) -> int:`
+- Line 368: `"INSERT INTO pipeline_runs (run_at, dry_run) VALUES (?, ?)",`
+- Line 369: `(_now(), int(dry_run)),`
+- Line 496: `cue_type, time_sec, bar, beat_in_bar, confidence, source`
+- Line 504: `(filepath, cue_type, time_sec, bar, beat_in_bar, confidence, source, analyzed_at)`
+- Line 510: `confidence=excluded.confidence,`
+- Line 519: `cue.get("confidence", 0.5),`
+
+## `intelligence/__init__.py`
+- Line 4: `#                           and review queue (artist-intelligence subcommand).`
+
+## `intelligence/artist/__init__.py`
+- Line 2: `# and review queue for the DJ Toolkit pipeline.`
+
+## `intelligence/artist/artist_alias_store.py`
+- Line 3: `uncertain-candidate review queue.`
+- Line 15: `Review queue (data/intelligence/artist_review_queue.json):`
+- Line 22: `"confidence":           0.60,`
+- Line 138: `Return canonical after applying normalize_artist_string() to both sides.`
+- Line 171: `Use this when the match method matters for confidence decisions:`
+- Line 172: `"exact" / "normalized" → high-confidence match`
+- Line 173: `"ci"                   → weaker match, consider review queue`
+- Line 212: `class ArtistReviewQueue:`
+- Line 214: `Append-only persistent queue for uncertain artist normalization candidates.`
+- Line 217: `in-place to avoid accumulating duplicate review requests.`
+- Line 224: `self._queue: List[dict] = []`
+- Line 234: `self._queue = data`
+- Line 236: `log.warning("Could not load review queue from %s: %s", self.path, exc)`
+- Line 244: `confidence: float,`
+- Line 252: `"confidence":           round(confidence, 3),`
+- Line 255: `# Update in-place if this file+artist was already queued`
+- Line 256: `for existing in self._queue:`
+- Line 263: `self._queue.append(entry)`
+- Line 269: `json.dump(self._queue, fh, indent=2, ensure_ascii=False)`
+- Line 271: `log.error("Could not save review queue to %s: %s", self.path, exc)`
+- Line 274: `return len(self._queue)`
+
+## `intelligence/artist/artist_normalizer.py`
+- Line 69: `CASING_LABEL_SKIPPED_ACRONYM   = "casing_skipped_acronym"`
+- Line 73: `# names / acronyms and left unchanged. Above this threshold we apply title-case.`
+- Line 126: `# Single-word entity: apply length-based acronym guard`
+- Line 135: `CASING_LABEL_SKIPPED_ACRONYM, name, _ACRONYM_MAX_LEN,`
+- Line 173: `Apply all normalization steps to a single artist name string.`
+
+## `intelligence/artist/artist_parser.py`
+- Line 47: `# Ordered separator specs: (pattern, label, confidence_penalty)`
+- Line 111: `Returns (parts, separator_label, confidence_penalty).`
+- Line 174: `ArtistParseResult with main_artists, featured_artists, confidence, notes`
+- Line 178: `confidence=0.0,`
+- Line 183: `confidence = 1.0`
+- Line 206: `confidence -= penalty`
+- Line 216: `confidence -= 0.10  # lower confidence for "and" splits`
+- Line 229: `confidence=confidence,`
+- Line 234: `# Step 4: Confidence calibration`
+- Line 237: `# Single artist, no splitting needed — maximum confidence`
+- Line 238: `confidence = 1.0`
+- Line 240: `# Multiple artists after splitting — moderate confidence`
+- Line 242: `confidence = max(0.70, confidence)`
+- Line 245: `confidence = max(0.0, min(1.0, confidence))`
+- Line 250: `confidence=confidence,`
+- Line 336: `([left, right], confidence)  when a confident split is found`
+
+## `intelligence/artist/artist_schema.py`
+- Line 25: `confidence  — how confident we are this entity is correctly identified`
+- Line 31: `confidence: float         = 1.0`
+- Line 50: `confidence        — overall parse confidence (0.0–1.0)`
+- Line 56: `confidence:       float              = 1.0`
+
+## `intelligence/artist/runner.py`
+- Line 11: `→ preview / apply / review-queue`
+- Line 14: `- Preview is the default — no writes without --apply`
+- Line 17: `- Only writes artist when confidence >= --min-confidence`
+- Line 18: `- Below-threshold candidates are written to the review queue, never applied`
+- Line 19: `- Dry-run and --apply are mutually exclusive`
+- Line 34: `from ai.normalizer import _collect_files, _read_full_tags, _apply_tags`
+- Line 38: `from intelligence.artist.artist_alias_store import ArtistAliasStore, ArtistReviewQueue`
+- Line 58: `REASON_SPLIT_AMBIGUOUS      = "split_ambiguous_skipped"`
+- Line 59: `REASON_SKIPPED_AMBIGUOUS    = "skipped_ambiguous_alias"`
+- Line 62: `REASON_CASING_SKIPPED_ACRONYM   = "casing_skipped_acronym"`
+- Line 64: `REASON_CONFIDENCE_BOOSTED       = "confidence_boosted"`
+- Line 98: `CI-only matches reduce entity confidence to 0.70.`
+- Line 108: `confidence=0.0,`
+- Line 132: `confidence=split_conf,`
+- Line 136: `result.confidence   = split_conf`
+- Line 149: `# Already got canonical in the split block; skip second lookup`
+- Line 157: `# CI-only match: weaker evidence — lower confidence`
+- Line 158: `entity.confidence = min(entity.confidence, 0.70)`
+- Line 159: `result.confidence = min(result.confidence, 0.70)`
+- Line 225: `CI-only alias matches never appear in this list — they cause a skip`
+- Line 226: `(REASON_SKIPPED_AMBIGUOUS) handled separately in the main loop.`
+- Line 323: `skipped_reason: Optional[str],`
+- Line 324: `review_queued: bool,`
+- Line 339: `print(f"Parse result  (confidence: {result.confidence:.2f}):")`
+- Line 363: `if skipped_reason:`
+- Line 364: `print(f"Status: SKIPPED        ({skipped_reason})")`
+- Line 365: `elif review_queued:`
+- Line 366: `print(f"Status: REVIEW QUEUED  ({REASON_SKIPPED_AMBIGUOUS} — written to review queue)")`
+- Line 370: `print("Status: PREVIEW        (pass --apply to write changes)")`
+- Line 389: `dry_run        = args.dry_run`
+- Line 390: `do_apply       = getattr(args, "apply", False)`
+- Line 391: `min_confidence = args.min_confidence`
+- Line 394: `if do_apply and dry_run:`
+- Line 395: `print("ERROR: --apply and --dry-run are mutually exclusive.", file=sys.stderr)`
+- Line 402: `# Load alias store and review queue from config paths`
+- Line 404: `review_queue = ArtistReviewQueue(config.ARTIST_REVIEW_QUEUE)`
+- Line 407: `print(f"Review queue : {config.ARTIST_REVIEW_QUEUE}")`
+- Line 415: `skipped_unsupported = total_on_disk - len(files_all)`
+- Line 417: `"Discovery: %d total files on disk, %d supported audio, %d unsupported/skipped",`
+- Line 418: `total_on_disk, len(files_all), skipped_unsupported,`
+- Line 431: `mode_label = "DRY-RUN" if dry_run else ("APPLY" if do_apply else "PREVIEW")`
+- Line 432: `print(f"Mode: {mode_label}  |  Min confidence: {min_confidence}\n")`
+- Line 440: `_rl.set_counter("applied", do_apply)`
+- Line 444: `n_skipped        = 0`
+- Line 445: `n_review         = 0`
+- Line 453: `n_skip_unchanged = 0`
+- Line 456: `if not _force and not dry_run and _proc.should_skip(_stage, path):`
+- Line 457: `n_skip_unchanged += 1`
+- Line 466: `# string is unsafe — send straight to review queue.`
+- Line 471: `review_queue.add(`
+- Line 476: `confidence=0.0,`
+- Line 479: `review_queued  = True`
+- Line 480: `n_review      += 1`
+- Line 481: `if not dry_run:`
+- Line 482: `_proc.record(_stage, path, "review", _note)`
+- Line 484: `_rl.inc("review_count")`
+- Line 485: `_rl.record_outcome("skipped", str(path), _note, "")`
+- Line 486: `log.info("REVIEW [unsafe_separator_artist] %s  artist=%r", path.name, current_artist)`
+- Line 490: `"proposed_artist": None, "confidence": 0.0, "changes": [],`
+- Line 492: `"skipped_reason": None, "review_queued": True, "notes": _note,`
+- Line 506: `skipped_reason: Optional[str] = None`
+- Line 507: `review_queued:  bool          = False`
+- Line 511: `if not dry_run:`
+- Line 516: `elif result.confidence < min_confidence:`
+- Line 517: `# Determine review reason: ci-only alias match vs general low-confidence`
+- Line 523: `review_note = (`
+- Line 524: `f"{REASON_SKIPPED_AMBIGUOUS}; confidence={result.confidence:.2f}"`
+- Line 526: `else f"confidence {result.confidence:.2f} < {min_confidence}"`
+- Line 528: `review_queue.add(`
+- Line 533: `confidence=result.confidence,`
+- Line 534: `notes=review_note,`
+- Line 536: `review_queued = True`
+- Line 537: `n_review += 1`
+- Line 539: `_rl.inc("review_count")`
+- Line 540: `_rl.record_outcome("skipped", str(path), REASON_SKIPPED_AMBIGUOUS if has_ci_alias else "low_confidence", review_note)`
+- Line 542: `"REVIEW [%s] %s  confidence=%.2f",`
+- Line 543: `REASON_SKIPPED_AMBIGUOUS if has_ci_alias else "low_confidence",`
+- Line 544: `path.name, result.confidence,`
+- Line 547: `elif do_apply and not dry_run:`
+- Line 548: `ok = _apply_tags(path, {"artist": changes[0]["new"]}, dry_run=False)`
+- Line 568: `skipped_reason = "tag write failed"`
+- Line 569: `n_skipped += 1`
+- Line 575: `# preview / dry-run with proposed changes`
+- Line 579: `"modified", str(path), "preview",`
+- Line 585: `applied, skipped_reason, review_queued,`
+- Line 592: `"confidence":       result.confidence,`
+- Line 596: `"skipped_reason":   skipped_reason,`
+- Line 597: `"review_queued":    review_queued,`
+- Line 601: `# Persist review queue if anything was added this run`
+- Line 602: `if n_review > 0:`
+- Line 603: `review_queue.save()`
+- Line 604: `log.debug("Saved review queue (%d entries) to %s", len(review_queue), config.ARTIST_REVIEW_QUEUE)`
+- Line 614: `print(f"  Skipped        : {n_skipped}")`
+- Line 615: `print(f"  Review queued  : {n_review}  (confidence < {min_confidence})")`
+- Line 617: `if n_skip_unchanged:`
+- Line 618: `print(f"  Skipped unchanged: {n_skip_unchanged}")`
+- Line 620: `preview_pending = sum(`
+- Line 622: `if r["changes"] and not r["review_queued"] and not r["applied"]`
+- Line 624: `if not do_apply and preview_pending:`
+- Line 625: `print(f"\n  {preview_pending} change(s) ready — re-run with --apply to write them.")`
+- Line 635: `print(f"Preview saved to: {out_path}")`
+
+## `intelligence/enrichment/__init__.py`
+- Line 12: `#   1. Spotify ISRC lookup  — most precise; skipped if file has no ISRC`
+- Line 14: `#   3. Deezer               — fallback when Spotify confidence < 0.70`
+- Line 16: `#                             combined confidence < 0.80 OR file genre is house/`
+
+## `intelligence/enrichment/deezer_lookup.py`
+- Line 5: `returns no result or a low-confidence match.`
+- Line 13: `Deezer does not support ISRC lookup via a public query parameter, so all`
+- Line 15: `an ISRC field from the track object, which the matcher will use for scoring.`
+- Line 113: `isrc            — ISRC (present on most tracks)`
+- Line 137: `isrc         = item.get("isrc") or None,`
+
+## `intelligence/enrichment/enrichment_schema.py`
+- Line 30: `isrc         : International Standard Recording Code, e.g. "GBUM71029604"`
+- Line 41: `isrc:         Optional[str]       = None`
+- Line 53: `"isrc":         self.isrc,`
+- Line 65: `confidence       : composite similarity score 0.0–1.0`
+- Line 70: `any safeguards applied (version mismatch, artist guard, etc.)`
+- Line 71: `isrc_matched     : True when the match was anchored by an exact ISRC hit`
+- Line 75: `confidence:       float                         = 0.0`
+- Line 79: `isrc_matched:     bool                          = False`
+- Line 82: `# One of: "ready" | "review" | "review_ambiguous"`
+- Line 83: `#       | "skipped_low_score" | "skipped_artist_mismatch" | "skipped_version_conflict"`
+- Line 94: `"confidence":       self.confidence,`
+- Line 98: `"isrc_matched":     self.isrc_matched,`
+
+## `intelligence/enrichment/metadata_matcher.py`
+- Line 8: `Gate A — Title similarity`
+- Line 12: `ISRC exact matches bypass this gate.`
+- Line 20: `Candidate is rejected (decision_code "skipped_artist_mismatch") when`
+- Line 21: `artist_sim < ARTIST_SIM_GATE (0.85) and no ISRC anchor.`
+- Line 25: `Candidate is rejected (decision_code "skipped_version_conflict") when`
+- Line 33: `confidence = title_sim  * 0.50`
+- Line 38: `label_match_boost — +0.05 when label similarity >= 0.70`
+- Line 44: `unless the match is ISRC-anchored OR label_sim >= 0.70.`
+- Line 47: `Decision thresholds`
+- Line 49: `>= THRESHOLD_APPLY (0.90)  → "ready"  (auto-apply when --apply is set)`
+- Line 50: `>= THRESHOLD_REVIEW (0.75) → "review" (needs human confirmation)`
+- Line 51: `< THRESHOLD_REVIEW         → "skipped_low_score"`
+- Line 55: `When >= 2 candidates both pass all gates AND the confidence gap between`
+- Line 56: `them is < AMBIGUITY_GAP (0.05), the result is marked "review_ambiguous".`
+- Line 59: `ISRC exact match`
+- Line 61: `Bypasses all gates; confidence is set to 0.98.`
+- Line 66: `title        : only if current is empty, or ISRC matched AND base differs.`
+- Line 67: `album        : if current empty, or ISRC matched.`
+- Line 68: `label        : if current empty; or ISRC matched AND confidence >= 0.95.`
+- Line 69: `isrc         : only if not already set.`
+- Line 75: `THRESHOLD_APPLY   — minimum confidence to auto-apply`
+- Line 76: `THRESHOLD_REVIEW  — minimum confidence to queue for review`
+- Line 77: `TITLE_SIM_GATE    — per-candidate pre-filter on base-title similarity`
+- Line 78: `ARTIST_SIM_GATE   — per-candidate artist rejection threshold`
+- Line 79: `AMBIGUITY_GAP     — max confidence gap between top-2 before flagging ambiguous`
+- Line 94: `# Exported threshold constants`
+- Line 97: `THRESHOLD_APPLY  = 0.90   # confidence >= this → ready to apply`
+- Line 98: `THRESHOLD_REVIEW = 0.75   # confidence in [this, THRESHOLD_APPLY) → needs review`
+- Line 101: `TITLE_SIM_GATE  = 0.92   # base-title similarity floor`
+- Line 102: `ARTIST_SIM_GATE = 0.85   # artist similarity floor (no ISRC anchor)`
+- Line 111: `# Album compilation filter — reject these terms in candidate album unless ISRC/label anchored`
+- Line 114: `# Title pre-clean regexes (noise removal before similarity comparison)`
+- Line 151: `_LABEL_SIM_BOOST   = 0.05   # awarded when label_sim >= _LABEL_SIM_THRESHOLD`
+- Line 152: `_LABEL_SIM_THRESHOLD = 0.70`
+- Line 218: `def _similarity(a: str, b: str) -> float:`
+- Line 235: `Both present, differ → 0.0  (different recordings — hard mismatch)`
+- Line 261: `Strip noise tokens from a title before similarity comparison.`
+- Line 310: `Falls back from string similarity to list-based subset matching when direct`
+- Line 320: `sim = _similarity(file_artist, cand_artist)`
+- Line 345: `current_isrc: Optional[str] = None,`
+- Line 349: `Compute a confidence score for one candidate against the track's current tags.`
+- Line 352: `(confidence, isrc_matched, reason_string, component_sims)`
+- Line 357: `# --- ISRC exact match (highest confidence; bypasses all gates) ---`
+- Line 359: `current_isrc`
+- Line 360: `and candidate.isrc`
+- Line 361: `and current_isrc.strip().upper() == candidate.isrc.strip().upper()`
+- Line 367: `return 0.98, True, "exact ISRC match", sims`
+- Line 385: `title_sim                     = _similarity(current_base, cand_base)`
+- Line 388: `label_sim   = _similarity(current_label, candidate.label or "") if current_label else 0.0`
+- Line 406: `confidence = (`
+- Line 413: `label_boost = _LABEL_SIM_BOOST if label_sim >= _LABEL_SIM_THRESHOLD else 0.0`
+- Line 415: `confidence = min(1.0, confidence + label_boost + alias_boost)`
+- Line 444: `return confidence, False, reason, sims`
+- Line 454: `current_isrc: Optional[str] = None,`
+- Line 463: `1. Score each candidate (ISRC exact match bypasses all gates)`
+- Line 465: `3. Artist gate — reject if artist_sim < ARTIST_SIM_GATE (no ISRC anchor)`
+- Line 467: `5. Ambiguity  — flag "review_ambiguous" when top-2 are too close`
+- Line 468: `6. Threshold  — "ready" / "review" / "skipped_low_score"`
+- Line 476: `decision_code="skipped_low_score",`
+- Line 483: `conf, isrc_hit, reason, sims = score_candidate(`
+- Line 484: `cand, current_tags, current_isrc, canonical_artist,`
+- Line 486: `scored.append((conf, isrc_hit, reason, sims, cand))`
+- Line 488: `# Sort: ISRC matches first, then confidence descending`
+- Line 491: `# --- ISRC exact match: bypass all gates ---`
+- Line 492: `if scored[0][1]:  # isrc_hit`
+- Line 494: `changes = _build_changes(top_cand, current_tags, current_isrc, top_conf, True,`
+- Line 498: `confidence=top_conf,`
+- Line 502: `isrc_matched=True,`
+- Line 509: `# --- Gate A: Title similarity (>= TITLE_SIM_GATE required) ---`
+- Line 511: `(conf, isrc_hit, reason, sims, cand)`
+- Line 512: `for (conf, isrc_hit, reason, sims, cand) in scored`
+- Line 520: `confidence=scored[0][0],`
+- Line 526: `decision_code="skipped_low_score",`
+- Line 536: `"Artist mismatch: sim=%.2f < %.2f  file=%r  candidate=%r",`
+- Line 542: `confidence=min(top_conf, 0.74),`
+- Line 546: `f"artist_mismatch: sim={artist_sim:.2f} < {ARTIST_SIM_GATE} "`
+- Line 550: `decision_code="skipped_artist_mismatch",`
+- Line 564: `confidence=min(top_conf, 0.74),`
+- Line 570: `decision_code="skipped_version_conflict",`
+- Line 575: `# If 2+ candidates passed gate A and their confidence gap is too small, don't guess.`
+- Line 579: `if gap < AMBIGUITY_GAP and top_conf >= THRESHOLD_REVIEW:`
+- Line 581: `"Ambiguous match: top=%.2f second=%.2f gap=%.2f — marking review_ambiguous",`
+- Line 586: `confidence=top_conf,`
+- Line 593: `decision_code="review_ambiguous",`
+- Line 597: `# --- Score threshold ---`
+- Line 598: `if top_conf < THRESHOLD_REVIEW:`
+- Line 601: `confidence=top_conf,`
+- Line 604: `reason=f"low_score: {top_conf:.2f} < {THRESHOLD_REVIEW}  [{top_reason}]",`
+- Line 605: `decision_code="skipped_low_score",`
+- Line 609: `changes = _build_changes(top_cand, current_tags, current_isrc, top_conf, False,`
+- Line 612: `if top_conf >= THRESHOLD_APPLY:`
+- Line 615: `decision_code = "review"   # 0.75–0.89: human confirmation needed`
+- Line 619: `confidence=top_conf,`
+- Line 623: `isrc_matched=False,`
+- Line 636: `current_isrc: Optional[str],`
+- Line 637: `confidence: float,`
+- Line 638: `isrc_matched: bool,`
+- Line 662: `elif isrc_matched:`
+- Line 665: `if _similarity(curr_base, cand_base) < 0.80:`
+- Line 677: `or isrc_matched`
+- Line 678: `or label_sim >= _LABEL_SIM_THRESHOLD`
+- Line 687: `elif isrc_matched and _similarity(current_album, cand.album) < 0.70:`
+- Line 694: `elif isrc_matched and confidence >= 0.95 and _similarity(current_label, cand.label) < 0.70:`
+- Line 697: `# isrc`
+- Line 698: `if cand.isrc and not current_isrc:`
+- Line 699: `_add("isrc", "", cand.isrc)`
+
+## `intelligence/enrichment/runner.py`
+- Line 6: `file → _read_full_tags() + _read_isrc()    (current state from disk)`
+- Line 9: `→ _print_result()                      (terminal preview)`
+- Line 10: `→ _apply_enrichment()   if --apply    (write tags + ISRC to disk)`
+- Line 14: `1. Spotify ISRC lookup  (most precise — skipped if no ISRC on file)`
+- Line 16: `3. Deezer artist+title  (fallback when Spotify conf < _FALLBACK_THRESHOLD)`
+- Line 20: `when Spotify+Deezer confidence is below the apply threshold OR when the file's`
+- Line 23: `The winning candidate is always the highest-confidence result across all sources`
+- Line 27: `- Preview is the default — no writes without --apply.`
+- Line 29: `- Min confidence default is 0.80 (higher than ai-normalize's 0.75) because`
+- Line 31: `- ISRC exact matches override the confidence formula (0.98).`
+- Line 33: `- Labels are only overwritten by online data when confidence >= 0.95.`
+- Line 34: `- All results (applied/rejected/skipped) are logged to JSONL.`
+- Line 37: `enrichment_queue.jsonl    — one entry per processed file (all outcomes)`
+- Line 39: `enrichment_rejected.jsonl — changes that were skipped or below threshold`
+- Line 57: `from ai.normalizer import _collect_files, _apply_tags`
+- Line 62: `THRESHOLD_APPLY,`
+- Line 63: `THRESHOLD_REVIEW,`
+- Line 78: `# Persistent human-review queue for medium-confidence enrichment results.`
+- Line 80: `_ENRICH_REVIEW_QUEUE: Path = config.AI_ENRICH_QUEUE.parent / "enrichment_review_queue.json"`
+- Line 83: `# Structure under IGNORED mirrors the original library layout.`
+- Line 84: `_ENRICH_IGNORED_DIR: Path = config.IGNORED_DIR`
+- Line 157: `Uses mutagen easy tags (same interface as _apply_tags).  Returns True on`
+- Line 178: `dry_run: bool,`
+- Line 190: `Writes to disk only when do_write=True and dry_run=False.`
+- Line 199: `if do_write and not dry_run:`
+- Line 206: `# Tag reading (extends ai.normalizer._read_full_tags with ISRC)`
+- Line 230: `_ISRC_RE = re.compile(r"^[A-Z]{2}[A-Z0-9]{3}[0-9]{7}$")`
+- Line 233: `def _validate_isrc(raw: Optional[str]) -> Optional[str]:`
+- Line 235: `Return the ISRC uppercased if it matches the standard format, else None.`
+- Line 249: `The check is intentionally strict: an ISRC that doesn't pass is treated`
+- Line 255: `if _ISRC_RE.match(normalised):`
+- Line 257: `log.debug("Ignoring malformed ISRC %r — does not match [A-Z]{2}[A-Z0-9]{3}[0-9]{7}", raw)`
+- Line 261: `def _read_isrc(path: Path) -> Optional[str]:`
+- Line 263: `Read and validate the ISRC from an audio file.`
+- Line 266: `FLAC : 'isrc' Vorbis comment (also not in easy tags)`
+- Line 269: `Returns None if the ISRC is absent, unreadable, invalid, or the format`
+- Line 271: `by some download tools) are discarded via _validate_isrc().`
+- Line 279: `return _validate_isrc(str(tsrc)) if tsrc else None`
+- Line 284: `vals = audio.get("isrc") or audio.get("ISRC")`
+- Line 285: `return _validate_isrc(vals[0].strip()) if vals else None`
+- Line 288: `log.debug("Could not read ISRC from %s: %s", path.name, exc)`
+- Line 294: `# Tag writing (ISRC — not available via mutagen easy tags)`
+- Line 297: `def _write_isrc(path: Path, isrc: str) -> bool:`
+- Line 299: `Write an ISRC to an audio file.`
+- Line 302: `FLAC : 'isrc' Vorbis comment`
+- Line 311: `tags["TSRC"] = TSRC(encoding=3, text=[isrc])`
+- Line 318: `audio["isrc"] = [isrc]`
+- Line 323: `log.warning("ISRC write failed for %s: %s", path.name, exc)`
+- Line 329: `# Apply changes to disk`
+- Line 332: `def _apply_enrichment(`
+- Line 335: `dry_run: bool,`
+- Line 341: `ISRC is written via _write_isrc() since it cannot be set through easy tags.`
+- Line 342: `All other fields use _apply_tags() (mutagen easy mode, same as ai-normalize).`
+- Line 348: `isrc_to_write: Optional[str] = None`
+- Line 359: `if field == "isrc":`
+- Line 360: `isrc_to_write = value`
+- Line 368: `ok = _apply_tags(path, easy_fields, dry_run)`
+- Line 374: `if isrc_to_write and not dry_run:`
+- Line 375: `ok = _write_isrc(path, isrc_to_write)`
+- Line 377: `written["TSRC"] = isrc_to_write`
+- Line 411: `# Deezer fallback: triggered when Spotify confidence is below this`
+- Line 412: `_FALLBACK_THRESHOLD    = 0.70`
+- Line 413: `# Traxsource fallback: triggered when best-so-far is below the apply threshold`
+- Line 415: `_TRAXSOURCE_THRESHOLD  = THRESHOLD_APPLY   # mirrors new apply threshold (0.90)`
+- Line 421: `current_isrc: Optional[str],`
+- Line 429: `Query sources in priority order and return the highest-confidence match.`
+- Line 432: `1. Spotify ISRC  (if current file has an ISRC)`
+- Line 434: `3. Deezer        (when Spotify confidence < _FALLBACK_THRESHOLD)`
+- Line 435: `4. Traxsource    (when best-so-far < _TRAXSOURCE_THRESHOLD OR dance genre)`
+- Line 438: `confidence across all sources attempted.  EnrichmentMatch.source_used and`
+- Line 453: `if current_isrc:`
+- Line 454: `log.debug("Spotify ISRC search: %s", current_isrc)`
+- Line 455: `candidates = spotify_client.search_by_isrc(current_isrc)`
+- Line 462: `candidates, current_tags, current_isrc,`
+- Line 467: `"Spotify best: confidence=%.2f isrc_match=%s reason=%s",`
+- Line 468: `spotify_match.confidence, spotify_match.isrc_matched, spotify_match.reason,`
+- Line 474: `if best and best.confidence >= _FALLBACK_THRESHOLD:`
+- Line 475: `# Spotify is strong — skip Deezer but still check Traxsource for dance music`
+- Line 485: `deezer_candidates, current_tags, current_isrc,`
+- Line 490: `"Deezer best: confidence=%.2f reason=%s",`
+- Line 491: `deezer_match.confidence, deezer_match.reason,`
+- Line 493: `if best is None or deezer_match.confidence > best.confidence:`
+- Line 500: `#   a) Best-so-far confidence is below the apply threshold, OR`
+- Line 502: `# Traxsource is skipped when an ISRC exact match (0.98) already anchors the result.`
+- Line 503: `best_conf = best.confidence if best else 0.0`
+- Line 504: `isrc_locked = best is not None and best.isrc_matched and best.confidence >= 0.95`
+- Line 508: `and not isrc_locked`
+- Line 509: `and (best_conf < _TRAXSOURCE_THRESHOLD or is_dance)`
+- Line 521: `ts_candidates, current_tags, current_isrc,`
+- Line 526: `"Traxsource best: confidence=%.2f reason=%s",`
+- Line 527: `ts_match.confidence, ts_match.reason,`
+- Line 529: `if best is None or ts_match.confidence > best.confidence:`
+- Line 551: `current_isrc: Optional[str],`
+- Line 554: `skipped_reason: Optional[str],`
+- Line 570: `_show("isrc",    current_isrc or "")`
+- Line 578: `f"  confidence={match.confidence:.2f}"`
+- Line 579: `+ (" [ISRC EXACT]" if match.isrc_matched else "")`
+- Line 588: `_show("isrc",    cand.isrc    or "")`
+- Line 607: `elif skipped_reason:`
+- Line 608: `print(f"Status: SKIPPED  ({skipped_reason})")`
+- Line 614: `print("Status: PREVIEW  (pass --apply to write changes)")`
+- Line 638: `current_isrc: Optional[str],`
+- Line 642: `skipped_reason: Optional[str],`
+- Line 652: `elif skipped_reason:`
+- Line 655: `if dc in ("skipped_artist_mismatch", "skipped_version_conflict", "skipped_low_score"):`
+- Line 657: `elif dc in ("review_ambiguous", "review"):`
+- Line 660: `status = "skipped"`
+- Line 664: `status = "preview"`
+- Line 666: `queue_record = {`
+- Line 672: `"current_isrc":     current_isrc,`
+- Line 676: `"confidence":       match.confidence,`
+- Line 677: `"isrc_matched":     match.isrc_matched,`
+- Line 683: `_append_jsonl(config.AI_ENRICH_QUEUE, queue_record)`
+- Line 688: `"current_isrc": current_isrc},`
+- Line 691: `"confidence":     match.confidence,`
+- Line 692: `"isrc_matched":   match.isrc_matched,`
+- Line 695: `"reason_codes":   ["auto_applied", "isrc_match" if match.isrc_matched`
+- Line 696: `else "similarity_match"],`
+- Line 701: `"skipped", "error",`
+- Line 702: `"skipped_artist_mismatch", "skipped_version_conflict", "skipped_low_score",`
+- ... truncated 159 additional hits
+
+## `intelligence/enrichment/spotify_lookup.py`
+- Line 18: `search_by_isrc(isrc)             → List[EnrichmentCandidate]`
+- Line 59: `candidates = client.search_by_isrc("GBUM71029604")`
+- Line 116: `# ISRC lookup`
+- Line 119: `def search_by_isrc(self, isrc: str) -> List[EnrichmentCandidate]:`
+- Line 121: `Search Spotify for a track by ISRC.`
+- Line 123: `ISRC is the most reliable lookup key — an exact ISRC match is`
+- Line 125: `ISRC is not in the Spotify catalogue.`
+- Line 127: `isrc = isrc.strip().upper()`
+- Line 128: `log.debug("Spotify ISRC lookup: %s", isrc)`
+- Line 134: `params={"q": f"isrc:{isrc}", "type": "track", "limit": 1},`
+- Line 139: `log.warning("Spotify ISRC search failed for %s: %s", isrc, exc)`
+- Line 218: `We skip a second album-detail call by default to stay within rate limits.`
+- Line 242: `isrc         = (item.get("external_ids") or {}).get("isrc") or None,`
+
+## `intelligence/enrichment/traxsource_lookup.py`
+- Line 11: `a) Spotify + Deezer combined confidence is below the apply threshold, OR`
+- Line 29: `- All parsing is wrapped in try/except; a broken row is skipped, not fatal.`
+- Line 38: `not commercial aggregation.  Review Traxsource's terms of service before use.`
+- Line 191: `"Skipping Traxsource for this track."`
+- Line 210: `Each track row is parsed independently; a broken row is skipped with a`
+- Line 265: `isrc         = None,   # Traxsource does not expose ISRCs on search pages`
+
+## `intelligence/label/cleaner.py`
+- Line 2: `Label cleaning — detection, confidence scoring, and optional tag write-back.`
+- Line 5: `1. Embedded organization/TPUB tag  (confidence 0.95 if valid)`
+- Line 8: `4. Unresolved                       (confidence 0.0)`
+- Line 10: `Write-back only occurs when confidence >= WRITE_THRESHOLD (default 0.85),`
+- Line 13: `appear in reports for manual review.`
+- Line 136: `# Now apply normalization for the remaining structural checks`
+- Line 202: `# Confidence constants`
+- Line 215: `#: Minimum confidence for automatic write-back (--write-tags).`
+- Line 217: `#: are reported but not written unless user lowers this via --confidence-threshold.`
+- Line 218: `WRITE_THRESHOLD = 0.85`
+- Line 234: `confidence: float                 # 0.0 – 1.0`
+- Line 237: `writable: bool = False            # True ↔ confidence >= write_threshold AND label found`
+- Line 247: `write_threshold: float = WRITE_THRESHOLD,`
+- Line 253: `making a low-confidence claim.`
+- Line 259: `def _result(raw, cleaned, source, confidence, action, extra=None):`
+- Line 270: `confidence=confidence,`
+- Line 273: `writable=bool(cleaned) and confidence >= write_threshold,`
+- Line 352: `fn_result.confidence,`
+- Line 369: `write_threshold: float = WRITE_THRESHOLD,`
+- Line 384: `r = detect_label(path, write_threshold)`
+- Line 391: `r.confidence,`
+- Line 402: `source=_SOURCE_UNRESOLVED, confidence=0.0,`
+- Line 406: `# Second pass: apply canonical names from alias registry`
+- Line 428: `log.warning("mutagen returned None for %s — skipping write", path)`
+
+## `intelligence/label/cli.py`
+- Line 21: `s.add_argument("--skip-enrich", action="store_true")`
+- Line 36: `skip_enrich=args.skip_enrich,`
+
+## `intelligence/label/filename_parser.py`
+- Line 5: `plus a confidence score and the pattern name that matched.`
+- Line 8: `- returns None if no pattern fires with reasonable confidence`
+- Line 22: `confidence: float       # 0.0 – 1.0`
+- Line 30: `# Each entry: (compiled_regex, pattern_name, base_confidence)`
+- Line 34: `# Confidence guidance:`
+- Line 113: `confidence=base_conf,`
+
+## `intelligence/label/reports.py`
+- Line 8: `label_clean_review.json    — only unresolved / low-confidence cases`
+- Line 37: `"confidence":      round(r.confidence, 3),`
+- Line 48: `"source", "confidence", "action_taken", "writable", "junk_count", "notes",`
+- Line 73: `def export_review_json(results: list[TrackLabelResult], path: Path) -> None:`
+- Line 74: `"""Only unresolved or low-confidence (non-writable) tracks."""`
+- Line 75: `review = [r for r in results if r.source == "unresolved" or not r.writable]`
+- Line 78: `json.dumps([_row_dict(r) for r in review], indent=2, ensure_ascii=False),`
+- Line 108: `f"  High-confidence (>= 0.85)  : {high_conf}",`
+- Line 144: `review_only: bool = False,`
+- Line 150: `When review_only=True, only the review JSON is written.`
+- Line 155: `p_review = output_dir / "label_clean_review.json"`
+- Line 156: `export_review_json(results, p_review)`
+- Line 157: `paths["review_json"] = p_review`
+- Line 159: `if not review_only:`
+
+## `intelligence/label/scraper.py`
+- Line 34: `skip_enrich: bool = False,`
+- Line 59: `if skip_enrich:`
+
+## `modules/analyze_missing.py`
+- Line 8: `python3 pipeline.py analyze-missing --dry-run --verbose`
+- Line 18: `longer exist on disk are skipped and counted as stale.`
+- Line 88: `continue   # already quarantined — do not re-attempt`
+- Line 97: `Query DB for status='ok' rows missing BPM/key. Skip files that no longer`
+- Line 130: `dry_run: bool,`
+- Line 141: `other   : unsupported — logged and skipped (returns True, not a failure)`
+- Line 143: `Returns True on success, dry_run, or unsupported format.`
+- Line 146: `if dry_run:`
+- Line 185: `log.debug("Tag write: unsupported format %s — skipping %s", suffix, path.name)`
+- Line 249: `log.warning("Per-file timeout (%.0fs) exceeded — skipping: %s", per_file_timeout, path_obj.name)`
+- Line 287: `dry_run: bool,`
+- Line 293: `In dry_run mode logs intent but performs no filesystem operation.`
+- Line 297: `tag  = "[DRY-RUN WOULD MOVE]" if dry_run else "[MOVED_TO_CORRUPT]"`
+- Line 304: `if dry_run:`
+- Line 305: `log.info("CORRUPT (dry-run): would move %s → %s  reason=%s", src.name, dest, reason)`
+- Line 325: `def _open_corrupt_log(dry_run: bool):`
+- Line 328: `Returns None in dry_run mode.`
+- Line 330: `if dry_run:`
+- Line 362: `"DIR_SKIP"             — path exists but is a directory, not a file`
+- Line 378: `return "DIR_SKIP", f"path is a directory: {path_obj}"`
+- Line 390: `def _open_log(dry_run: bool):`
+- Line 393: `Returns None in dry_run mode.`
+- Line 395: `if dry_run:`
+- Line 418: `dry_run: bool = False,`
+- Line 421: `min_confidence: float = 0.0,`
+- Line 436: `# Resolve corrupt quarantine directory:`
+- Line 466: `msg += f" ({stale_count} stale DB entries skipped)"`
+- Line 475: `stale_str   = f"  ({stale_count} stale DB entries skipped)" if stale_count else ""`
+- Line 481: `+ (" [DRY RUN]" if dry_run else "")`
+- Line 486: `fh          = _open_log(dry_run)`
+- Line 487: `corrupt_fh  = _open_corrupt_log(dry_run) if isolate_corrupt else None`
+- Line 496: `_log_line(fh, f"  stale skip : {stale_count}")`
+- Line 499: `_log_line(fh, f"  dry_run    : {dry_run}")`
+- Line 506: `if min_confidence > 0:`
+- Line 507: `_log_line(fh, f"  min_conf   : {min_confidence}")`
+- Line 512: `skipped_timeout   = 0    # session-level timeout (remaining unprocessed)`
+- Line 513: `skipped_file_to   = 0    # per-file timeout (corrupt / slow decoder)`
+- Line 520: `cnt_dir_skip      = 0    # DIR_SKIP — path is a directory`
+- Line 527: `skipped_timeout = len(candidates) - (i - 1)`
+- Line 528: `_log_line(fh, f"  [TIMEOUT] session limit reached after {i-1} track(s) — {skipped_timeout} remaining")`
+- Line 539: `elif path_tag == "DIR_SKIP":`
+- Line 540: `cnt_dir_skip += 1`
+- Line 562: `_log_line(fh, f"  SKIP (timeout): {path_obj.name}")`
+- Line 563: `skipped_file_to += 1`
+- Line 568: `dry_run,`
+- Line 572: `if dest and not dry_run:`
+- Line 582: `# Nothing detected — skip DB/tag write`
+- Line 604: `dry_run,`
+- Line 608: `if dest and not dry_run:`
+- Line 614: `if not dry_run:`
+- Line 631: `dry_run=dry_run,`
+- Line 642: `_log_line(fh, f"  Stale skipped    : {stale_count}")`
+- Line 647: `if cnt_dir_skip:`
+- Line 648: `_log_line(fh, f"  Dir skipped      : {cnt_dir_skip}  (path is a directory)")`
+- Line 654: `if skipped_file_to:`
+- Line 655: `_log_line(fh, f"  Timeout (file)   : {skipped_file_to}  ({per_file_timeout:.0f}s limit)")`
+- Line 657: `label = "would move" if dry_run else "moved"`
+- Line 661: `if skipped_timeout:`
+- Line 662: `_log_line(fh, f"  Skip (session TO): {skipped_timeout}  (session limit reached)")`
+- Line 663: `total_path_errors = cnt_bad_path + cnt_missing_file + cnt_dir_skip + cnt_not_file`
+- Line 664: `if isolate_corrupt and not dry_run and (moved_corrupt or total_path_errors):`
+- Line 670: `+ (f"  Stale skipped: {stale_count}" if stale_count else "")`
+- Line 673: `+ (f"  Dir skipped: {cnt_dir_skip}" if cnt_dir_skip else "")`
+- Line 678: `+ (f"  Timeout (file): {skipped_file_to}" if skipped_file_to else "")`
+- Line 679: `+ (f"  Corrupt {'(dry-run) ' if dry_run else ''}moved: {moved_corrupt}" if moved_corrupt else "")`
+- Line 680: `+ (f"  Skipped (session timeout): {skipped_timeout}" if skipped_timeout else "")`
+- Line 682: `+ (" [DRY RUN — no writes]" if dry_run else "")`
+
+## `modules/analyzer.py`
+- Line 95: `def _apply_bpm_correction(raw_bpm: float, genre: str, name: str, source: str) -> Optional[float]:`
+- Line 141: `return _apply_bpm_correction(raw_bpm, genre, path.name, "librosa")`
+- Line 211: `"""Log reason aubio was skipped/failed, then attempt librosa."""`
+- Line 287: `return _apply_bpm_correction(raw_bpm, genre, path.name, "aubio")`
+- Line 380: `read them here so the pipeline can skip re-analysis and preserve MIK data.`
+- Line 464: `def run(files: List[Path], run_id: int, dry_run: bool = False) -> List[Path]:`
+- Line 530: `if update and not dry_run:`
+
+## `modules/artist_folder_clean.py`
+- Line 16: `→ validate candidate; if source/promo junk → review`
+- Line 20: `→ if plausible artist candidate  → suspicious (manual review, shown with candidate)`
+- Line 21: `→ if inner text clearly invalid  → review (no candidate)`
+- Line 28: `"review"     — no valid artist name extractable; written to report only`
+- Line 303: `status:          str                   # "rename"|"merge"|"recover"|"suspicious"|"review"`
+- Line 403: `Good folders are silently skipped.`
+- Line 418: `continue  # skip _unsorted, _compilations`
+- Line 434: `status        = "review"`
+- Line 448: `status = "review"`
+- Line 468: `status = "review"`
+- Line 479: `status = "review"`
+- Line 520: `def _move_files_to_target(result: CleanResult, dry_run: bool) -> Dict[str, int]:`
+- Line 545: `("DRY-RUN would move" if dry_run else "moving"),`
+- Line 549: `f"FOLDER-CLEAN: {'[DRY] ' if dry_run else ''}move"`
+- Line 554: `if not dry_run:`
+- Line 572: `def _apply_recovery(result: CleanResult, dry_run: bool) -> Dict[str, int]:`
+- Line 597: `("DRY-RUN would recover" if dry_run else "recovering"),`
+- Line 601: `f"FOLDER-CLEAN: {'[DRY] ' if dry_run else ''}recover"`
+- Line 606: `if not dry_run:`
+- Line 622: `if not dry_run:`
+- Line 628: `def _apply_clean(result: CleanResult, dry_run: bool) -> Dict[str, int]:`
+- Line 630: `Apply one CleanResult (rename or merge only).`
+- Line 631: `Recover, suspicious, and review results must use the appropriate caller.`
+- Line 636: `stats = _move_files_to_target(result, dry_run)`
+- Line 639: `if not dry_run:`
+- Line 731: `dry_run: bool = True,`
+- Line 734: `mode = "dry_run" if dry_run else "applied"`
+- Line 741: `reviews    = [r for r in results if r.status == "review"]`
+- Line 751: `"review":            len(reviews),`
+- Line 758: `"review":     [_result_to_dict(r) for r in reviews],`
+- Line 773: `def run_dry_run(sorted_root: Path, report_dir: Path) -> int:`
+- Line 775: `Scan the library, detect bad folder names, write a dry-run report, and`
+- Line 778: `log.info("FOLDER-CLEAN: scanning %s (dry-run)", sorted_root)`
+- Line 779: `log_action("FOLDER-CLEAN DRY-RUN START")`
+- Line 782: `report_path = _write_report(report_dir, results, dry_run=True)`
+- Line 788: `reviews    = [r for r in results if r.status == "review"]`
+- Line 793: `if r.status == "review" and r.detection_rule == "camelot_prefix" and r.reject_reason`
+- Line 813: `f"  Suspicious (review)      : {len(suspicious):>4}"`
+- Line 817: `f"  Review (no candidate)    : {len(reviews):>4}"`
+- Line 818: `f"  ({sum(len(r.files) for r in reviews)} files)"`
+- Line 879: `if reviews:`
+- Line 881: `f"\n  Review  [{len(reviews)}]"`
+- Line 885: `for r in sorted(reviews, key=lambda x: x.original_name.lower()):`
+- Line 896: `"FOLDER-CLEAN dry-run: %d bad — %d rename, %d merge,"`
+- Line 897: `" %d recover, %d suspicious, %d review",`
+- Line 899: `len(recovered), len(suspicious), len(reviews),`
+- Line 902: `f"FOLDER-CLEAN DRY-RUN DONE: {len(results)} bad —"`
+- Line 905: `f" {len(reviews)} review → {report_path}"`
+- Line 910: `def run_apply(sorted_root: Path, report_dir: Path) -> int:`
+- Line 912: `Apply all actionable folders:`
+- Line 916: `Suspicious and review folders are never touched — they appear in the report.`
+- Line 920: `log.info("FOLDER-CLEAN: scanning %s (apply)", sorted_root)`
+- Line 921: `log_action("FOLDER-CLEAN APPLY START")`
+- Line 926: `reviews    = [r for r in results if r.status == "review"]`
+- Line 931: `_write_report(report_dir, results, dry_run=False)`
+- Line 955: `stats = _apply_recovery(r, dry_run=False)`
+- Line 962: `stats = _apply_clean(r, dry_run=False)`
+- Line 975: `"FOLDER-CLEAN: suspicious (skipped) %r  candidate=%r  files=%d",`
+- Line 979: `f"FOLDER-CLEAN: SUSPICIOUS (skipped) {r.original_name!r}"`
+- Line 983: `for r in reviews:`
+- Line 985: `"FOLDER-CLEAN: review (skipped) %r  rule=%s  files=%d",`
+- Line 989: `f"FOLDER-CLEAN: REVIEW (skipped) {r.original_name!r}"`
+- Line 995: `applied_stats=global_stats, dry_run=False,`
+- Line 1008: `print(f"  Suspicious (skipped)     : {len(suspicious)}")`
+- Line 1009: `print(f"  Review (skipped)         : {len(reviews)}")`
+- Line 1014: `"FOLDER-CLEAN apply done:"`
+- Line 1016: `" %d errors, %d suspicious, %d review",`
+- Line 1019: `global_stats["errors"], len(suspicious), len(reviews),`
+- Line 1022: `f"FOLDER-CLEAN APPLY DONE:"`
+- Line 1029: `f" {len(reviews)} review → {report_path}"`
+
+## `modules/artist_merge.py`
+- Line 17: `Never auto-merged; written to review report only.`
+- Line 19: `Both SAFE_ALIAS and SAME_PRIMARY_COLLAB are auto-applied in --apply mode.`
+- Line 20: `AMBIGUOUS groups are always skipped.`
+- Line 170: `Applies the same transformations as normalize_artist_key() but skips`
+- Line 372: `continue  # skip _unsorted, _compilations`
+- Line 502: `ambiguous_groups contains only AMBIGUOUS groups (written to review report,`
+- Line 557: `# Apply a single merge group`
+- Line 560: `def _apply_merge(group: MergeGroup, dry_run: bool) -> Dict[str, int]:`
+- Line 571: `log.debug("ARTIST-MERGE: skipping canonical folder %s", fi.display_name)`
+- Line 576: `if not dry_run and fi.path.exists():`
+- Line 602: `("DRY-RUN would move" if dry_run else "moving"),`
+- Line 607: `f"ARTIST-MERGE: {'[DRY] ' if dry_run else ''}move"`
+- Line 612: `if not dry_run:`
+- Line 648: `if not dry_run and fi.path.exists():`
+- Line 705: `dry_run: bool = True,`
+- Line 709: `mode = "dry_run" if dry_run else "applied"`
+- Line 774: `def run_dry_run(sorted_root: Path, report_dir: Path) -> int:`
+- Line 781: `log.info("ARTIST-MERGE: scanning %s (dry-run)", sorted_root)`
+- Line 782: `log_action("ARTIST-MERGE DRY-RUN START")`
+- Line 786: `report_path = _write_report(report_dir, safe, ambiguous, dry_run=True)`
+- Line 802: `print(f"  Ambiguous (review needed) : {len(ambiguous):>4}  "`
+- Line 806: `print(f"\n  Safe Alias Merges  (auto-applied with --apply)")`
+- Line 812: `print(f"\n  Same Primary Artist — Collab Variants  (auto-applied with --apply)")`
+- Line 818: `print(f"\n  Ambiguous Merges — manual review required")`
+- Line 830: `"ARTIST-MERGE dry-run: %d safe (%d alias, %d collab, %d files),"`
+- Line 836: `f"ARTIST-MERGE DRY-RUN DONE: {len(safe)} safe "`
+- Line 843: `def run_apply(sorted_root: Path, report_dir: Path) -> int:`
+- Line 845: `Apply all safe merges (both SAFE_ALIAS and SAME_PRIMARY_COLLAB): move`
+- Line 851: `log.info("ARTIST-MERGE: scanning %s (apply)", sorted_root)`
+- Line 852: `log_action("ARTIST-MERGE APPLY START")`
+- Line 859: `_write_report(report_dir, safe, ambiguous, dry_run=False)`
+- Line 879: `stats = _apply_merge(group, dry_run=False)`
+- Line 888: `applied_stats=global_stats, dry_run=False,`
+- Line 905: `print(f"  Ambiguous (skipped) : {len(ambiguous)}")`
+- Line 910: `"ARTIST-MERGE apply done: %d merged, %d moved, %d collisions, %d errors",`
+- Line 917: `f"ARTIST-MERGE APPLY DONE: {global_stats['groups_merged']} groups,"`
+
+## `modules/artist_repair.py`
+- Line 16: `- Preview by default; no writes without --apply.`
+- Line 17: `- Only HIGH-confidence splits (both sides confirmed in known-artist dict) are`
+- Line 18: `write-eligible with --apply.  All others go to review queue only.`
+- Line 22: `skipped (protects Mc, De, La, du-style prefixes).`
+- Line 23: `- --move-artist-review moves review-queue files to .BIN/CHKARTISTNAMES/,`
+- Line 24: `relative structure preserved.  Requires --apply to execute.`
+- Line 27: `Review queue : data/intelligence/artist_repair_queue.json`
+- Line 59: `HIGH_CONFIDENCE   = 0.85   # both sides confirmed in known_artists`
+- Line 60: `MEDIUM_CONFIDENCE = 0.65   # one side confirmed`
+- Line 61: `LOW_CONFIDENCE    = 0.45   # neither side confirmed`
+- Line 105: `Walks backwards from word_start: skips whitespace, then checks the last`
+- Line 129: `Skips:`
+- Line 272: `confidence: float`
+- Line 274: `apply_blocked: bool      # True when confidence < HIGH_CONFIDENCE`
+- Line 284: `Returns at most one candidate (the highest-confidence split).`
+- Line 303: `conf          = HIGH_CONFIDENCE`
+- Line 304: `apply_blocked = False`
+- Line 307: `conf          = MEDIUM_CONFIDENCE`
+- Line 308: `apply_blocked = True`
+- Line 311: `conf          = MEDIUM_CONFIDENCE`
+- Line 312: `apply_blocked = True`
+- Line 315: `conf          = LOW_CONFIDENCE`
+- Line 316: `apply_blocked = True`
+- Line 327: `confidence=conf,`
+- Line 329: `apply_blocked=apply_blocked,`
+- Line 335: `# Return only the highest-confidence candidate`
+- Line 336: `candidates.sort(key=lambda c: c.confidence, reverse=True)`
+- Line 351: `Skips:`
+- Line 355: `Confidence mirrors _propose_repairs:`
+- Line 356: `HIGH  — all sides found in known_artists (write-eligible with --apply)`
+- Line 358: `LOW   — no sides known (review queue only)`
+- Line 375: `# Confidence from known-artist lookup`
+- Line 378: `conf, apply_blocked, known_side = HIGH_CONFIDENCE, False, "all"`
+- Line 380: `conf, apply_blocked, known_side = MEDIUM_CONFIDENCE, True, "some"`
+- Line 382: `conf, apply_blocked, known_side = LOW_CONFIDENCE, True, "none"`
+- Line 397: `confidence=conf,`
+- Line 399: `apply_blocked=apply_blocked,`
+- Line 458: `# Review queue`
+- Line 461: `def _load_queue(queue_path: Path) -> List[dict]:`
+- Line 462: `"""Load queue from disk; returns [] when missing or unreadable."""`
+- Line 463: `if not queue_path.exists():`
+- Line 466: `with open(queue_path, "r", encoding="utf-8") as fh:`
+- Line 470: `log.warning("Could not load review queue %s: %s", queue_path, exc)`
+- Line 474: `def _save_queue(queue_path: Path, entries: List[dict]) -> None:`
+- Line 475: `"""Save queue to disk, creating parent dirs as needed."""`
+- Line 476: `queue_path.parent.mkdir(parents=True, exist_ok=True)`
+- Line 477: `with open(queue_path, "w", encoding="utf-8") as fh:`
+- Line 499: `def _print_queue(entries: List[dict]) -> None:`
+- Line 505: `f"REVIEW QUEUE — {len(entries)} entries  "`
+- Line 518: `conf = entry.get("confidence", 0)`
+- Line 527: `def _update_review_queue(queue_path: Path, entries: List[dict]) -> None:`
+- Line 529: `Merge new entries into the queue, dedup by (file, original_artist).`
+- Line 533: `existing: List[dict] = _load_queue(queue_path)`
+- Line 552: `_save_queue(queue_path, existing)`
+- Line 564: `apply_mode  = getattr(args, "apply",              False)`
+- Line 565: `move_review = getattr(args, "move_artist_review", False)`
+- Line 582: `mode_label = "APPLY" if apply_mode else "PREVIEW"`
+- Line 612: `# .BIN/CHKARTISTNAMES for quarantine`
+- Line 615: `# Review queue path`
+- Line 616: `repair_queue_path_raw = getattr(config, "ARTIST_REPAIR_QUEUE",`
+- Line 617: `"data/intelligence/artist_repair_queue.json")`
+- Line 618: `repair_queue_path = Path(repair_queue_path_raw)`
+- Line 624: `review_count     = 0`
+- Line 627: `n_skip_unchanged = 0`
+- Line 630: `review_entries: List[dict] = []`
+- Line 633: `if not _force and _proc.should_skip(_stage, path):`
+- Line 634: `n_skip_unchanged += 1`
+- Line 649: `_all.sort(key=lambda c: c.confidence, reverse=True)`
+- Line 658: `print(f"    conf     : {cand.confidence:.2f}  blocked: {cand.apply_blocked}")`
+- Line 661: `if cand.apply_blocked:`
+- Line 662: `review_count += 1`
+- Line 663: `review_entries.append({`
+- Line 667: `"confidence":      round(cand.confidence, 3),`
+- Line 670: `"apply_blocked":   True,`
+- Line 675: `print("    → QUEUED for review (confidence below apply threshold)")`
+- Line 677: `if move_review and apply_mode:`
+- Line 686: `_proc.record(_stage, path, "skipped", "moved_to_chkartistnames")`
+- Line 692: `_proc.record(_stage, path, "review", "apply_blocked")`
+- Line 694: `# High confidence — eligible for write`
+- Line 696: `if apply_mode:`
+- Line 711: `# Preview-pending: don't record success yet`
+- Line 712: `print("    → WOULD APPLY (pass --apply to write)")`
+- Line 716: `# Write review queue`
+- Line 717: `if review_entries:`
+- Line 719: `_update_review_queue(repair_queue_path, review_entries)`
+- Line 721: `log.error("Could not write review queue: %s", exc)`
+- Line 731: `"skip_unchanged":  n_skip_unchanged,`
+- Line 734: `"high_confidence": high_conf_count,`
+- Line 735: `"review_queued":   review_count,`
+- Line 748: `print(f"Files skipped unchanged : {n_skip_unchanged}")`
+- Line 752: `print(f"  Queued for review     : {review_count}")`
+- Line 754: `print(f"Files moved to review   : {moved_count}")`
+- Line 757: `if not apply_mode and flagged_count:`
+- Line 759: `print("Preview mode — no files modified. Pass --apply to write high-confidence repairs.")`
+- Line 760: `if review_count:`
+- Line 761: `print(f"\nReview queue: {repair_queue_path} ({review_count} new entries)")`
+- Line 762: `if not (move_review and apply_mode):`
+- Line 763: `print("  Pass --apply --move-artist-review to quarantine review files.")`
+- Line 766: `f"ARTIST-REPAIR {'APPLY' if apply_mode else 'PREVIEW'}: "`
+- Line 768: `f"{review_count} queued, {moved_count} moved → {input_path}"`
+- Line 774: `# artist-repair-review CLI entry point`
+- Line 777: `def run_artist_repair_review(args) -> int:`
+- Line 778: `"""Called by pipeline.py dispatch for the artist-repair-review subcommand."""`
+- Line 781: `queue_path_raw = getattr(config, "ARTIST_REPAIR_QUEUE",`
+- Line 782: `"data/intelligence/artist_repair_queue.json")`
+- Line 783: `queue_path = Path(queue_path_raw)`
+- Line 786: `do_apply      = getattr(args, "apply_approved", False)`
+- Line 790: `entries = _load_queue(queue_path)`
+- Line 793: `print(f"Review queue is empty: {queue_path}")`
+- Line 797: `if do_list or (not do_apply and approve_idx is None and reject_idx is None):`
+- Line 798: `_print_queue(entries)`
+- Line 799: `print(f"Queue file: {queue_path}")`
+- Line 803: `print("  --apply-approved       write approved repairs to audio file tags")`
+- Line 811: `f"(queue has {len(entries)} entries)",`
+- Line 818: `_save_queue(queue_path, entries)`
+- Line 825: `f"(queue has {len(entries)} entries)",`
+- Line 832: `_save_queue(queue_path, entries)`
+- Line 834: `# --apply-approved`
+- Line 835: `if do_apply:`
+- Line 839: `print("No approved (unapplied) entries to apply.")`
+- ... truncated 8 additional hits
+
+## `modules/audit_quality.py`
+- Line 19: `- dry_run=True logs intended actions but makes no file changes`
+- Line 25: `AIFF/WAV : skipped safely (AIFF/WAV tagging is unreliable; logged, not failed)`
+- Line 83: `# HIGH tier bitrate threshold (fixed — not configurable per spec)`
+- Line 98: `action_taken: str             # "none" | "moved" | "tag_written" | "skipped" | "unreadable"`
+- Line 119: `bitrate_kbps:   Bitrate in kbps.  Ignored for lossless codecs.`
+- Line 121: `min_lossy_kbps: Bitrate threshold that separates LOW from MEDIUM.`
+- Line 257: `dry_run: bool = False,`
+- Line 266: `AIFF/WAV : skipped — tagging unreliable; returns True (no-op, not error)`
+- Line 268: `Returns True on success / skip; False on write failure.`
+- Line 271: `if dry_run:`
+- Line 272: `log.debug("[DRY-RUN] Would write QUALITY=%s to %s", tier.value, path.name)`
+- Line 310: `# skip silently to avoid breaking files.`
+- Line 312: `"Skipping QUALITY tag write for %s "`
+- Line 319: `log.debug("Skipping QUALITY tag write for unsupported format %s", path.suffix)`
+- Line 335: `dry_run:         bool = False,`
+- Line 345: `Returns the destination Path on success / dry-run; None on failure.`
+- Line 352: `"Cannot compute relative path for %s vs root %s — skipping move",`
+- Line 359: `if dry_run:`
+- Line 360: `log.info("[DRY-RUN] Would move LOW: %s → %s", path, dest)`
+- Line 386: `dry_run:    bool = False,`
+- Line 392: `In dry-run mode nothing is written; returns empty dict.`
+- Line 394: `if dry_run:`
+- Line 473: `for action in ("none", "moved", "tag_written", "skipped", "unreadable"):`
+- Line 488: `dry_run:         bool           = False,`
+- Line 513: `dry_run=True logs all intended actions but makes no changes.`
+- Line 541: `"dry_run=%s  move_low=%s  write_tags=%s  min_lossy_kbps=%d",`
+- Line 543: `dry_run, move_low_dir or "off", write_tags, min_lossy_kbps,`
+- Line 584: `dest = _move_file(path, scan_root, move_low_dir, dry_run=dry_run)`
+- Line 588: `action = "skipped"`
+- Line 594: `wrote = _write_quality_tag(path, tier, dry_run=dry_run)`
+- Line 598: `log.debug("Tag write skipped for unsupported format: %s", path.suffix)`
+- Line 601: `if store_in_db and not dry_run:`
+- Line 606: `log.debug("DB quality_tier update skipped for %s: %s", path.name, exc)`
+- Line 618: `report_paths = _write_reports(results, report_dir, report_formats, dry_run=dry_run)`
+- Line 623: `if dry_run:`
+- Line 624: `print("  (dry-run: no files were moved or modified)")`
+- Line 637: `AIFF/WAV return True but _write_quality_tag() skips them gracefully.`
+
+## `modules/convert_audio.py`
+- Line 5: `1. ffprobe check — skip corrupt / unreadable source files`
+- Line 7: `3. Skip if output already exists, unless --overwrite`
+- Line 52: `status:    str            # "ok" | "skipped" | "failed" | "corrupt_src"`
+- Line 137: `dry_run:      bool,`
+- Line 149: `# 1. Skip check`
+- Line 152: `return ConvResult(src, dst, None, "skipped",`
+- Line 164: `# 3. Dry-run exit`
+- Line 166: `if dry_run:`
+- Line 168: `"[dry-run — no files written]", src_dur, None)`
+- Line 214: `f"duration mismatch: src={src_dur:.2f}s dst={dst_dur:.2f}s "`
+- Line 242: `def _open_run_log(log_dir: Path, dry_run: bool):`
+- Line 243: `"""Return an open file handle for this run's log, or None in dry-run mode."""`
+- Line 244: `if dry_run:`
+- Line 273: `dry_run:       bool           = False,`
+- Line 308: `+ ("  [DRY RUN]" if dry_run else "")`
+- Line 316: `fh = _open_run_log(log_dir, dry_run)`
+- Line 326: `_wlog(fh, f"  dry_run   : {dry_run}")`
+- Line 349: `dry_run=dry_run,`
+- Line 402: `skipped_count = sum(1 for r in results if r.status == "skipped")`
+- Line 406: `log_path_str = str(getattr(fh, "_path", "N/A")) if fh else "[dry-run]"`
+- Line 411: `_wlog(fh, f"  Skipped      : {skipped_count}  (already existed)")`
+- Line 416: `if not dry_run:`
+- Line 427: `f"  skipped={skipped_count}"`
+- Line 432: `if not dry_run:`
+
+## `modules/cue_suggest.py`
+- Line 6: `Final review and placement in Rekordbox is recommended.`
+- Line 15: `5. Detect 6 cue positions with multi-feature threshold logic`
+- Line 16: `6. Score per-cue confidence from feature agreement + distinctiveness`
+- Line 22: `- All cues marked source='bpm_estimate', confidence ≤ 0.50`
+- Line 25: `intro_start   Always bar 1 (confidence 1.0)`
+- Line 98: `# Multi-feature detection thresholds (fractions of track peak, 0–1)`
+- Line 103: `_GROOVE_BARS  = 2        # bars that must stay above threshold`
+- Line 120: `confidence:  float = 0.5`
+- Line 136: `"confidence":  round(self.confidence, 3),`
+- Line 148: `"confidence":  self.confidence,`
+- Line 362: `confidence=1.0, source="energy_analysis",`
+- Line 381: `# bonus: stays above threshold for 2+ bars`
+- Line 389: `note += " LOW CONFIDENCE — verify in Rekordbox."`
+- Line 392: `confidence=conf, source="energy_analysis", note=note,`
+- Line 426: `note += " LOW CONFIDENCE — verify."`
+- Line 429: `confidence=conf, source="energy_analysis", note=note,`
+- Line 471: `note += " LOW CONFIDENCE — verify in Rekordbox."`
+- Line 474: `confidence=conf, source="energy_analysis", note=note,`
+- Line 499: `note += " LOW CONFIDENCE — verify."`
+- Line 502: `confidence=conf, source="energy_analysis", note=note,`
+- Line 532: `confidence=conf, source="energy_analysis", note=note,`
+- Line 546: `All confidence values are low (≤ 0.50).`
+- Line 562: `confidence=1.0,  source="bpm_estimate",`
+- Line 565: `confidence=0.50, source="bpm_estimate",`
+- Line 566: `note="Bar 9 (conventional 2-bar intro end). LOW CONFIDENCE — verify."),`
+- Line 568: `confidence=0.40, source="bpm_estimate",`
+- Line 569: `note="Bar 17 (conventional build end). LOW CONFIDENCE — verify."),`
+- Line 571: `confidence=0.35, source="bpm_estimate",`
+- Line 572: `note=f"~26% through track (bar {drop_bar}). BPM estimate only. LOW CONFIDENCE."),`
+- Line 574: `confidence=0.30, source="bpm_estimate",`
+- Line 575: `note=f"~58% through track (bar {bd_bar}). BPM estimate only. LOW CONFIDENCE."),`
+- Line 577: `confidence=0.45, source="bpm_estimate",`
+- Line 674: `low = sum(1 for c in tc.cues if c.confidence < 0.50)`
+- Line 681: `marker = "!" if cue.confidence < 0.50 else " "`
+- Line 683: `marker, cue.cue_type, cue.time_fmt, cue.bar, cue.confidence)`
+- Line 696: `"cue_type", "time_sec", "time_fmt", "bar", "confidence",`
+- Line 715: `"confidence":   round(cue.confidence, 3),`
+- Line 752: `"confidence": round(float(cue["confidence"]), 3),`
+- Line 763: `"Review and confirm all positions in Rekordbox before use in a live set."`
+- Line 812: `row[f"{ct}_conf"]   = round(c["confidence"], 3)  if c else ""`
+- Line 840: `dry_run:        bool                = False,`
+- Line 851: `dry_run:        Print results only; no DB writes or file output.`
+- Line 852: `min_conf:       Minimum confidence to store a cue in DB.`
+- Line 861: `min_conf = float(getattr(config, "CUE_SUGGEST_MIN_CONFIDENCE", 0.4))`
+- Line 873: `skipped       = 0`
+- Line 886: `log.debug("cue_suggest: skip %s — not in DB and tags unreadable", path.name)`
+- Line 887: `skipped += 1`
+- Line 896: `log.debug("cue_suggest: skip %s — filtered by --track", path.name)`
+- Line 903: `log.debug("cue_suggest: skip %s — too short (%.1fs)", path.name, dur)`
+- Line 904: `skipped += 1`
+- Line 925: `if any(c.confidence < 0.50 for c in cues):`
+- Line 928: `if not dry_run:`
+- Line 929: `storable = [c for c in cues if c.confidence >= min_conf]`
+- Line 936: `# Per-run CSV (written even on dry-run — read-only output for review)`
+- Line 942: `if not dry_run and results:`
+- Line 951: `"cue-suggest: %d analysed | %d stored | %d skipped | %d low-confidence",`
+- Line 952: `analyzed, cues_stored, skipped, low_conf_trks,`
+- Line 955: `f"CUE-SUGGEST {'DRY-RUN' if dry_run else 'DONE'}: "`
+
+## `modules/dedupe.py`
+- Line 6: `2. Results are written to the DB and a quarantine report.`
+- Line 8: `4. The pipeline caller decides whether to prompt for manual review.`
+- Line 10: `Dry-run: detects and reports but does not move anything.`
+- Line 96: `def _quarantine(dup_path: Path, dry_run: bool) -> None:`
+- Line 98: `log.info("DUPLICATE → quarantine: %s", dup_path.name)`
+- Line 99: `if not dry_run:`
+- Line 106: `def run(files: List[Path], run_id: int, dry_run: bool = False) -> List[Path]:`
+- Line 109: `Quarantine duplicates, return list of files that are not duplicates.`
+- Line 113: `log.info("Dedupe: single file — skipping rmlint")`
+- Line 136: `quarantined: set = set()`
+- Line 143: `_quarantine(dup_path, dry_run)`
+- Line 144: `quarantined.add(str(dup_path))`
+- Line 146: `surviving = [f for f in files if str(f) not in quarantined]`
+- Line 147: `log.info("Dedupe: %d duplicates quarantined, %d files remain", len(quarantined), len(surviving))`
+
+## `modules/doc_gen.py`
+- Line 163: `skip_cats = {"MAIN PIPELINE", "DOCS"}`
+- Line 165: `if cat in skip_cats:`
+
+## `modules/doc_registry.py`
+- Line 37: `"flag": "--dry-run",`
+- Line 44: `"flag": "--skip-beets",`
+- Line 46: `"Skip Beets/MusicBrainz lookup. Uses the Python filename-parser "`
+- Line 52: `"flag": "--skip-analysis",`
+- Line 54: `"[Legacy — rarely needed] Force-skip all BPM/key analysis even "`
+- Line 56: `"only fills gaps by default; use this only to skip analysis entirely."`
+- Line 98: `"python3 pipeline.py --dry-run",`
+- Line 99: `"python3 pipeline.py --skip-beets",`
+- Line 112: `"  skipped automatically — safe to re-run at any time.\n\n"`
+- Line 123: `"description": "Detect and quarantine duplicate audio files across the library.",`
+- Line 126: `{"flag": "--dry-run", "description": "Preview duplicate groups — move no files."},`
+- Line 133: `"flag": "--quarantine-dir",`
+- Line 141: `"python3 pipeline.py dedupe --dry-run",`
+- Line 144: `"python3 pipeline.py dedupe --quarantine-dir /music/review/dupes/",`
+- Line 148: `"  Case A  Exact duplicate (same SHA-256 hash)       -> quarantine all but one\n"`
+- Line 149: `"  Case B  Same track, different quality/format       -> quarantine lower quality\n"`
+- Line 162: `"flag": "--dry-run",`
+- Line 163: `"description": "Preview all field changes — make no file writes.",`
+- Line 173: `"python3 pipeline.py metadata-clean --dry-run",`
+- Line 194: `"flag": "--dry-run",`
+- Line 205: `"python3 pipeline.py tag-normalize --dry-run",`
+- Line 209: `"notes": "Non-MP3 files (FLAC, WAV, AIFF, M4A, OGG, OPUS) are always skipped.",`
+- Line 224: `"flag": "--dry-run",`
+- Line 239: `"flag": "--min-confidence",`
+- Line 241: `"description": "Minimum BPM confidence score to accept a result.",`
+- Line 257: `"description": "Base directory for quarantined corrupt files.",`
+- Line 265: `"python3 pipeline.py analyze-missing --dry-run --verbose",`
+- Line 286: `"flag": "--dry-run",`
+- Line 296: `"description": "Write a QUALITY tag to each file. UNKNOWN files are skipped.",`
+- Line 307: `"description": "Bitrate threshold (kbps) separating LOW from MEDIUM.",`
+- Line 315: `"python3 pipeline.py audit-quality --dry-run --verbose",`
+- Line 326: `"  LOW       lossy codec < 192 kbps  (threshold: --min-lossy-kbps)\n"`
+- Line 332: `"  AIFF/WAV : skipped safely (tagging unreliable; no error raised)"`
+- Line 342: `"flag": "--dry-run",`
+- Line 346: `"flag": "--apply",`
+- Line 347: `"description": "Apply all recoverable renames and merges. Unrecoverable folders go to the review report only.",`
+- Line 357: `"python3 pipeline.py artist-folder-clean --dry-run",`
+- Line 358: `"python3 pipeline.py artist-folder-clean --apply",`
+- Line 359: `"python3 pipeline.py artist-folder-clean --apply --path /mnt/music_ssd/KKDJ/",`
+- Line 363: `"  pure_camelot    e.g. '10B', '1A'               -> review\n"`
+- Line 365: `"  bracket_junk    e.g. '[HouseGrooveSA]'          -> review\n"`
+- Line 366: `"  url_junk        e.g. 'djcity.com'               -> review\n"`
+- Line 367: `"  symbol_heavy    < 40% alphanumeric chars        -> review"`
+- Line 377: `"flag": "--dry-run",`
+- Line 381: `"flag": "--apply",`
+- Line 382: `"description": "Apply safe merges. Uncertain merges go to the review report.",`
+- Line 392: `"python3 pipeline.py artist-merge --dry-run",`
+- Line 393: `"python3 pipeline.py artist-merge --apply",`
+- Line 394: `"python3 pipeline.py artist-merge --apply --path /mnt/music_ssd/KKDJ/",`
+- Line 404: `"flag": "--dry-run",`
+- Line 416: `"python3 pipeline.py db-prune-stale --dry-run",`
+- Line 467: `"flag": "--dry-run",`
+- Line 486: `"    --workers 8 --verify-tolerance-sec 2.0 --dry-run"`
+- Line 491: `"  1. ffprobe validates source (corrupt files skipped)\n"`
+- Line 512: `{"flag": "--dry-run", "description": "Show what would be written — create no files."},`
+- Line 513: `{"flag": "--no-genre", "description": "Skip Genre/ playlists."},`
+- Line 514: `{"flag": "--no-energy", "description": "Skip Energy/ playlists."},`
+- Line 515: `{"flag": "--no-combined", "description": "Skip Combined/ playlists."},`
+- Line 516: `{"flag": "--no-key", "description": "Skip Key/ (Camelot) playlists."},`
+- Line 517: `{"flag": "--no-route", "description": "Skip Route/ playlists (Acapella, Tool, Vocal)."},`
+- Line 518: `{"flag": "--no-xml", "description": "Skip Rekordbox XML export."},`
+- Line 527: `"python3 pipeline.py playlists --dry-run",`
+- Line 551: `"flag": "--dry-run",`
+- Line 552: `"description": "Preview what would be exported. Tag warnings still shown.",`
+- Line 565: `{"flag": "--no-m3u", "description": "Skip M3U playlist generation."},`
+- Line 605: `"python3 pipeline.py rekordbox-export --dry-run",`
+- Line 640: `{"flag": "--dry-run", "description": "Analyse and print cue points. No DB writes."},`
+- Line 642: `"flag": "--min-confidence",`
+- Line 644: `"description": "Minimum confidence score to store a cue point.",`
+- Line 667: `"python3 pipeline.py cue-suggest --dry-run",`
+- Line 675: `"Review all cues in Rekordbox after analysis.\n\n"`
+- Line 682: `"  intro_start   bar 1 (always present, confidence 1.0)\n"`
+- Line 700: `{"flag": "--dry-run", "description": "Preview the set. Write no files."},`
+- Line 765: `"python3 pipeline.py set-builder --dry-run",`
+- Line 835: `{"flag": "--dry-run", "description": "Print suggestions only — do not write JSON output."},`
+- Line 900: `"flag": "--label-skip-enrich",`
+- Line 901: `"description": "Skip label page enrichment (faster; search results only).",`
+- Line 929: `"flag": "--dry-run",`
+- Line 934: `"description": "Write high-confidence labels (>= threshold) back to the organization/TPUB tag.",`
+- Line 937: `"flag": "--review-only",`
+- Line 938: `"description": "Only export the review file (unresolved / low-confidence tracks).",`
+- Line 941: `"flag": "--confidence-threshold",`
+- Line 943: `"description": "Minimum confidence for write-back.",`
+- Line 964: `"python3 pipeline.py label-clean --review-only",`
+- Line 965: `"python3 pipeline.py label-clean --write-tags --confidence-threshold 0.75",`
+- Line 969: `"Detection order (confidence shown):\n"`
+- Line 975: `"Write-back only applies when confidence >= threshold (default 0.85).\n"`
+- Line 976: `"At the default threshold, only embedded-tag results are auto-written."`
+- Line 990: `"flag": "--dry-run",`
+- Line 991: `"description": "Preview generated output to stdout — write no files.",`
+- Line 1007: `"python3 pipeline.py generate-docs --dry-run",`
+- Line 1020: `"description": "Exit with code 1 if any mismatches are found (useful in CI/pre-commit).",`
+
+## `modules/filename_normalize.py`
+- Line 11: `- Preview by default; pass apply=True to commit renames.`
+- Line 13: `- Skips files missing artist or title tags.`
+- Line 29: `# Artist review constants`
+- Line 32: `# Instead an entry is written to the JSONL queue for manual triage.`
+- Line 33: `_ARTIST_REVIEW_DIR   = config.BIN_DIR / "ARTIST_REVIEW"   # under .BIN → auto-excluded`
+- Line 34: `_ARTIST_REVIEW_QUEUE = Path(__file__).parent.parent / "data" / "review" / "artist_review_queue.jsonl"`
+- Line 37: `# Directories to skip`
+- Line 39: `_SKIP_DIRS: frozenset = config.FILENAME_NORMALIZE_SKIP_DIRS`
+- Line 213: `# Artist review queue writer`
+- Line 216: `def _write_review_entry(`
+- Line 224: `_ARTIST_REVIEW_QUEUE.parent.mkdir(parents=True, exist_ok=True)`
+- Line 239: `with open(_ARTIST_REVIEW_QUEUE, "a", encoding="utf-8") as fh:`
+- Line 242: `print(f"    [WARN] Could not write review queue: {exc}")`
+- Line 246: `# Skip-dir guard`
+- Line 249: `def _should_skip(path: Path) -> bool:`
+- Line 251: `if part in _SKIP_DIRS:`
+- Line 268: `if _should_skip(path):`
+- Line 284: `def run(input_dir: Path, *, apply: bool = False, verbose: bool = False,`
+- Line 287: `move_artist_review: bool = False) -> dict:`
+- Line 292: `scanned, candidates, renamed, skipped_no_tags, skipped_unsafe_artist,`
+- Line 293: `artist_review_count, moved_to_artist_review,`
+- Line 294: `skipped_no_change, skipped_errors, collisions, stripped_version`
+- Line 299: `skipped_no_tags=0, skipped_unsafe_artist=0,`
+- Line 300: `artist_review_count=0, moved_to_artist_review=0,`
+- Line 301: `skipped_no_change=0, skipped_errors=0,`
+- Line 308: `n_skip_unchanged = 0`
+- Line 311: `skipped:       list[tuple[Path, str]]             = []`
+- Line 312: `artist_review: list[tuple[Path, str, str, str]]   = []  # (path, artist, title, album)`
+- Line 318: `if not force and _proc.should_skip(_stage, path):`
+- Line 319: `n_skip_unchanged += 1`
+- Line 330: `skipped.append((path, reason))`
+- Line 331: `stats["skipped_no_tags"] += 1`
+- Line 332: `if apply:`
+- Line 333: `_proc.record(_stage, path, "skipped", reason)`
+- Line 336: `# Artist safety: concatenated names without separators → review queue`
+- Line 338: `artist_review.append((path, artist, title, album))`
+- Line 339: `stats["skipped_unsafe_artist"] += 1`
+- Line 340: `if apply:`
+- Line 341: `_proc.record(_stage, path, "skipped", "unsafe_artist_concat")`
+- Line 355: `stats["skipped_no_change"] += 1`
+- Line 356: `if apply:`
+- Line 368: `mode = "APPLY" if apply else "PREVIEW"`
+- Line 383: `if apply:`
+- Line 391: `stats["skipped_errors"] += 1`
+- Line 394: `# ── Artist review queue ─────────────────────────────────────────────────`
+- Line 395: `if artist_review:`
+- Line 396: `print(f"  ARTIST REVIEW ({len(artist_review)} file(s)) — artist tag looks like concatenated names:")`
+- Line 398: `for path, artist, title, album in artist_review:`
+- Line 401: `if apply and move_artist_review:`
+- Line 404: `dest_dir = _ARTIST_REVIEW_DIR / rel.parent`
+- Line 410: `stats["moved_to_artist_review"] += 1`
+- Line 411: `_proc.record(_stage, dest, "skipped", "unsafe_artist_concat")`
+- Line 414: `_write_review_entry(path, artist, title, album, moved=moved, moved_to=moved_to)`
+- Line 415: `stats["artist_review_count"] += 1`
+- Line 416: `print(f"  REVIEW  {path.name}")`
+- Line 424: `action = "will move" if (apply and move_artist_review) else "use --move-artist-review --apply to move"`
+- Line 425: `print(f"    Action : queued for review ({action})")`
+- Line 427: `print(f"  Review queue: {_ARTIST_REVIEW_QUEUE}")`
+- Line 430: `for path, reason in skipped:`
+- Line 431: `print(f"  SKIP  {path.name}")`
+- Line 435: `if n_skip_unchanged:`
+- Line 436: `print(f"  (Skipped unchanged: {n_skip_unchanged}  — use --force to reprocess)")`
+
+## `modules/harmonic.py`
+- Line 280: `"""Strip version/remix suffixes, then apply standard normalization."""`
+- Line 654: `# Apply energy direction bias`
+- Line 669: `# Apply absolute BPM step penalty — prevents 122→150 type jumps regardless`
+- Line 843: `# Apply absolute BPM step penalty`
+
+## `modules/library_dedupe.py`
+- Line 8: `→ keep one, quarantine the rest (safe to auto-apply)`
+- Line 10: `→ keep highest quality, quarantine rest (safe to auto-apply)`
+- Line 29: `- Any group where "keep" cannot be determined with confidence → skip + log.`
+- Line 30: `- Dry-run never touches files.`
+- Line 31: `- Apply mode moves files to quarantine dir (never deletes outright).`
+- Line 189: `remove:     List[FileInfo]  # files that will be quarantined`
+- Line 327: `# Duration guard — skip if files have materially different durations.`
+- Line 335: `"SKIP (duration mismatch): %s — duration spread %.1fs exceeds %.1fs "`
+- Line 336: `"threshold; likely different tracks with matching title",`
+- Line 354: `"SKIP (ambiguous quality): %s vs %s — manual review needed",`
+- Line 426: `log.debug("Skipped unreadable file: %s", path)`
+- Line 434: `# Dry-run output`
+- Line 437: `def print_dry_run_summary(scanned: int, groups: List[DupeGroup]) -> None:`
+- Line 438: `"""Print a structured preview of what would be done."""`
+- Line 452: `print(f"\n  Files that would be quarantined : {total_remove}")`
+- Line 487: `print(f"\nRun with --apply to quarantine {total_remove} file(s).")`
+- Line 491: `# Apply mode`
+- Line 495: `"""Return True if path passes through a quarantine, ignored, or hidden directory."""`
+- Line 497: `skip = config.MAINTENANCE_SKIP_DIRS`
+- Line 499: `skip = frozenset({".BIN", "QUARANTINE", "IGNORED", "CORRUPT", "_duplicates"})`
+- Line 502: `any(part in skip for part in parts)`
+- Line 507: `def _quarantine_file(`
+- Line 509: `quarantine_dir: Path,`
+- Line 513: `Move info.path to quarantine_dir, preserving the folder structure relative`
+- Line 514: `to source_root.  Falls back to a flat quarantine if source_root is None or`
+- Line 519: `# Safety net: never quarantine files already inside a maintenance location.`
+- Line 521: `log.warning("SKIP quarantine (already in maintenance path): %s", info.path)`
+- Line 527: `dest_dir = quarantine_dir / rel.parent`
+- Line 529: `dest_dir = quarantine_dir`
+- Line 531: `dest_dir = quarantine_dir`
+- Line 536: `# Avoid silently overwriting a different file already in quarantine`
+- Line 549: `def apply_changes(`
+- Line 551: `quarantine_dir: Path,`
+- Line 552: `dry_run: bool,`
+- Line 556: `Move duplicate files to quarantine_dir.`
+- Line 557: `Returns (files_quarantined, bytes_freed).`
+- Line 559: `quarantined = 0`
+- Line 572: `log.warning("SKIP (already in maintenance path): %s", r.path)`
+- Line 576: `"QUARANTINE [%s]  %s  (%s %.1f MB)  reason: %s",`
+- Line 581: `f"DEDUPE-{g.group_type.upper()}: quarantine {r.path.name} "`
+- Line 585: `if not dry_run:`
+- Line 586: `freed = _quarantine_file(r, quarantine_dir, source_root=source_root)`
+- Line 588: `quarantined += 1`
+- Line 591: `quarantined += 1`
+- Line 594: `return quarantined, bytes_freed`
+- Line 598: `# Summary print (apply mode)`
+- Line 601: `def print_apply_summary(`
+- Line 604: `quarantined: int,`
+- Line 606: `quarantine_dir: Path,`
+- Line 607: `dry_run: bool,`
+- Line 613: `label = "DRY RUN " if dry_run else ""`
+- Line 619: `print(f"  Files quarantined        : {quarantined}")`
+- Line 621: `if quarantined and not dry_run:`
+- Line 622: `print(f"  Quarantine location      : {quarantine_dir}")`
+- Line 623: `print(f"\n  Files are in quarantine (not deleted). Review and remove manually.")`
+- Line 633: `dry_run: bool = True,`
+- Line 634: `quarantine_dir: Optional[Path] = None,`
+- Line 638: `Scan paths for duplicates and optionally quarantine them.`
+- Line 642: `dry_run:        If True (default), report only — do not move any files.`
+- Line 643: `Pass dry_run=False (via --apply) to actually quarantine.`
+- Line 644: `quarantine_dir: Where to move duplicates (default: config.DEDUPE_QUARANTINE_DIR).`
+- Line 645: `source_root:    Root directory for preserving relative folder structure in quarantine.`
+- Line 648: `(files_scanned, groups_found, files_quarantined, bytes_freed)`
+- Line 650: `if quarantine_dir is None:`
+- Line 651: `quarantine_dir = config.DEDUPE_QUARANTINE_DIR`
+- Line 653: `mode = "DRY-RUN" if dry_run else "APPLY"`
+- Line 655: `log.info("Dedupe: scanning %d file(s)  dry_run=%s", len(paths), dry_run)`
+- Line 670: `if dry_run:`
+- Line 671: `print_dry_run_summary(scanned, groups)`
+- Line 673: `f"DEDUPE DRY-RUN DONE: {scanned} scanned, "`
+- Line 674: `f"{len(groups)} group(s), {total_would_remove} would be quarantined"`
+- Line 680: `quarantined, bytes_freed = apply_changes(groups, quarantine_dir, dry_run=False, source_root=source_root)`
+- Line 682: `print_apply_summary(scanned, groups, quarantined, bytes_freed, quarantine_dir, dry_run=False)`
+- Line 686: `f"{quarantined} quarantined, {bytes_freed // (1024*1024)} MB freed"`
+- Line 688: `return scanned, len(groups), quarantined, bytes_freed`
+
+## `modules/library_organize.py`
+- Line 11: `- Preview by default; pass apply=True to commit moves.`
+- Line 13: `- Skips files missing artist tag.`
+- Line 14: `- Skips files whose artist string looks like concatenated names without a`
+- Line 17: `- Operational folders (.BIN, QUARANTINE, …) are excluded automatically.`
+- Line 30: `# Skip dirs`
+- Line 32: `_SKIP_DIRS: frozenset = config.LIBRARY_ORGANIZE_SKIP_DIRS`
+- Line 95: `tolerate prefixes: Mc, De, La.  Single-word inputs skip this rule —`
+- Line 107: `# Rule 2 — skipped for single-word strings; a lone CamelCase word (e.g.`
+- Line 212: `'duplicate' – destination exists and content matches src; skip the move`
+- Line 232: `# Skip-dir guard`
+- Line 235: `def _should_skip(path: Path) -> bool:`
+- Line 237: `if part in _SKIP_DIRS:`
+- Line 254: `if _should_skip(path):`
+- Line 305: `number (all digits → low confidence → skip).`
+- Line 322: `apply: bool = False,`
+- Line 337: `skipped_already_correct=0, skipped_errors=0,`
+- Line 340: `skipped_unchanged=0, skipped_no_artist=0, skipped_unsafe_artist=0,`
+- Line 345: `mode = "APPLY" if apply else "PREVIEW"`
+- Line 362: `stats["skipped_already_correct"] += 1`
+- Line 373: `stats["skipped_already_correct"] += 1`
+- Line 390: `if apply:`
+- Line 398: `stats["skipped_errors"] += 1`
+- Line 400: `if not apply and stats["candidates"] > 0:`
+- Line 401: `print(f"\nRun with --apply to flatten {stats['candidates']} file(s).")`
+- Line 413: `apply: bool = False,`
+- Line 428: `scanned, candidates, moved, skipped_unchanged, skipped_no_artist,`
+- Line 429: `skipped_unsafe_artist, skipped_already_correct, skipped_errors, collisions`
+- Line 435: `return _run_flatten(sorted_root, apply=apply, verbose=verbose, limit=limit)`
+- Line 439: `skipped_unchanged=0, skipped_no_artist=0, skipped_unsafe_artist=0,`
+- Line 440: `skipped_already_correct=0, skipped_errors=0,`
+- Line 449: `n_skip_unchanged = 0`
+- Line 452: `skipped:         list[tuple[Path, str]]               = []`
+- Line 459: `mode = "APPLY" if apply else "PREVIEW"`
+- Line 465: `if not force and _proc.should_skip(_stage, path):`
+- Line 466: `n_skip_unchanged += 1`
+- Line 473: `skipped.append((path, "no_artist_tag"))`
+- Line 474: `stats["skipped_no_artist"] += 1`
+- Line 475: `if apply:`
+- Line 476: `_proc.record(_stage, path, "skipped", "no_artist_tag")`
+- Line 495: `skipped.append((path, "unsafe_primary_artist"))`
+- Line 496: `if apply:`
+- Line 497: `_proc.record(_stage, path, "skipped", "unsafe_primary_artist")`
+- Line 506: `skipped.append((path, "duplicate_candidate"))`
+- Line 507: `if apply:`
+- Line 508: `_proc.record(_stage, path, "skipped", "duplicate_candidate")`
+- Line 512: `stats["skipped_already_correct"] += 1`
+- Line 513: `if apply:`
+- Line 528: `label = "  CHKARTISTNAMES:" if apply else "  WOULD MOVE TO CHKARTISTNAMES:"`
+- Line 536: `if apply:`
+- Line 542: `_proc.record(_stage, dst, "ignored", "unsafe_primary_artist")`
+- Line 545: `stats["skipped_errors"] += 1`
+- Line 559: `if apply:`
+- Line 568: `stats["skipped_errors"] += 1`
+- Line 571: `for path, reason in skipped:`
+- Line 572: `print(f"  SKIP  {path.name}")`
+- Line 576: `stats["skipped_unchanged"]    = n_skip_unchanged`
+- Line 577: `stats["skipped_unsafe_artist"] = (`
+- Line 580: `if n_skip_unchanged:`
+- Line 581: `print(f"  (Skipped unchanged: {n_skip_unchanged}  — use --force to reprocess)")`
+
+## `modules/metadata_clean.py`
+- Line 18: `python pipeline.py metadata-clean --dry-run   # preview, no writes`
+- Line 19: `python pipeline.py metadata-clean             # apply`
+- Line 178: `"catalognumber", "isrc",`
+- Line 430: `# The "original" we report is the desc [mime] so dry-run is informative.`
+- Line 445: `# TXXX custom frames — skip unconditionally-protected descriptions`
+- Line 543: `if kind == 1:  # binary — skip`
+- Line 558: `"""Apply raw changes to an open ID3 tags object."""`
+- Line 704: `def _write_ape_tags(path: Path, ape_changes: List[FieldChange], dry_run: bool) -> bool:`
+- Line 706: `if dry_run or not ape_changes:`
+- Line 741: `def _write_raw_frames(path: Path, raw_changes: List[FieldChange], dry_run: bool) -> bool:`
+- Line 743: `if dry_run or not raw_changes:`
+- Line 766: `def _write_tags(path: Path, changes: List[FieldChange], dry_run: bool) -> bool:`
+- Line 775: `if dry_run:`
+- Line 810: `_write_raw_frames(path, raw_changes, dry_run=False)`
+- Line 813: `_write_ape_tags(path, ape_changes, dry_run=False)`
+- Line 921: `# Dry-run output`
+- Line 924: `def print_dry_run_summary(results: List[TrackResult]) -> None:`
+- Line 942: `f"  Corrupt  : {len(corrupt)} unreadable (skipped)\n"`
+- Line 944: `f"No files modified. Run without --dry-run to apply.\n"`
+- Line 1000: `print(f"\nRun without --dry-run to apply these {total_fields} change(s).")`
+- Line 1004: `# Apply mode`
+- Line 1007: `def _apply_changes(results: List[TrackResult]) -> Tuple[int, int]:`
+- Line 1018: `log.warning("File no longer exists, skipping: %s", path)`
+- Line 1021: `ok = _write_tags(path, result.changes, dry_run=False)`
+- Line 1047: `def run(paths: List[Path], dry_run: bool = False) -> Tuple[int, int, int]:`
+- Line 1049: `Scan all paths and optionally apply metadata cleanup.`
+- Line 1054: `mode = "DRY-RUN" if dry_run else "APPLY"`
+- Line 1067: `if dry_run:`
+- Line 1068: `print_dry_run_summary(results)`
+- Line 1070: `f"METADATA-CLEAN DRY-RUN DONE: "`
+- Line 1076: `files_written, fields_cleaned = _apply_changes(results)`
+- Line 1089: `f"{fields_cleaned} fields cleaned, {len(corrupt)} corrupt skipped"`
+
+## `modules/metadata_sanitize.py`
+- Line 6: `- isrc         : clear if format is invalid (strict: CC-XXX-YY-NNNNNNN)`
+- Line 11: `Preview is the default — no writes without --apply.`
+- Line 36: `# ISRC: canonical 12-char form (dashes are stripped before validation)`
+- Line 37: `_ISRC_RE = re.compile(r'^[A-Z]{2}[A-Z0-9]{3}[0-9]{7}$')`
+- Line 128: `"cut", "flip", "mashup", "blend", "snippet", "preview", "interlude",`
+- Line 176: `skipped: List[str] = dc_field(default_factory=list)  # reason strings for skipped fields`
+- Line 213: `Read title, artist, album, organization, isrc.`
+- Line 234: `tags["isrc"] = _read_isrc(path)`
+- Line 238: `def _read_isrc(path: Path) -> str:`
+- Line 239: `"""Read ISRC using format-specific raw access (easy mode omits TSRC for MP3)."""`
+- Line 250: `vals = audio.tags.get("isrc", []) if audio.tags else []`
+- Line 257: `key = "----:com.apple.iTunes:ISRC"`
+- Line 277: `def _apply_sanitized(path: Path, changes: List[SanitizeChange]) -> Tuple[bool, set]:`
+- Line 283: `easy_changes = {c.field: c.new_value for c in changes if c.field != "isrc"}`
+- Line 284: `isrc_change = next((c for c in changes if c.field == "isrc"), None)`
+- Line 306: `if isrc_change is not None and not isrc_change.new_value:`
+- Line 307: `if not _clear_isrc(path):`
+- Line 308: `failed_fields.add("isrc")`
+- Line 313: `def _clear_isrc(path: Path) -> bool:`
+- Line 314: `"""Delete ISRC tag from file (format-specific). Returns True on success."""`
+- Line 327: `if audio.tags and "isrc" in audio.tags:`
+- Line 328: `del audio.tags["isrc"]`
+- Line 334: `key = "----:com.apple.iTunes:ISRC"`
+- Line 348: `log.debug("Could not clear ISRC from %s: %s", path.name, exc)`
+- Line 396: `def _sanitize_isrc(value: str) -> Tuple[str, str]:`
+- Line 400: `if _ISRC_RE.match(normalized):`
+- Line 402: `return "", "invalid_isrc"`
+- Line 599: `("isrc",         _sanitize_isrc),`
+- Line 617: `result.skipped.append(f"{field}: skipped_multi_value_artist"`
+- Line 619: `else f"{field}: skipped_multi_value")`
+- Line 642: `def _print_track_preview(result: TrackSanitizeResult, verbose: bool = False) -> None:`
+- Line 651: `for s in result.skipped:`
+- Line 652: `print(f"    [SKIP] {s}")`
+- Line 658: `for s in result.skipped:`
+- Line 659: `print(f"    [SKIP] {s}")`
+- Line 675: `"skipped": r.skipped,`
+- Line 678: `if r.changes or r.skipped or r.is_corrupt`
+- Line 695: `apply_mode = getattr(args, "apply", False)`
+- Line 720: `_rl.set_counter("applied", apply_mode)`
+- Line 722: `mode_label = "APPLY" if apply_mode else "PREVIEW"`
+- Line 736: `n_skip_unchanged = 0`
+- Line 746: `# --- incremental-run skip check ---`
+- Line 748: `# are NOT skipped — new rules must get a chance to fire on those files.`
+- Line 749: `if not _force and _proc.should_skip(_stage, path, reason_prefix=_RULES_REASON):`
+- Line 750: `n_skip_unchanged += 1`
+- Line 751: `print(f"  SKIP_UNCHANGED:")`
+- Line 754: `_rl.inc("skipped_unchanged")`
+- Line 762: `_pstate  = None   # set below; None = preview-pending (don't record)`
+- Line 767: `print(f"  [SKIP] {path.name} — corrupt_file")`
+- Line 768: `log_action(f"SANITIZE-SKIP: {path.name} | corrupt_file")`
+- Line 778: `if not result.changes and not result.skipped:`
+- Line 804: `elif result.skipped and _rl and not _is_presanitize:`
+- Line 805: `_rl.inc("skipped")`
+- Line 806: `_rl.record_outcome("skipped", str(path), result.skipped[0], "")`
+- Line 808: `# Skipped-only path (no changes, has skips): record deterministically`
+- Line 809: `if not result.changes and result.skipped:`
+- Line 810: `_pstate  = "skipped"`
+- Line 811: `_preason = result.skipped[0] if result.skipped else ""`
+- Line 813: `_print_track_preview(result, verbose=verbose)`
+- Line 815: `if apply_mode:`
+- Line 817: `ok, failed_fields = _apply_sanitized(path, result.changes)`
+- Line 824: `"ISRC clear failed for %s — not logged as applied", path.name`
+- Line 837: `for s in result.skipped:`
+- Line 838: `log_action(f"SANITIZE-SKIP: {path.name} | {s}")`
+- Line 840: `# _pstate is None when changes exist but apply_mode is False (preview pending)`
+- Line 844: `n_processed = len(files) - n_skip_unchanged`
+- Line 847: `print(f"Files skipped unchanged : {n_skip_unchanged}")`
+- Line 859: `if not apply_mode and changed_count:`
+- Line 861: `print("Dry-run mode — no files modified. Pass --apply to write changes.")`
+- Line 866: `"skipped_unchanged": n_skip_unchanged,`
+- Line 967: `preview = not getattr(args, "apply", False)`
+- Line 979: `mode_label = "PREVIEW" if preview else "APPLY"`
+- Line 988: `n_skip = 0`
+- Line 1000: `action = "SKIP"`
+- Line 1003: `action = "WOULD_REVERT" if preview else "REVERT"`
+- Line 1019: `if action == "SKIP":`
+- Line 1020: `n_skip += 1`
+- Line 1025: `if not preview:`
+- Line 1039: `print(f"Skipped      : {n_skip}")`
+- Line 1040: `if not preview:`
+- Line 1043: `if preview and n_would_revert:`
+- Line 1045: `print("Dry-run mode — pass --apply to write reverted titles.")`
+- Line 1092: `apply_mode = getattr(args, "apply", False)`
+- Line 1105: `mode_label = "APPLY" if apply_mode else "PREVIEW"`
+- Line 1110: `n_skipped_index = 0`
+- Line 1118: `print(f"  SKIP_NO_SEPARATOR: {path.name}")`
+- Line 1131: `print(f"  SKIP_UNREADABLE: {path.name}")`
+- Line 1146: `n_skipped_index += 1`
+- Line 1148: `print(f"  SKIP_OBVIOUS_INDEX:")`
+- Line 1155: `action = "RECOVER" if apply_mode else "WOULD_RECOVER"`
+- Line 1163: `if apply_mode:`
+- Line 1177: `if apply_mode:`
+- Line 1179: `print(f"Skipped (obvious index): {n_skipped_index}")`
+- Line 1182: `if not apply_mode and n_candidates:`
+- Line 1184: `print("Dry-run mode — pass --apply to write recovered titles.")`
+
+## `modules/organizer.py`
+- Line 204: `- (None,  None)  → no allowlist match; skip edits routing for this field`
+- Line 492: `def _run_beets(files: List[Path], dry_run: bool) -> Tuple[List[Path], List[Path]]:`
+- Line 506: `if dry_run:`
+- Line 507: `# Skip beets entirely on dry-run (no --pretend in beets 1.x)`
+- Line 508: `log.info("DRY-RUN: skipping beets import")`
+- Line 535: `def _organize_file(path: Path, dry_run: bool) -> Optional[Path]:`
+- Line 781: `if not dry_run:`
+- Line 788: `if not dry_run:`
+- Line 809: `return dest if not dry_run else path`
+- Line 815: `def run(files: List[Path], run_id: int, dry_run: bool = False, use_beets: bool = True) -> List[Path]:`
+- Line 825: `_, beets_failed = _run_beets(files, dry_run)`
+- Line 837: `new_path = _organize_file(path, dry_run)`
+- Line 844: `if not dry_run:`
+- Line 847: `db.mark_status(str(path), "needs_review", "organize failed")`
+- Line 851: `if not beets_failed and not dry_run:`
+
+## `modules/parser.py`
+- Line 497: `# Score thresholds`
+- Line 498: `# score >= _ARTIST_THRESHOLD  → "artist"`
+- Line 499: `# score <= _LABEL_THRESHOLD   → "label"`
+- Line 501: `_ARTIST_THRESHOLD = 1`
+- Line 502: `_LABEL_THRESHOLD  = -3`
+- Line 621: `Score thresholds:`
+- Line 681: `if score >= _ARTIST_THRESHOLD:`
+- Line 683: `elif score <= _LABEL_THRESHOLD:`
+
+## `modules/playlists.py`
+- Line 48: `# BPM thresholds`
+- Line 176: `# Location-based (highest confidence — organizer already routed these)`
+- Line 279: `def _write_m3u(playlist_path: Path, tracks: List[sqlite3.Row], dry_run: bool) -> int:`
+- Line 283: `if dry_run:`
+- Line 284: `log.info("DRY-RUN: would write %s (%d tracks)", playlist_path.name, len(tracks))`
+- Line 300: `def generate_m3u(dry_run: bool = False) -> int:`
+- Line 331: `n = _write_m3u(playlist_path, tracks, dry_run)`
+- Line 337: `_write_m3u(master_path, normal_tracks, dry_run)`
+- Line 343: `def generate_genre_m3u(dry_run: bool = False) -> int:`
+- Line 381: `log.info("Genre M3U '%s': skipped (%d tracks < min %d)", genre_name, len(tracks), min_tracks)`
+- Line 385: `n = _write_m3u(playlist_path, tracks, dry_run)`
+- Line 395: `def generate_energy_m3u(dry_run: bool = False) -> int:`
+- Line 430: `n = _write_m3u(playlist_path, tracks, dry_run)`
+- Line 440: `def generate_combined_m3u(dry_run: bool = False) -> int:`
+- Line 483: `n = _write_m3u(playlist_path, tracks, dry_run)`
+- Line 493: `def generate_key_m3u(dry_run: bool = False) -> int:`
+- Line 531: `log.info("Key M3U '%s': skipped (%d tracks < min %d)", key_name, len(tracks), min_tracks)`
+- Line 534: `n = _write_m3u(playlist_path, tracks, dry_run)`
+- Line 544: `def generate_route_m3u(dry_run: bool = False) -> int:`
+- Line 588: `log.info("Route M3U '%s': skipped (%d tracks < min %d)", route_name, len(tracks), min_tracks)`
+- Line 592: `n = _write_m3u(playlist_path, tracks, dry_run)`
+- Line 629: `def generate_rekordbox_xml(dry_run: bool = False) -> Path:`
+- Line 646: `if dry_run:`
+- Line 647: `log.info("DRY-RUN: would write Rekordbox XML with %d tracks", len(all_tracks))`
+- Line 730: `# Genre grouping (skip junk genres)`
+- Line 738: `# Combined genre+energy grouping — all genres (skip junk)`
+- Line 951: `def run(files: List[Path], run_id: int, dry_run: bool = False) -> List[Path]:`
+- Line 968: `generate_m3u(dry_run)`
+- Line 969: `generate_genre_m3u(dry_run)`
+- Line 970: `generate_energy_m3u(dry_run)`
+- Line 971: `generate_combined_m3u(dry_run)`
+- Line 972: `generate_key_m3u(dry_run)`
+- Line 973: `generate_route_m3u(dry_run)`
+- Line 974: `generate_rekordbox_xml(dry_run)`
+
+## `modules/qc.py`
+- Line 74: `# 5. Bitrate check (skip for lossless)`
+- Line 97: `def _reject(path: Path, reason: str, dry_run: bool) -> None:`
+- Line 100: `if not dry_run:`
+- Line 108: `def run(files: List[Path], run_id: int, dry_run: bool = False) -> List[Path]:`
+- Line 138: `_reject(path, reason, dry_run)`
+
+## `modules/rekordbox_export.py`
+- Line 71: `# Exact lowercased alias map — checked first, highest confidence.`
+- Line 366: `# Track resolution — validate, apply fallbacks, return None if unfixable`
+- Line 601: `junk            — junk/placeholder filenames skipped`
+- Line 664: `"rekordbox-export: [STALE_DB] %s — not found on current filesystem, skipping",`
+- Line 728: `dry_run: bool = False,`
+- Line 746: `if dry_run:`
+- Line 750: `log.info("  ... and %d more excluded (run without --dry-run for full log)",`
+- Line 852: `def _write_rb_m3u(playlist_path: Path, tracks: list, dry_run: bool) -> int:`
+- Line 856: `if dry_run:`
+- Line 857: `log.info("[DRY-RUN] Would write %s (%d tracks)", playlist_path.name, len(tracks))`
+- Line 873: `def export_m3u_playlists(tracks: list, dry_run: bool = False) -> Dict[str, int]:`
+- Line 879: `dry_run: Preview only — create no files.`
+- Line 905: `n = _write_rb_m3u(genre_dir / f"{safe}.m3u8", gtracks, dry_run)`
+- Line 922: `n = _write_rb_m3u(energy_dir / f"{level}.m3u8", etracks, dry_run)`
+- Line 942: `n = _write_rb_m3u(combined_dir / f"{safe}.m3u8", ctracks, dry_run)`
+- Line 959: `n = _write_rb_m3u(key_dir / f"{kname}.m3u8", ktracks, dry_run)`
+- Line 981: `n = _write_rb_m3u(route_dir / f"{safe}.m3u8", rtracks, dry_run)`
+- Line 996: `def export_xml(tracks: list, dry_run: bool = False) -> Tuple[Path, int]:`
+- Line 1002: `dry_run: Preview only — create no files.`
+- Line 1010: `if dry_run:`
+- Line 1011: `log.info("[DRY-RUN] Would write Rekordbox XML with %d tracks → %s",`
+- Line 1195: `dry_run:              bool            = False,`
+- Line 1196: `skip_xml:             bool            = False,`
+- Line 1197: `skip_m3u:             bool            = False,`
+- Line 1206: `dry_run:             Preview only — create no files.`
+- Line 1207: `skip_xml:            Skip Rekordbox XML generation.`
+- Line 1208: `skip_m3u:            Skip M3U playlist generation.`
+- Line 1225: `"rekordbox-export: mapping %s → %s:\\ (dry_run=%s)",`
+- Line 1226: `linux_root, drive, dry_run,`
+- Line 1230: `f"REKORDBOX-EXPORT {'DRY-RUN' if dry_run else 'START'}: "`
+- Line 1258: `# --- Resolve: validate, apply fallbacks, filter ---`
+- Line 1282: `_write_invalid_log(invalid_tracks, invalid_log_path, total_scanned, dry_run)`
+- Line 1287: `if not skip_xml:`
+- Line 1288: `xml_path, track_count = export_xml(valid_tracks, dry_run)`
+- Line 1292: `if not skip_m3u:`
+- Line 1293: `m3u_totals = export_m3u_playlists(valid_tracks, dry_run)`
+- Line 1300: `print(f"=== Rekordbox Export {'(DRY-RUN) ' if dry_run else ''}===")`
+- Line 1304: `+ (" (file not on current SSD — skipped)" if stale_count else ""))`
+- Line 1306: `+ (" (unknown.mp3 / empty — skipped)" if junk_count else ""))`
+- Line 1309: `+ ("" if dry_run else "  → logs/rekordbox_export/invalid_tracks.txt"))`
+- Line 1341: `if not skip_xml:`
+- Line 1344: `if not skip_m3u:`
+- Line 1352: `f"REKORDBOX-EXPORT {'DRY-RUN' if dry_run else 'DONE'}: "`
+
+## `modules/reporter.py`
+- Line 8: `- Files needing manual review (_unsorted)`
+- Line 33: `def generate(run_id: int, duration_sec: float, dry_run: bool = False) -> Path:`
+- Line 38: `prefix  = "dryrun_" if dry_run else ""`
+- Line 43: `unsorted  = db.get_tracks_by_status("needs_review")`
+- Line 60: `w(f"Dry-run:   {'YES' if dry_run else 'no'}")`
+- Line 72: `w(f"  Duplicates quarantined: {run_row['duplicates']}")`
+- Line 73: `w(f"  Needs manual review  : {run_row['unsorted']}")`
+- Line 89: `w("DUPLICATES  (moved to /music/duplicates/) — review before deleting")`
+- Line 98: `# Needs review`
+- Line 100: `w("NEEDS MANUAL REVIEW  (in /music/library/sorted/_unsorted/)")`
+- Line 141: `def generate_readme(run_id: int, duration_sec: float, dry_run: bool = False) -> Path:`
+- Line 153: `unsorted    = db.get_tracks_by_status("needs_review")`
+- Line 185: `if dry_run:`
+- Line 186: `w("_⚠ This was a dry-run — no files were changed._")`
+- Line 216: `w("├── duplicates/         ← quarantined duplicates (review before deleting)")`
+- Line 238: `w(f"| Duplicates quarantined | {run_row['duplicates']} |")`
+- Line 239: `w(f"| Needs manual review    | {run_row['unsorted']} |")`
+- Line 250: `w(f"- **{len(dupes)} duplicate(s)** in `{config.DUPLICATES}/` — review and delete unwanted copies")`
+- Line 291: `unsorted = db.get_tracks_by_status("needs_review")`
+- Line 300: `print(f"  Needs review         : {len(unsorted)}")`
+- Line 305: `print(f"  [!] CHECKPOINT: Review /music/duplicates/ ({len(dupes)} files)")`
+- Line 307: `print(f"  [!] CHECKPOINT: Review /music/library/sorted/_unsorted/ ({len(unsorted)} files)")`
+
+## `modules/run_logger.py`
+- Line 8: `a prior record whose status is in SKIP_STATUSES.`
+- Line 14: `skipped    — skipped for a deterministic reason (missing tags, hard reject, etc.)`
+- Line 15: `ignored    — file moved to the IGNORED quarantine`
+- Line 16: `review     — queued for human review (NOT in SKIP_STATUSES — re-evaluated each run)`
+- Line 17: `error      — processing failed (NOT in SKIP_STATUSES — retried each run)`
+- Line 29: `n_skip_unchanged = 0`
+- Line 32: `if not _force and proc.should_skip(STAGE, path):`
+- Line 33: `n_skip_unchanged += 1`
+- Line 40: `if n_skip_unchanged:`
+- Line 41: `print(f"  Skipped unchanged : {n_skip_unchanged}")`
+- Line 52: `# Statuses that cause a file to be skipped on the next run (when unchanged).`
+- Line 53: `# "error" and "review" are deliberately excluded — those are retried every run.`
+- Line 54: `SKIP_STATUSES: frozenset = frozenset({"success", "no_change", "skipped", "ignored"})`
+- Line 57: `def should_skip(stage: str, path: Path, reason_prefix: str = "") -> bool:`
+- Line 59: `Return True if this file should be skipped for this stage.`
+- Line 61: `Requirements for a skip:`
+- Line 63: `2. The prior status is in SKIP_STATUSES.`
+- Line 83: `if row["status"] not in SKIP_STATUSES:`
+
+## `modules/sanitizer.py`
+- Line 263: `def _write_tags(path, fields: Dict[str, str], dry_run: bool) -> bool:`
+- Line 265: `if dry_run:`
+- Line 291: `def run(files, run_id: int, dry_run: bool = False):`
+- Line 321: `if not dry_run:`
+- Line 331: `_write_tags(path, write_fields, dry_run)`
+
+## `modules/set_builder.py`
+- Line 348: `return pool[0]  # first track — no transition constraints apply`
+- Line 515: `log.debug("set-builder: no candidates for phase=%s, skipping", phase)`
+- Line 584: `def _write_m3u(tracks: List[SetTrack], path: Path, dry_run: bool) -> None:`
+- Line 585: `if dry_run:`
+- Line 586: `log.info("[DRY-RUN] Would write M3U: %s (%d tracks)", path, len(tracks))`
+- Line 603: `def _write_csv(tracks: List[SetTrack], path: Path, dry_run: bool) -> None:`
+- Line 604: `if dry_run:`
+- Line 667: `dry_run:              bool          = False,`
+- Line 673: `(track_count, m3u_path)  — m3u_path is None on dry_run or empty set`
+- Line 727: `_write_m3u(tracks, m3u_path, dry_run)`
+- Line 728: `_write_csv(tracks, csv_path, dry_run)`
+- Line 731: `if not dry_run:`
+- Line 752: `f"SET-BUILDER DONE: {len(tracks)} tracks → {m3u_path.name if not dry_run else '[dry-run]'}"`
+- Line 754: `return len(tracks), m3u_path if not dry_run else None`
+
+## `modules/tag_normalize.py`
+- Line 11: `python pipeline.py tag-normalize --dry-run      # preview, no writes`
+- Line 12: `python pipeline.py tag-normalize                # apply to whole sorted library`
+- Line 46: `normalized: bool           # a change was made (or would be in dry-run)`
+- Line 98: `def normalize_file(path: Path, dry_run: bool = False) -> NormalizeResult:`
+- Line 136: `if dry_run:`
+- Line 142: `# --- Apply: save as ID3v2.3, strip ID3v1 ---`
+- Line 157: `# Dry-run output`
+- Line 160: `def print_dry_run_summary(`
+- Line 178: `f"\nNo files modified. Run without --dry-run to apply.\n"`
+- Line 200: `print(f"Run without --dry-run to apply to {len(to_fix)} file(s).")`
+- Line 209: `dry_run: bool = False,`
+- Line 216: `paths:   list of audio file Paths (non-MP3 entries are silently skipped)`
+- Line 217: `dry_run: if True, detect but don't write`
+- Line 226: `mode = "DRY-RUN" if dry_run else "APPLY"`
+- Line 237: `result = normalize_file(path, dry_run=dry_run)`
+- Line 254: `if not dry_run:`
+- Line 260: `if not dry_run:`
+- Line 264: `if not dry_run:`
+- Line 267: `prefix = "[DRY-RUN] " if dry_run else ""`
+- Line 275: `if dry_run:`
+- Line 276: `print_dry_run_summary(results, scanned)`
+
+## `modules/tagger.py`
+- Line 6: `Skips formats it cannot handle rather than crashing the pipeline.`
+- Line 53: `def _write_mp3(path: Path, row: dict, dry_run: bool) -> bool:`
+- Line 108: `if not dry_run:`
+- Line 118: `def _write_flac(path: Path, row: dict, dry_run: bool) -> bool:`
+- Line 142: `if not dry_run:`
+- Line 150: `def _write_m4a(path: Path, row: dict, dry_run: bool) -> bool:`
+- Line 167: `if not dry_run:`
+- Line 178: `def run(files: List[Path], run_id: int, dry_run: bool = False) -> List[Path]:`
+- Line 184: `log.error("Skipping tag writing — mutagen not available")`
+- Line 196: `log.warning("No DB record for %s — skipping tag write", path.name)`
+- Line 203: `ok = _write_mp3(path, row, dry_run)`
+- Line 205: `ok = _write_flac(path, row, dry_run)`
+- Line 207: `ok = _write_m4a(path, row, dry_run)`
+- Line 209: `log.debug("No tag writer for %s — skipping", path.suffix)`
+
+## `pipeline.py`
+- Line 7: `python3 pipeline.py [--dry-run] [--skip-beets] [--skip-analysis]`
+- Line 23: `and status='ok' in DB) are skipped on subsequent runs.`
+- Line 137: `"""Return all audio files under root, excluding maintenance/quarantine directories."""`
+- Line 138: `skip = config.MAINTENANCE_SKIP_DIRS`
+- Line 149: `# skip exact maintenance dir names`
+- Line 150: `if any(part in skip for part in f.parts):`
+- Line 152: `# skip hidden directories (any path component starting with ".")`
+- Line 196: `config.DEDUPE_QUARANTINE_DIR          = config.SORTED / "_duplicates"`
+- Line 255: `"""Return all audio files in INBOX (recursive). Skip already-processed."""`
+- Line 273: `def run_pipeline(dry_run: bool, skip_beets: bool, skip_analysis: bool, verbose: bool,`
+- Line 275: `skip_cue_suggest: bool = True) -> int:`
+- Line 290: `run_id = db.start_run(dry_run)`
+- Line 291: `log.info("Pipeline start (run_id=%d, dry_run=%s)", run_id, dry_run)`
+- Line 292: `log_run_separator(f"run_id={run_id}" + (" DRY-RUN" if dry_run else ""))`
+- Line 321: `files = qc.run(inbox_files, run_id, dry_run)`
+- Line 326: `files = dedupe.run(files, run_id, dry_run)`
+- Line 331: `files = organizer.run(files, run_id, dry_run, use_beets=not skip_beets)`
+- Line 338: `files = sanitizer.run(files, run_id, dry_run)`
+- Line 341: `if not skip_analysis:`
+- Line 343: `files = analyzer.run(files, run_id, dry_run)`
+- Line 345: `log.info("[5/8] Skipping analysis (--skip-analysis)")`
+- Line 349: `files = tagger.run(files, run_id, dry_run)`
+- Line 356: `if row and row["status"] not in ("rejected", "duplicate", "needs_review"):`
+- Line 365: `if not skip_cue_suggest and not skip_analysis and files:`
+- Line 369: `min_conf = getattr(config, "CUE_SUGGEST_MIN_CONFIDENCE", 0.4)`
+- Line 372: `dry_run  = dry_run,`
+- Line 380: `"[7/8] Cue point suggestion skipped "`
+- Line 386: `playlists.run(files, run_id, dry_run)`
+- Line 391: `unsorted    = db.get_tracks_by_status("needs_review")`
+- Line 405: `report_path = reporter.generate(run_id, duration, dry_run)`
+- Line 406: `reporter.generate_readme(run_id, duration, dry_run)`
+- Line 426: `skip_enrich = args.label_skip_enrich`
+- Line 451: `log.info("Sources: %s  |  delay: %.1fs  |  skip_enrich: %s",`
+- Line 452: `sources, delay, skip_enrich)`
+- Line 459: `skip_enrich=skip_enrich,`
+- Line 557: `log.debug("Skipped malformed label record: %s", exc)`
+- Line 614: `--dry-run   scan + report JSON, no file moves (default when neither flag given)`
+- Line 615: `--apply     apply safe merges; uncertain cases go to report only`
+- Line 627: `do_apply = getattr(args, "apply", False)`
+- Line 629: `if do_apply:`
+- Line 630: `log_action("ARTIST-MERGE APPLY START")`
+- Line 631: `artist_merge.run_apply(sorted_root, report_dir)`
+- Line 632: `log_action("ARTIST-MERGE APPLY DONE")`
+- Line 634: `log_action("ARTIST-MERGE DRY-RUN START")`
+- Line 635: `artist_merge.run_dry_run(sorted_root, report_dir)`
+- Line 636: `log_action("ARTIST-MERGE DRY-RUN DONE")`
+- Line 651: `--dry-run   scan + report JSON, no file moves (default when neither flag given)`
+- Line 652: `--apply     apply all recoverable renames/merges; review cases go to report only`
+- Line 664: `do_apply = getattr(args, "apply", False)`
+- Line 666: `if do_apply:`
+- Line 667: `log_action("FOLDER-CLEAN APPLY START")`
+- Line 668: `rc = artist_folder_clean.run_apply(sorted_root, report_dir)`
+- Line 669: `log_action("FOLDER-CLEAN APPLY DONE")`
+- Line 671: `log_action("FOLDER-CLEAN DRY-RUN START")`
+- Line 672: `rc = artist_folder_clean.run_dry_run(sorted_root, report_dir)`
+- Line 673: `log_action("FOLDER-CLEAN DRY-RUN DONE")`
+- Line 686: `default / --dry-run   scan + report, no file writes`
+- Line 687: `--write-tags          scan + report + write high-confidence labels`
+- Line 688: `--review-only         scan + export only unresolved / low-confidence cases`
+- Line 694: `scan_tracks, write_label_tag, WRITE_THRESHOLD,`
+- Line 705: `log.warning("--use-discogs: Discogs provider is not yet implemented (Phase 2) — skipped.")`
+- Line 707: `log.warning("--use-beatport: Beatport clean provider is not yet implemented (Phase 2) — skipped.")`
+- Line 731: `threshold   = getattr(args, "confidence_threshold", config.LABEL_CLEAN_THRESHOLD)`
+- Line 732: `do_write    = getattr(args, "write_tags", False) and not getattr(args, "dry_run", False)`
+- Line 733: `review_only = getattr(args, "review_only", False)`
+- Line 737: `log.info("Confidence threshold : %.2f   write-back: %s   review-only: %s",`
+- Line 738: `threshold, do_write, review_only)`
+- Line 742: `results = scan_tracks(paths, write_threshold=threshold, alias_registry=alias_registry)`
+- Line 756: `results, output_dir, written=written, review_only=review_only,`
+- Line 781: `optionally quarantine them.`
+- Line 784: `--dry-run   scan + preview groups, no files moved`
+- Line 785: `(no flag)   scan + quarantine duplicates`
+- Line 788: `Case A — exact hash match       → safe to quarantine automatically`
+- Line 789: `Case B — same title, lower quality → quarantine lower-quality copy`
+- Line 798: `quarantine_raw = getattr(args, "quarantine_dir", None)`
+- Line 800: `# Derive quarantine under the selected library root, not the global config default.`
+- Line 801: `# Explicit --quarantine-dir always wins; otherwise derive from the scan path.`
+- Line 802: `if quarantine_raw:`
+- Line 803: `quarantine_dir = Path(quarantine_raw)`
+- Line 805: `quarantine_dir = _resolve_library_root(custom_path) / ".BIN" / "QUARANTINE"`
+- Line 807: `quarantine_dir = config.DEDUPE_QUARANTINE_DIR`
+- Line 827: `do_apply = getattr(args, "apply", False)`
+- Line 828: `dry_run  = not do_apply`
+- Line 832: `print(f"  Quarantine : {quarantine_dir}")`
+- Line 834: `"Dedupe: %d track(s) to scan  dry_run=%s  quarantine=%s",`
+- Line 835: `len(paths), dry_run, quarantine_dir,`
+- Line 838: `scanned, groups, quarantined, bytes_freed = library_dedupe.run(`
+- Line 840: `dry_run        = dry_run,`
+- Line 841: `quarantine_dir = quarantine_dir,`
+- Line 858: `Preview by default; use --apply to write stale status to the DB.`
+- Line 865: `do_apply = getattr(args, "apply", False)`
+- Line 877: `print(f"\n=== orphan-scan {'APPLY' if do_apply else 'PREVIEW'} ===\n")`
+- Line 886: `if do_apply:`
+- Line 894: `print(f"\n  Run with --apply to mark {len(stale_rows)} row(s) as stale.")`
+- Line 931: `print(f"\n  {len(untracked):,} untracked file(s) — review manually.")`
+- Line 940: `f"ORPHAN-SCAN {'APPLY' if do_apply else 'PREVIEW'}: "`
+- Line 958: `--dry-run     print what would be written, no files created`
+- Line 962: `--no-genre    skip Genre/ playlists`
+- Line 963: `--no-energy   skip Energy/ playlists`
+- Line 964: `--no-combined skip Combined/ playlists`
+- Line 965: `--no-key      skip Key/ playlists`
+- Line 966: `--no-route    skip Route/ playlists`
+- Line 967: `--no-xml      skip Rekordbox XML generation`
+- Line 977: `dry_run = getattr(args, "dry_run", False)`
+- Line 997: `if not dry_run:`
+- Line 1000: `log_action(f"PLAYLISTS {'DRY-RUN' if dry_run else 'GENERATE'} START")`
+- Line 1002: `playlists.generate_m3u(dry_run)`
+- Line 1003: `playlists.generate_genre_m3u(dry_run)`
+- Line 1004: `playlists.generate_energy_m3u(dry_run)`
+- Line 1005: `playlists.generate_combined_m3u(dry_run)`
+- Line 1006: `playlists.generate_key_m3u(dry_run)`
+- Line 1007: `playlists.generate_route_m3u(dry_run)`
+- Line 1010: `xml_path = playlists.generate_rekordbox_xml(dry_run)`
+- Line 1011: `if not dry_run:`
+- Line 1014: `log_action(f"PLAYLISTS {'DRY-RUN' if dry_run else 'GENERATE'} DONE")`
+- Line 1027: `--dry-run   analyse and print cues, no DB writes or sidecars`
+- Line 1036: `dry_run     = getattr(args, "dry_run", False)`
+- Line 1037: `min_conf    = getattr(args, "min_confidence", config.CUE_SUGGEST_MIN_CONFIDENCE)`
+- Line 1064: `# Apply track filter and limit to the candidate list up front so that`
+- Line 1075: `"cue-suggest: %d candidate(s)  dry_run=%s  min_conf=%.2f",`
+- ... truncated 369 additional hits
+
+## `scripts/generate-docs.py`
+- Line 9: `python3 scripts/generate-docs.py --dry-run`
+- Line 31: `"malformed ISRCs, and BPM/key comment noise."`
+- Line 35: `"Removes malformed ISRCs and BPM/key noise embedded in comment fields",`
+- Line 40: `"python3 pipeline.py metadata-sanitize --input ~/Music/inbox --apply"`
+- Line 48: `{"flag": "--apply",     "description": "Write changes to files. Without this flag, preview only."},`
+- Line 53: `"python3 pipeline.py metadata-sanitize --input ~/Music/inbox --apply",`
+- Line 56: `"# Preview (no writes)",`
+- Line 59: `"# Apply",`
+- Line 60: `"python3 pipeline.py metadata-sanitize --input ~/Music/inbox --apply",`
+- Line 67: `"label, remixers, and featured artists. Preview by default; "`
+- Line 68: `"--apply to write. BPM, key, and cues are never touched."`
+- Line 73: `"Skips proposals below 0.75 confidence; BPM, key, and cues are never touched",`
+- Line 77: `"python3 pipeline.py ai-normalize --input ~/Music/inbox --pre-sanitize --apply"`
+- Line 80: `"Min confidence: 0.75 — proposals below threshold are skipped, not applied.\n"`
+- Line 85: `{"flag": "--apply",               "description": "Write accepted proposals to files."},`
+- Line 87: `{"flag": "--min-confidence 0.75", "description": "Minimum confidence to accept a proposal."},`
+- Line 93: `"python3 pipeline.py ai-normalize --input ~/Music/inbox --apply",`
+- Line 94: `"python3 pipeline.py ai-normalize --input ~/Music/inbox --pre-sanitize --apply",`
+- Line 95: `"python3 pipeline.py ai-normalize --input ~/Music/inbox --min-confidence 0.80 --apply",`
+- Line 98: `"# Preview",`
+- Line 101: `"# Apply",`
+- Line 102: `"python3 pipeline.py ai-normalize --input ~/Music/inbox --pre-sanitize --apply",`
+- Line 119: `"python3 pipeline.py artist-intelligence --input ~/Music/inbox --apply"`
+- Line 124: `{"flag": "--apply",     "description": "Write normalized artist tags to files."},`
+- Line 129: `"python3 pipeline.py artist-intelligence --input ~/Music/inbox --apply",`
+- Line 132: `"python3 pipeline.py artist-intelligence --input ~/Music/inbox --apply",`
+- Line 138: `"Fill missing album, label, and ISRC via Spotify + Deezer matching "`
+- Line 139: `"with confidence scoring. Preview by default; --apply to write. "`
+- Line 143: `"Queries Spotify, Deezer, and Traxsource to fill missing album, label, and ISRC",`
+- Line 144: `"Routes each result to APPLY, REVIEW, or SKIP based on confidence and safety rules",`
+- Line 145: `"Artist field is never proposed; version mismatches block auto-apply",`
+- Line 146: `"Use `--move-ignored` to quarantine unresolvable files automatically",`
+- Line 149: `"python3 pipeline.py metadata-enrich-online --input ~/Music/inbox --apply --move-ignored"`
+- Line 153: `"  APPLY   conf >= 0.80; all safety rules pass -> written with --apply\n"`
+- Line 154: `"  REVIEW  0.70 <= conf < 0.80 -> added to review queue\n"`
+- Line 155: `"  SKIP    hard safety block fires -> moved to IGNORED with --move-ignored\n"`
+- Line 157: `"IGNORED path: /home/koolkatdj/Music/music/IGNORED/"`
+- Line 161: `{"flag": "--apply",               "description": "Write APPLY-state changes to files."},`
+- Line 162: `{"flag": "--min-confidence 0.80", "description": "Minimum confidence to apply. Default: 0.80."},`
+- Line 163: `{"flag": "--move-ignored",        "description": "Move all hard-rejected files to the IGNORED quarantine directory."},`
+- Line 168: `"python3 pipeline.py metadata-enrich-online --input ~/Music/inbox --apply",`
+- Line 169: `"python3 pipeline.py metadata-enrich-online --input ~/Music/inbox --apply --move-ignored",`
+- Line 170: `"python3 pipeline.py metadata-enrich-online --input ~/Music/inbox --min-confidence 0.85",`
+- Line 173: `"# Preview",`
+- Line 176: `"# Apply (with IGNORED quarantine for unresolvable files)",`
+- Line 177: `"python3 pipeline.py metadata-enrich-online --input ~/Music/inbox --apply --move-ignored",`
+- Line 181: `"name": "review-queue",`
+- Line 183: `"Review and resolve medium-confidence enrichment results interactively. "`
+- Line 184: `"Reads entries populated by metadata-enrich-online (REVIEW state: "`
+- Line 188: `"Opens an interactive session to resolve REVIEW-state enrichment results",`
+- Line 190: `"Accepted entries are written immediately; skipped entries stay in the queue",`
+- Line 191: `"Use `--list-only` to audit the queue without making any changes",`
+- Line 193: `"common_usage": "python3 pipeline.py review-queue",`
+- Line 195: `"Queue file: data/intelligence/enrichment_review_queue.json\n"`
+- Line 196: `"Actions: a=apply  s=skip  d=delete  n=next  q=quit"`
+- Line 202: `"python3 pipeline.py review-queue",`
+- Line 203: `"python3 pipeline.py review-queue --list-only",`
+- Line 206: `"python3 pipeline.py review-queue",`
+- Line 207: `"python3 pipeline.py review-queue --list-only",`
+- Line 221: `("APPLY",  "conf ≥ 0.80, all safety rules pass", "Written with `--apply`"),`
+- Line 222: `("REVIEW", "0.70 ≤ conf < 0.80",                 "Added to review queue"),`
+- Line 223: `("SKIP",   "Hard safety block fires",             "Moved to IGNORED with `--move-ignored`"),`
+- Line 229: `"Version mismatch: conflicting version tokens → confidence capped at 0.74",`
+- Line 230: `"Low artist similarity (< 0.90, no ISRC anchor): confidence capped at 0.74",`
+- Line 231: `"ISRC exact match: overrides all formula limits → confidence 0.98",`
+- Line 232: `"Preview by default on every command — nothing writes without `--apply`",`
+- Line 345: `"Preview by default — nothing writes without `--apply`.",`
+- Line 618: `Preview by default. Nothing writes without <code>--apply</code>.`
+- Line 716: `# Skip any blank line immediately after the heading`
+- Line 761: `"--dry-run", action="store_true",`
+- Line 801: `if args.dry_run:`
+- Line 809: `print(f"\n--dry-run: {len(generated)} file(s) would be written to {out_root}")`
+
+## `scripts/rollback.py`
+- Line 12: `python3 scripts/rollback.py rollback <history_id> [--dry-run] [--restore-path]`
+- Line 19: `--dry-run              Simulate rollback without making any changes`
+- Line 24: `- If the target file no longer exists, rollback is skipped with a warning.`
+- Line 25: `- If the original_path destination is occupied, the move is skipped.`
+- Line 43: `def _restore_tags(filepath: str, original_meta: dict, dry_run: bool) -> bool:`
+- Line 59: `if not dry_run:`
+- Line 66: `if not dry_run:`
+- Line 69: `print(f"  {'[DRY-RUN] ' if dry_run else ''}Tags restored: {', '.join(fields_restored)}")`
+- Line 77: `def _move_to_original(current_path: str, original_path: str, dry_run: bool) -> bool:`
+- Line 93: `print(f"  [!] Original path already occupied — skipping move: {dest}")`
+- Line 96: `print(f"  {'[DRY-RUN] ' if dry_run else ''}Moving: {src.name} → {dest}")`
+- Line 97: `if not dry_run:`
+- Line 153: `def cmd_rollback(history_id: int, dry_run: bool, restore_path: bool) -> None:`
+- Line 167: `print(f"{'[DRY-RUN] ' if dry_run else ''}Rolling back history ID {history_id}")`
+- Line 172: `if not dry_run:`
+- Line 174: `log_action(f"ROLLBACK: ID={history_id} SKIP file not found [{Path(current_path).name}]")`
+- Line 179: `tags_ok   = _restore_tags(current_path, orig_meta, dry_run)`
+- Line 184: `move_ok = _move_to_original(current_path, orig_path, dry_run)`
+- Line 185: `if move_ok and not dry_run:`
+- Line 187: `db.upsert_track(orig_path, status="needs_review")`
+- Line 190: `if not dry_run:`
+- Line 194: `f"ROLLBACK: ID={history_id} {'(dry-run) ' if dry_run else ''}"`
+- Line 200: `print(f"  {'[DRY-RUN] ' if dry_run else ''}Done.")`
+- Line 226: `p_rb.add_argument("--dry-run", action="store_true",`
+- Line 238: `cmd_rollback(args.history_id, args.dry_run, args.restore_path)`
+
+## `tests/create_dedupe_test_fixture.py`
+- Line 134: `# Dedupe keeps the higher-priority path, quarantines the copy.`
+- Line 144: `"Case A: 1 group — 'Track One (copy).mp3' quarantined",`
+- Line 150: `# FLAC quality > MP3/128 → Case B: FLAC kept, MP3 quarantined.`
+- Line 162: `"Case B: 1 group — FLAC kept (lossless), MP3 quarantined",`
+- Line 180: `"Case B: 1 group — M4A 256 kbps kept, MP3 128 kbps quarantined",`
+- Line 202: `"Case C: 1 group — all 3 files kept (no quarantine, report only)",`
+- Line 223: `"Case C: 1 group — both files kept (no quarantine, report only)",`
+- Line 242: `"No groups — files are unrelated (artist mismatch)",`
+- Line 262: `"Case C: 1 group — both files kept (no quarantine, report only)",`
+- Line 288: `# When quarantined with source_root=INBOX, the relative path`
+- Line 289: `# Label X/Artist J/ must be preserved inside the quarantine dir.`
+- Line 299: `"Case A: 1 group — quarantine preserves Label X/Artist J/ sub-path",`
+- Line 345: `print("  # 1. Preview (dry-run, no files moved):")`
+- Line 348: `print("  # 2. Apply quarantine to a scoped destination:")`
+- Line 349: `print(f"  python pipeline.py dedupe --path {INBOX} --apply \\")`
+- Line 350: `print(f"    --quarantine-dir {FIXTURE_ROOT}/quarantine_out")`
+- Line 353: `print(f"  find {FIXTURE_ROOT}/quarantine_out -type f")`
+
+## `tests/create_sanitize_fixtures.py`
+- Line 34: `"organization": "Pampa Records", "isrc": "DEAM10000001",`
+- Line 51: `"isrc": "USAT20000001",`
+- Line 57: `"album": "Isles", "organization": "Ninja Tune", "isrc": "GBARL2000001",`
+- Line 79: `"album": "Stars Dance", "organization": "Interscope", "isrc": "USUM71300001",`
+- Line 113: `# --- ISRC validation ---`
+- Line 114: `("tc18_isrc_valid_bare.mp3", {`
+- Line 116: `"organization": "Pryda", "isrc": "GBAYE0000001",`
+- Line 118: `("tc19_isrc_valid_dashes.flac", {`
+- Line 120: `"organization": "Pryda", "isrc": "GB-AYE-00-00001",`
+- Line 122: `("tc20a_isrc_bad_word.mp3", {`
+- Line 124: `"album": "Reassemblage", "organization": "RVNG Intl.", "isrc": "BADISRC",`
+- Line 126: `("tc20b_isrc_digit_wrong_pos.mp3", {`
+- Line 128: `"album": "Reassemblage", "organization": "RVNG Intl.", "isrc": "GBAYE000000X",`
+- Line 130: `("tc20c_isrc_too_short.mp3", {`
+- Line 132: `"album": "Reassemblage", "organization": "RVNG Intl.", "isrc": "GB-BAD-99",`
+- Line 134: `# TC-21: AIFF with ISRC in ID3 TSRC frame — handled separately below`
+- Line 135: `("tc21_aiff_isrc_id3.aiff", {`
+- Line 149: `"isrc": "DEUM71800001",`
+- Line 185: `_EASY_ISRC_FORMATS = {".flac", ".m4a"}  # easy mode exposes isrc for these`
+- Line 195: `"organization": "organization", "isrc": "isrc",`
+- Line 207: `def _write_mp3_isrc(path: Path, value: str) -> None:`
+- Line 208: `"""MP3: write ISRC as TSRC frame (not exposed via easy mode)."""`
+- Line 226: `"""AIFF: write ISRC as a TSRC frame inside the AIFF container via mutagen.aiff.AIFF."""`
+- Line 256: `# MP3: ISRC must go via raw TSRC frame`
+- Line 257: `if path.suffix.lower() == ".mp3" and "isrc" in easy_tags:`
+- Line 258: `_write_mp3_isrc(path, easy_tags["isrc"])`
+
+## `tests/test_artist_intelligence.py`
+- Line 41: `REASON_CASING_SKIPPED_ACRONYM,`
+- Line 102: `assert result.confidence == 1.0`
+- Line 109: `assert result.confidence == 1.0`
+- Line 286: `result = ArtistParseResult(main_artists=[], confidence=0.0, notes="empty")`
+- Line 511: `def test_returns_confidence_in_valid_range(self):`
+- Line 683: `def test_confidence_not_degraded_by_nested_split(self):`
+- Line 685: `assert result.confidence >= 0.90`
+- Line 687: `def test_personal_name_split_confidence_boosted(self):`
+
+## `tests/test_artist_repair.py`
+- Line 7: `- _propose_repairs: full split proposal with confidence assignment`
+- Line 32: `_load_queue,`
+- Line 33: `_save_queue,`
+- Line 36: `_update_review_queue,`
+- Line 37: `HIGH_CONFIDENCE,`
+- Line 38: `MEDIUM_CONFIDENCE,`
+- Line 39: `LOW_CONFIDENCE,`
+- Line 244: `# --- Confidence levels ---`
+- Line 246: `def test_low_confidence_when_neither_known(self):`
+- Line 250: `assert c.confidence == LOW_CONFIDENCE`
+- Line 251: `assert c.apply_blocked is True`
+- Line 253: `def test_medium_confidence_left_known(self):`
+- Line 258: `assert c.confidence == MEDIUM_CONFIDENCE`
+- Line 259: `assert c.apply_blocked is True`
+- Line 261: `def test_medium_confidence_right_known(self):`
+- Line 266: `assert c.confidence == MEDIUM_CONFIDENCE`
+- Line 267: `assert c.apply_blocked is True`
+- Line 269: `def test_high_confidence_both_known(self):`
+- Line 274: `assert c.confidence == HIGH_CONFIDENCE`
+- Line 275: `assert c.apply_blocked is False`
+- Line 277: `def test_high_confidence_normalized_lookup(self):`
+- Line 282: `assert candidates[0].apply_blocked is False`
+- Line 358: `# --- Confidence ---`
+- Line 360: `def test_low_confidence_neither_known(self):`
+- Line 362: `assert c[0].confidence == LOW_CONFIDENCE`
+- Line 363: `assert c[0].apply_blocked is True`
+- Line 365: `def test_medium_confidence_one_known(self):`
+- Line 368: `assert c[0].confidence == MEDIUM_CONFIDENCE`
+- Line 369: `assert c[0].apply_blocked is True`
+- Line 371: `def test_high_confidence_all_known(self):`
+- Line 374: `assert c[0].confidence == HIGH_CONFIDENCE`
+- Line 375: `assert c[0].apply_blocked is False`
+- Line 408: `confidence: float = 0.45,`
+- Line 415: `"confidence":      confidence,`
+- Line 421: `# Queue creation`
+- Line 424: `class TestReviewQueueCreation:`
+- Line 427: `_update_review_queue(q, [_make_entry()])`
+- Line 428: `loaded = _load_queue(q)`
+- Line 433: `assert _load_queue(tmp_path / "missing.json") == []`
+- Line 438: `_save_queue(q, entries)`
+- Line 439: `assert _load_queue(q) == entries`
+- Line 444: `_update_review_queue(q, [entry])`
+- Line 445: `_update_review_queue(q, [entry])   # same key — must NOT duplicate`
+- Line 446: `assert len(_load_queue(q)) == 1`
+- Line 451: `_update_review_queue(q, [entry])`
+- Line 453: `entries = _load_queue(q)`
+- Line 455: `_save_queue(q, entries)`
+- Line 457: `_update_review_queue(q, [_make_entry()])`
+- Line 458: `assert _load_queue(q)[0]["approved"] is True`
+- Line 462: `_update_review_queue(q, [_make_entry()])`
+- Line 463: `entries = _load_queue(q)`
+- Line 465: `_save_queue(q, entries)`
+- Line 466: `_update_review_queue(q, [_make_entry()])`
+- Line 467: `assert _load_queue(q)[0]["rejected"] is True`
+- Line 471: `_update_review_queue(q, [_make_entry(filepath="/a.mp3")])`
+- Line 472: `_update_review_queue(q, [_make_entry(filepath="/b.mp3")])`
+- Line 473: `assert len(_load_queue(q)) == 2`
+- Line 539: `# apply-approved logic`
+- Line 542: `class TestApplyApprovedLogic:`
+- Line 543: `"""Tests for the eligibility filtering logic used by --apply-approved."""`
+- Line 561: `def test_already_applied_skipped(self):`
+- Line 566: `def test_apply_marks_entry_applied(self):`
+- Line 572: `def test_skip_when_current_tag_differs(self):`
+- Line 573: `# The apply loop skips entries where current tag ≠ original`
+- Line 576: `assert current != original          # → SKIP_CHANGED path fires`
+
+## `tests/test_audit_quality.py`
+- Line 100: `"""Just below the default threshold → LOW."""`
+- Line 106: `# --- Custom min_lossy_kbps threshold ---`
+- Line 108: `def test_custom_threshold_lower(self):`
+- Line 112: `def test_custom_threshold_higher(self):`
+- Line 167: `def test_dry_run_does_not_move(self):`
+- Line 168: `dest = _move_file(self.track, self.scan_root, self.low_dir, dry_run=True)`
+- Line 175: `def test_dry_run_returns_expected_dest(self):`
+- Line 176: `dest = _move_file(self.track, self.scan_root, self.low_dir, dry_run=True)`
+- Line 238: `dry_run=True,`
+- Line 256: `dry_run=True,`
+- Line 271: `dry_run=False,`
+- Line 287: `def test_dry_run_does_not_move_files(self, mock_probe):`
+- Line 293: `dry_run=True,`
+- Line 309: `dry_run=False,`
+- Line 323: `dry_run=False,`
+- Line 344: `dry_run=False,`
+- Line 360: `dry_run=False,`
+- Line 382: `def test_dry_run_skips_report_files(self, mock_probe):`
+- Line 388: `dry_run=True,`
+- Line 393: `# dry_run → no report files written`
+- Line 407: `dry_run=True,`
+- Line 418: `dry_run=True,`
+- Line 431: `dry_run=True,`
+- Line 451: `"""0 kbps counts as below any threshold → LOW."""`
+
+## `tests/test_parser.py`
+- Line 552: `"""Two moderate signals together should reach label threshold."""`
+- Line 568: `"""'Music' alone (-1) must not reach the -3 label threshold."""`
+
+## `tests/test_sanitizer.py`
+- Line 493: `"""Dict with only some fields must work — missing fields ignored."""`
+
+## `tools/static_analysis/generate_repo_inventory.py`
+- Line 131: `"--apply",`
+- Line 132: `"apply",`
+- Line 253: `"confidence",`
+- Line 254: `"threshold",`
+- Line 255: `"review",`
+- Line 256: `"queue",`
+- Line 257: `"quarantine",`
+- Line 258: `"ignored",`
+- Line 259: `"skip",`
+- Line 260: `"hard block",`
+- Line 261: `"mismatch",`
+- Line 262: `"similarity",`
+- Line 263: `"isrc",`
+- Line 264: `"dry_run",`
+- Line 265: `"dry-run",`
+- Line 266: `"apply",`
+
+## `utils/prompt_logger.py`
+- Line 170: `self._groups:     dict = {"modified": [], "skipped": [], "errors": []}`
+- Line 171: `self._page_files: dict = {"modified": [], "skipped": [], "errors": []}`
+- Line 215: `Record a file-level outcome into 'modified', 'skipped', or 'errors'.`
+- Line 250: `confidence: "float | None" = None,`
+- Line 260: `if confidence is not None: entry["confidence"] = confidence`
+- Line 277: `for group in ("modified", "skipped", "errors"):`
+- Line 293: `"skipped":   _pop("skipped",   0),`
+- Line 303: `for k in ("high_confidence", "medium_confidence", "low_confidence"):`
+- Line 330: `data["review_count"]     = _pop("review_count",     0)`
+- Line 331: `data["moved_to_ignored"] = _pop("moved_to_ignored", 0)`
+

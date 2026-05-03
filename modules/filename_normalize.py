@@ -348,6 +348,14 @@ def run(input_dir: Path, *, apply: bool = False, verbose: bool = False,
             version = ""
             stats["stripped_version"] += 1
 
+        if not _sanitize(artist) or not _sanitize(title):
+            reason = "empty_sanitized_artist" if not _sanitize(artist) else "empty_sanitized_title"
+            skipped.append((path, reason))
+            stats["skipped_no_tags"] += 1
+            if apply:
+                _proc.record(_stage, path, "skipped", reason)
+            continue
+
         stem         = _build_stem(artist, title, version)
         target, coll = _safe_target(path.parent, stem, path.suffix, src=path)
 
