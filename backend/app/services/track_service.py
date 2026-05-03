@@ -246,6 +246,32 @@ def get_stats() -> TrackStats:
 
 
 # ---------------------------------------------------------------------------
+# get_orphan_stats
+# ---------------------------------------------------------------------------
+
+def get_orphan_stats() -> Dict[str, int]:
+    """
+    Return a lightweight count summary of orphan categories.
+
+    stale_db_rows — non-stale DB rows whose file is missing on disk
+    active_rows   — non-stale rows whose file exists on disk
+    """
+    if not pipeline_db_exists():
+        return {"stale_db_rows": 0, "active_rows": 0}
+    try:
+        from pathlib import Path as _Path
+        with get_pipeline_conn() as conn:
+            rows = conn.execute(
+                "SELECT filepath FROM tracks WHERE status != 'stale'"
+            ).fetchall()
+        stale = sum(1 for r in rows if not _Path(r["filepath"]).exists())
+        return {"stale_db_rows": stale, "active_rows": len(rows) - stale}
+    except Exception as exc:
+        log.exception("get_orphan_stats failed: %s", exc)
+        return {"stale_db_rows": 0, "active_rows": 0}
+
+
+# ---------------------------------------------------------------------------
 # get_issues
 # ---------------------------------------------------------------------------
 

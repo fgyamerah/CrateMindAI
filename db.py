@@ -107,6 +107,20 @@ CREATE TABLE IF NOT EXISTS set_playlist_tracks (
     transition_note TEXT,
     UNIQUE(set_id, position)
 );
+
+CREATE TABLE IF NOT EXISTS processed_state (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    stage        TEXT    NOT NULL,
+    filepath     TEXT    NOT NULL,
+    file_size    INTEGER NOT NULL DEFAULT 0,
+    file_mtime   REAL    NOT NULL DEFAULT 0,
+    status       TEXT    NOT NULL,
+    processed_at TEXT    NOT NULL,
+    reason       TEXT    NOT NULL DEFAULT '',
+    UNIQUE(stage, filepath)
+);
+
+CREATE INDEX IF NOT EXISTS idx_pstate_stage_path ON processed_state(stage, filepath);
 """
 
 
@@ -260,6 +274,89 @@ def prune_stale_tracks(
                     ("path not found on current filesystem", fp),
                 )
     return checked, pruned
+
+
+def scan_orphans(
+    lib_root: "Path",
+    *,
+    include_untracked: bool = True,
+    scan_root: "Optional[Path]" = None,
+) -> tuple:
+    """
+    Detect two categories of orphans in a single DB pass:
+
+    stale_db_rows   — DB row (non-stale status) whose file is missing on disk.
+    untracked_files — Audio file on disk with no matching DB row.
+
+    These are NEVER merged into one list; they represent distinct problems.
+
+    Args:
+        lib_root:          Root directory to walk for audio files.
+        include_untracked: When False, skip the disk→DB scan (faster, DB-only audit).
+
+    Returns:
+        (stale_db_rows: list[str], untracked_files: list[Path])
+        stale_db_rows  — filepaths from DB that no longer exist on disk
+        untracked_files — paths on disk that have no DB row
+    """
+    from pathlib import Path as _Path, PurePath as _PurePath
+    import config as _config
+
+    lr = _Path(lib_root)
+    skip = _config.MAINTENANCE_SKIP_DIRS
+
+    def _in_maintenance(p_str: str) -> bool:
+        parts = _PurePath(p_str).parts
+        return (
+            any(part in skip for part in parts)
+            or any(part.startswith(".") for part in parts)
+        )
+
+    # ── single DB fetch ──────────────────────────────────────────────────────
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT filepath, status FROM tracks WHERE status != 'stale'"
+        ).fetchall()
+
+    # Exclude quarantine/ignored rows from both categories so they never
+    # pollute stale counts or untracked lists.
+    known_fps: set = {
+        str(row["filepath"]) for row in rows
+        if not _in_maintenance(str(row["filepath"]))
+    }
+
+    # ── stale_db_rows: DB record but file missing on disk ───────────────────
+    stale_db_rows: list = [
+        fp for fp in known_fps if not _Path(fp).exists()
+    ]
+
+    # When a sub-tree scan is requested, restrict stale_db_rows to paths that
+    # live under scan_root.  Path.relative_to() does component-level comparison
+    # so it is immune to trailing-slash and separator mismatches.
+    if scan_root is not None:
+        _sr = _Path(scan_root).resolve()
+        _scoped: list = []
+        for fp in stale_db_rows:
+            try:
+                _Path(fp).relative_to(_sr)
+                _scoped.append(fp)
+            except ValueError:
+                pass
+        stale_db_rows = _scoped
+
+    # ── untracked_files: file on disk but no DB record ───────────────────────
+    untracked_files: list = []
+    if include_untracked and lr.exists():
+        for ext in _config.AUDIO_EXTENSIONS:
+            for p in lr.rglob(f"*{ext}"):
+                if any(part in skip for part in p.parts):
+                    continue
+                if any(part.startswith(".") for part in p.parts):
+                    continue
+                if str(p) not in known_fps:
+                    untracked_files.append(p)
+
+    return stale_db_rows, untracked_files
 
 
 # ---------------------------------------------------------------------------
@@ -494,6 +591,117 @@ def get_set_playlist_tracks(set_id: int) -> list:
                ORDER BY spt.position""",
             (set_id,),
         ).fetchall()
+
+
+# ---------------------------------------------------------------------------
+# Processed-state tracking  (per-stage incremental-run cache)
+# ---------------------------------------------------------------------------
+
+# Standalone DDL for the processed_state table.  Kept separate from _SCHEMA so
+# that the four helper functions below can self-heal on databases that existed
+# before this feature was introduced (i.e. init_db() was never called on them).
+_PSTATE_DDL = """
+CREATE TABLE IF NOT EXISTS processed_state (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    stage        TEXT    NOT NULL,
+    filepath     TEXT    NOT NULL,
+    file_size    INTEGER NOT NULL DEFAULT 0,
+    file_mtime   REAL    NOT NULL DEFAULT 0,
+    status       TEXT    NOT NULL,
+    processed_at TEXT    NOT NULL,
+    reason       TEXT    NOT NULL DEFAULT '',
+    UNIQUE(stage, filepath)
+);
+CREATE INDEX IF NOT EXISTS idx_pstate_stage_path ON processed_state(stage, filepath);
+CREATE INDEX IF NOT EXISTS idx_pstate_filepath   ON processed_state(filepath);
+"""
+
+
+def _ensure_pstate(conn: sqlite3.Connection) -> None:
+    """Create processed_state table + indexes if they don't exist yet.
+
+    Uses conn.execute() (not executescript) to avoid the implicit COMMIT that
+    executescript issues — that COMMIT can discard the INSERT that follows in
+    set_processed_state when Python's legacy isolation_level mode is active.
+    """
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS processed_state (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            stage        TEXT    NOT NULL,
+            filepath     TEXT    NOT NULL,
+            file_size    INTEGER NOT NULL DEFAULT 0,
+            file_mtime   REAL    NOT NULL DEFAULT 0,
+            status       TEXT    NOT NULL,
+            processed_at TEXT    NOT NULL,
+            reason       TEXT    NOT NULL DEFAULT '',
+            UNIQUE(stage, filepath)
+        )"""
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_pstate_stage_path "
+        "ON processed_state(stage, filepath)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_pstate_filepath "
+        "ON processed_state(filepath)"
+    )
+
+
+def get_processed_state(stage: str, filepath: str) -> Optional[sqlite3.Row]:
+    """Return the processed_state row for (stage, filepath), or None."""
+    with get_conn() as conn:
+        _ensure_pstate(conn)
+        return conn.execute(
+            "SELECT * FROM processed_state WHERE stage=? AND filepath=?",
+            (stage, filepath),
+        ).fetchone()
+
+
+def set_processed_state(
+    stage: str,
+    filepath: str,
+    *,
+    file_size: int,
+    file_mtime: float,
+    status: str,
+    reason: str = "",
+) -> None:
+    """Upsert a processed-state record for (stage, filepath)."""
+    with get_conn() as conn:
+        _ensure_pstate(conn)
+        conn.execute(
+            """INSERT INTO processed_state
+               (stage, filepath, file_size, file_mtime, status, processed_at, reason)
+               VALUES (?, ?, ?, ?, ?, ?, ?)
+               ON CONFLICT(stage, filepath) DO UPDATE SET
+                 file_size=excluded.file_size,
+                 file_mtime=excluded.file_mtime,
+                 status=excluded.status,
+                 processed_at=excluded.processed_at,
+                 reason=excluded.reason""",
+            (stage, filepath, file_size, file_mtime, status, _now(), reason),
+        )
+
+
+def clear_stage_processed(stage: str) -> None:
+    """Delete all processed_state rows for a stage (implements --reset-stage)."""
+    with get_conn() as conn:
+        _ensure_pstate(conn)
+        conn.execute("DELETE FROM processed_state WHERE stage=?", (stage,))
+
+
+def rename_processed_path(old_filepath: str, new_filepath: str) -> None:
+    """
+    Update filepath in all processed_state rows after a file is renamed.
+    Called by filename-normalize after each successful rename so that other
+    stages' prior records remain valid under the new path.
+    """
+    with get_conn() as conn:
+        _ensure_pstate(conn)
+        conn.execute(
+            "UPDATE processed_state SET filepath=? WHERE filepath=?",
+            (new_filepath, old_filepath),
+        )
 
 
 # ---------------------------------------------------------------------------

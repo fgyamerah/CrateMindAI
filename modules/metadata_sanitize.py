@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import config
+import modules.run_logger as _proc
 from modules.sanitizer import sanitize_text
 from modules.textlog import log_action
 
@@ -83,6 +84,69 @@ _LABEL_JUNK_LOWER: frozenset = frozenset({
     "various", "various artists", "va",
     "promo", "white label", "white lbl",
 })
+
+# ---------------------------------------------------------------------------
+# Title-cleanup additions (new rules)
+# ---------------------------------------------------------------------------
+
+# Bare leading track-number with no separator — "2 Sada" → "Sada", "3 Afro" → "Afro"
+# Existing _RE_TITLE_NUM_PREFIX handles cases WITH a separator (|, -, –, etc.).
+# This rule covers the bare "N<space>Title" pattern.
+_RE_TITLE_BARE_NUM_PREFIX = re.compile(
+    r'^\d{1,3}\s+(?=[A-Za-z(])',
+    re.UNICODE,
+)
+
+# Domain / piracy tokens in any parenthetical:
+# "(fordjonly.com)", "(hulkshare.com)", "(htpthahouse-lovers.blogspot.com)" etc.
+_RE_TITLE_DOMAIN_PAREN = re.compile(
+    r'\s*\([^)]*(?:\.com|\.net|\.org|blogspot|hulkshare|zippyshare|fordjonly|djonly|mp3(?:[\s.)]|$))[^)]*\)',
+    re.IGNORECASE,
+)
+
+# Trailing BPM at very end — preceded by space or ')' (lookbehind, fixed width 1 char)
+# Range enforced in code: 80–160 only.
+_RE_TITLE_TRAILING_BPM = re.compile(r'(?<=[\s)])\s*(\d{2,3})\s*$')
+
+# "(Feat." → "(feat." casing normalisation in titles
+_RE_TITLE_FEAT_UPPER = re.compile(r'\(Feat\.')
+
+# Keywords that mark a trailing paren as a VERSION/MIX — these must NOT be stripped.
+_PROTECTED_PAREN_WORDS: frozenset = frozenset({
+    "mix", "edit", "version", "remix", "dub", "vocal", "club", "rework",
+    "reprise", "instrumental", "radio", "extended", "original", "short",
+    "vip", "acapella", "acoustic", "live", "bootleg", "reconstruction",
+    "refix", "remaster", "remastered", "retro", "intro", "outro",
+    "cut", "flip", "mashup", "blend", "snippet", "preview", "interlude",
+})
+
+# Keywords indicating a trailing paren is a record-label name.
+_LABEL_PAREN_KEYWORDS: frozenset = frozenset({
+    "records", "recordings", "music", "entertainment", "digital", "audio",
+    "sound", "sounds", "label", "labels", "group", "media", "distrokid",
+    "publishing", "productions", "distribution",
+})
+
+# Known label strings to strip even without a keyword match (lowercase, no parens).
+_KNOWN_STRIP_LABELS: frozenset = frozenset({
+    "shockit",
+    "techno and chill",
+})
+
+# Version token stored in processed-state reason for "no_change" records.
+# Bump this string whenever title-cleanup rules are added or changed so that
+# stale "no_change" records are invalidated and all files are re-evaluated.
+_SANITIZE_RULES_VERSION = "v3"
+_RULES_REASON = f"rules:{_SANITIZE_RULES_VERSION}"
+
+# Maps _sanitize_title() reason codes to named debug counters for the run summary.
+_COUNTER_FOR_REASON: dict = {
+    "title_bare_number_stripped":  "title_leading_number_fixes",
+    "title_trailing_bpm_stripped": "bpm_suffix_removed",
+    "title_domain_token_stripped": "junk_domain_removed",
+    "title_label_suffix_stripped": "label_suffix_removed",
+    "title_feat_normalized":       "feat_normalized",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -330,6 +394,42 @@ def _sanitize_isrc(value: str) -> Tuple[str, str]:
     return "", "invalid_isrc"
 
 
+def _strip_label_suffix(value: str) -> Tuple[str, str]:
+    """
+    Strip a label-like trailing parenthetical from a title.
+    Returns (new_value, reason) or (original, "") if nothing to strip.
+
+    Protected: any paren that contains a mix/version keyword is never stripped.
+    Triggered by: label keyword match OR known-label-name match.
+    """
+    if not value:
+        return value, ""
+    m = re.search(r'\s*\(([^)]*)\)\s*$', value)
+    if not m:
+        return value, ""
+    content = m.group(1)
+    content_lower = re.sub(r'[^a-z\s]', ' ', content.lower())
+    words = content_lower.split()
+
+    # Never strip mix/version parens
+    for w in words:
+        if w in _PROTECTED_PAREN_WORDS:
+            return value, ""
+
+    # Strip on label-keyword match
+    for w in words:
+        if w in _LABEL_PAREN_KEYWORDS:
+            stripped = value[:m.start()].rstrip()
+            return (stripped, "title_label_suffix_stripped") if stripped else (value, "")
+
+    # Strip on known-label-name match
+    if content.strip().lower() in _KNOWN_STRIP_LABELS:
+        stripped = value[:m.start()].rstrip()
+        return (stripped, "title_label_suffix_stripped") if stripped else (value, "")
+
+    return value, ""
+
+
 def _sanitize_title(value: str) -> Tuple[str, str]:
     if not value:
         return value, ""
@@ -337,11 +437,51 @@ def _sanitize_title(value: str) -> Tuple[str, str]:
     result = value
     reasons: List[str] = []
 
+    # 1. Separator-based numeric prefix (existing rule: "01 | Title", "002. Title")
     stripped = _RE_TITLE_NUM_PREFIX.sub("", result)
     if stripped != result:
         result = stripped
         reasons.append("title_prefix_removed")
 
+    # 2. Bare numeric prefix — no separator ("2 Sada" → "Sada", "3 Afro" → "Afro")
+    bare = _RE_TITLE_BARE_NUM_PREFIX.sub("", result)
+    if bare != result:
+        bare = bare.strip()
+        if len(bare) >= 2:
+            result = bare
+            reasons.append("title_bare_number_stripped")
+
+    # 3. Domain / piracy paren tokens — strip globally
+    cleaned = _RE_TITLE_DOMAIN_PAREN.sub("", result).strip()
+    if cleaned != result:
+        result = cleaned
+        reasons.append("title_domain_token_stripped")
+
+    # 4. Trailing BPM (80–160) at very end — strip before label so "(Label)122" works
+    m = _RE_TITLE_TRAILING_BPM.search(result)
+    if m:
+        try:
+            bpm_int = int(m.group(1))
+            if 80 <= bpm_int <= 160:
+                prefix = result[:m.start()].rstrip()
+                if prefix:
+                    result = prefix
+                    reasons.append("title_trailing_bpm_stripped")
+        except ValueError:
+            pass
+
+    # 5. Label-like trailing parenthetical suffix ("(Xumba Recordings)" etc.)
+    result, label_reason = _strip_label_suffix(result)
+    if label_reason:
+        reasons.append(label_reason)
+
+    # 6. Normalize (Feat. → (feat. casing in titles
+    normed = _RE_TITLE_FEAT_UPPER.sub("(feat.", result)
+    if normed != result:
+        result = normed
+        reasons.append("title_feat_normalized")
+
+    # 7–11. Existing structural cleanup
     fixed = _RE_TITLE_MULTI_SEP.sub(" - ", result)
     if fixed != result:
         result = fixed
@@ -474,17 +614,32 @@ def _sanitize_track(path: Path) -> TrackSanitizeResult:
 # Output helpers
 # ---------------------------------------------------------------------------
 
-def _print_track_preview(result: TrackSanitizeResult) -> None:
-    print(f"  {Path(result.filepath).name}")
-    for c in result.changes:
-        new_display = repr(c.new_value) if c.new_value else "(cleared)"
-        print(f"    [{c.reason}] {c.field}: {c.old_value!r} → {new_display}")
-    for s in result.skipped:
-        print(f"    [SKIP] {s}")
+def _print_track_preview(result: TrackSanitizeResult, verbose: bool = False) -> None:
+    if verbose and result.changes:
+        print(f"  CHANGE: {Path(result.filepath).name}")
+        for c in result.changes:
+            new_display = repr(c.new_value) if c.new_value else "(cleared)"
+            print(f"    {c.field}:")
+            print(f"      BEFORE:  {c.old_value!r}")
+            print(f"      AFTER:   {new_display}")
+            print(f"      REASONS: {c.reason}")
+        for s in result.skipped:
+            print(f"    [SKIP] {s}")
+    else:
+        print(f"  {Path(result.filepath).name}")
+        for c in result.changes:
+            new_display = repr(c.new_value) if c.new_value else "(cleared)"
+            print(f"    [{c.reason}] {c.field}: {c.old_value!r} → {new_display}")
+        for s in result.skipped:
+            print(f"    [SKIP] {s}")
 
 
-def _write_json_log(output_path: str, results: List[TrackSanitizeResult]) -> None:
-    data = [
+def _write_json_log(
+    output_path: str,
+    results: List[TrackSanitizeResult],
+    summary: dict,
+) -> None:
+    tracks = [
         {
             "file": r.filepath,
             "corrupt": r.is_corrupt,
@@ -497,6 +652,7 @@ def _write_json_log(output_path: str, results: List[TrackSanitizeResult]) -> Non
         for r in results
         if r.changes or r.skipped or r.is_corrupt
     ]
+    data = {"results": summary, "tracks": tracks}
     try:
         with open(output_path, "w", encoding="utf-8") as fh:
             json.dump(data, fh, indent=2, ensure_ascii=False)
@@ -528,37 +684,115 @@ def run_metadata_sanitize(args) -> int:
         print(f"No audio files found under {input_path}")
         return 0
 
+    from utils.prompt_logger import get_run_logger as _grl
+    _rl = _grl()
+    _is_presanitize = _rl is not None and _rl._command != "metadata-sanitize"
+    if _rl:
+        if not _is_presanitize:
+            _rl.inc("files_scanned", len(files))
+            _rl.set_counter("input_path", str(input_path))
+            _rl.set_counter("limit", limit)
+            _rl.set_counter("applied", apply_mode)
+
     mode_label = "APPLY" if apply_mode else "PREVIEW"
     print(f"metadata-sanitize [{mode_label}] — {len(files)} file(s)")
     print()
 
+    _stage = "metadata-sanitize"
+    _force = getattr(args, "force", False)
+    if getattr(args, "reset_stage", False):
+        _proc.clear_stage(_stage)
+
     all_results: List[TrackSanitizeResult] = []
-    changed_count = 0
-    applied_count = 0
-    error_count = 0
+    changed_count    = 0
+    applied_count    = 0
+    error_count      = 0
+    n_no_change      = 0
+    n_skip_unchanged = 0
+    _debug_counters: Dict[str, int] = {
+        "title_leading_number_fixes": 0,
+        "bpm_suffix_removed":         0,
+        "junk_domain_removed":        0,
+        "label_suffix_removed":       0,
+        "feat_normalized":            0,
+    }
 
     for path in files:
+        # --- incremental-run skip check ---
+        # reason_prefix ensures stale "no_change" records from old rule versions
+        # are NOT skipped — new rules must get a chance to fire on those files.
+        if not _force and _proc.should_skip(_stage, path, reason_prefix=_RULES_REASON):
+            n_skip_unchanged += 1
+            print(f"  SKIP_UNCHANGED:")
+            print(f"    {path}")
+            if _rl and not _is_presanitize:
+                _rl.inc("skipped_unchanged")
+            continue
+
+        if _rl and not _is_presanitize:
+            _rl.inc("files_processed")
         result = _sanitize_track(path)
         all_results.append(result)
+
+        _pstate  = None   # set below; None = preview-pending (don't record)
+        _preason = ""
 
         if result.is_corrupt:
             error_count += 1
             print(f"  [SKIP] {path.name} — corrupt_file")
             log_action(f"SANITIZE-SKIP: {path.name} | corrupt_file")
+            if _rl:
+                if _is_presanitize:
+                    _rl.inc("sanitize_clean")
+                else:
+                    _rl.inc("errors")
+                    _rl.record_outcome("errors", str(path), "corrupt_file", "")
+            _proc.record(_stage, path, "error", "corrupt_file")
             continue
 
         if not result.changes and not result.skipped:
+            n_no_change += 1
+            if _rl:
+                if _is_presanitize:
+                    _rl.inc("sanitize_clean")
+                else:
+                    _rl.inc("unchanged")
+            _proc.record(_stage, path, "no_change", _RULES_REASON)
             continue
 
         if result.changes:
             changed_count += 1
-        _print_track_preview(result)
+            for _c in result.changes:
+                _ctr = _COUNTER_FOR_REASON.get(_c.reason)
+                if _ctr:
+                    _debug_counters[_ctr] += 1
+            if _rl:
+                if _is_presanitize:
+                    _rl.inc("sanitize_changed")
+                else:
+                    _rl.inc("changed")
+                    _rl.record_outcome(
+                        "modified", str(path),
+                        result.changes[0].reason,
+                        "; ".join(f"{c.field}:{c.reason}" for c in result.changes),
+                    )
+        elif result.skipped and _rl and not _is_presanitize:
+            _rl.inc("skipped")
+            _rl.record_outcome("skipped", str(path), result.skipped[0], "")
+
+        # Skipped-only path (no changes, has skips): record deterministically
+        if not result.changes and result.skipped:
+            _pstate  = "skipped"
+            _preason = result.skipped[0] if result.skipped else ""
+
+        _print_track_preview(result, verbose=verbose)
 
         if apply_mode:
             if result.changes:
                 ok, failed_fields = _apply_sanitized(path, result.changes)
                 if ok:
                     applied_count += 1
+                    _pstate = "success"
                     for c in result.changes:
                         if c.field in failed_fields:
                             log.warning(
@@ -571,22 +805,45 @@ def run_metadata_sanitize(args) -> int:
                         )
                 else:
                     print(f"    [ERROR] failed to write {path.name}", file=sys.stderr)
+                    if _rl and not _is_presanitize:
+                        _rl.record_outcome("errors", str(path), "write_failed", "")
+                    _pstate  = "error"
+                    _preason = "write_failed"
             for s in result.skipped:
                 log_action(f"SANITIZE-SKIP: {path.name} | {s}")
 
+        # _pstate is None when changes exist but apply_mode is False (preview pending)
+        if _pstate is not None:
+            _proc.record(_stage, path, _pstate, _preason)
+
+    n_processed = len(files) - n_skip_unchanged
     print()
-    print(f"Files scanned               : {len(files)}")
-    print(f"Files with proposed changes : {changed_count}")
-    if error_count:
-        print(f"Files unreadable            : {error_count}")
-    if apply_mode:
-        print(f"Files written               : {applied_count}")
-    else:
+    print(f"Files scanned           : {len(files)}")
+    print(f"Files skipped unchanged : {n_skip_unchanged}")
+    print(f"Files processed         : {n_processed}")
+    print(f"Files changed           : {changed_count}")
+    print(f"Files unchanged         : {n_no_change}")
+    print(f"Files written           : {applied_count}")
+    print(f"Errors                  : {error_count}")
+    if any(_debug_counters.values()):
+        print()
+        print("Changes by rule:")
+        for _ctr_name, _ctr_val in _debug_counters.items():
+            if _ctr_val:
+                print(f"  {_ctr_name:<30}: {_ctr_val}")
+    if not apply_mode and changed_count:
         print()
         print("Dry-run mode — no files modified. Pass --apply to write changes.")
 
     if output_json:
-        _write_json_log(output_json, all_results)
+        _summary = {
+            "processed":         n_processed,
+            "skipped_unchanged": n_skip_unchanged,
+            "changed":           changed_count,
+            "unchanged":         n_no_change,
+            "errors":            error_count,
+        }
+        _write_json_log(output_json, all_results, _summary)
         print(f"JSON log written to: {output_json}")
 
     return 0

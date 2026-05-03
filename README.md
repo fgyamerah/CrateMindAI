@@ -44,6 +44,8 @@ Raw audio downloads
 
 Each stage is standalone. Run one, or compose the full pipeline.
 
+**Incremental processing.** All five pipeline stages track processed state in SQLite (path + size + mtime fingerprint). On repeat runs, unchanged files are skipped automatically — no reprocessing, no API calls. Use `--force` to override or `--reset-stage` to clear tracking for a stage. Scales to 10k+ file libraries.
+
 ---
 
 ## Safety Philosophy
@@ -202,6 +204,7 @@ python3 pipeline.py analyze-missing
 python3 pipeline.py audit-quality
 python3 pipeline.py artist-merge --apply
 python3 pipeline.py tag-normalize
+python3 pipeline.py filename-normalize --input /mnt/music_ssd/KKDJ/sorted --apply
 
 # Audio conversion
 python3 pipeline.py convert-audio --src /downloads/m4a --dst /music/inbox --archive /archive

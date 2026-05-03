@@ -17,19 +17,69 @@ P3 = low
 ----------------------------------------------------------------------
 CURRENT FOCUS
 ----------------------------------------------------------------------
+[x] (P1) metadata-sanitize — new title rules: bare number strip, trailing BPM, domain tokens, label suffix, feat casing (2026-05-02)
+         _strip_label_suffix() helper; protected-paren guard; 37 new tests in test_metadata_sanitize.py
+[x] (P1) artist-repair subcommand — detect merged artist names before artist-intelligence (2026-05-02)
+         modules/artist_repair.py; HIGH/MEDIUM/LOW confidence; review queue; --move-artist-review;
+         36 tests in test_artist_repair.py; pipeline order: sanitize → repair → intelligence
+[ ] (P2) artist-repair: HIGH-confidence auto-apply on --apply (currently write-eligible but not yet wired through tagger)
+[ ] (P2) artist-repair: build-known-artists scan uses folder depth 1+2; add tag-sample depth option for deeper libraries
+[ ] (P2) artist-repair review queue approval workflow (artist-repair --approve-queue)
 [x] (P1) metadata-sanitize command — offline deterministic tag sanitation (2026-04-18)
 [x] (P1) metadata-sanitize → ai-normalize integration via --pre-sanitize flag (2026-04-19)
-[~] (P1) Artist Intelligence — Phase 1 complete; Phase 2 open (see below)
+[x] (P1) Collection workspace UI — Phase 1 static shell (2026-04-19)
+[x] (P1) Collection workspace UI — Phase 2: interactions, search, sort, presets, responsive (2026-04-19)
+[x] (P1) Collection workspace UI — Phase 3: metadata-sanitize live job (2026-04-19)
+[x] (P1) Collection workspace: real filesystem directory tree via API (2026-04-19)
+[x] (P1) Collection workspace — Phase 4: real tracks + counts + maintenance + sidebar collapse (2026-04-19)
+[x] (P1) Collection workspace — run results browser: Results panel in Collection UI (2026-04-23)
+[x] (P1) Library maintenance — dedupe preview-first + quarantine with source_root (2026-04-23)
+[x] (P1) Library maintenance — orphan-scan: stale_db_rows + untracked_files (2026-04-23)
+[x] (P1) Library maintenance — quarantine path isolation: MUSIC_ROOT/QUARANTINE, skip dirs, nested-move guard (2026-04-23)
+[x] (P1) Operational storage refactor: all maintenance paths consolidated under MUSIC_ROOT/.BIN/ (2026-04-23)
+[x] (P2) tests: dedupe fixture generator — 9 controlled test cases, mutagen-parseable stubs (2026-04-23)
+[x] (P1) filename-normalize subcommand — rename files to {artist} - {title} ({version}).ext (2026-04-24)
+[x] (P1) filename-normalize — artist review queue + --move-artist-review flag (2026-04-25)
+[x] (P1) dedupe — quarantine placed under --path library root, not global /music/.BIN (2026-04-25)
+[x] (P1) library-organize subcommand — sort into letter/artist folders, processed-state tracking (2026-04-25)
+         data/review/artist_review_queue.jsonl; .BIN/ARTIST_REVIEW/ quarantine; album in tags
+[x] (P1) Persistent per-stage processed-state tracking — skip unchanged files, --force, --reset-stage (2026-04-23)
+         db.py: processed_state table + 4 helpers; modules/run_logger.py (new);
+         integrated into metadata-sanitize, ai-normalize, artist-intelligence,
+         metadata-enrich-online, filename-normalize; pipeline.py subparser flags;
+         COMMANDS.md Incremental Processing section; README.md note
+[ ] (P2) Collection workspace — Phase 5: pagination for large folders (>500 tracks)
+[ ] (P2) Collection workspace — duplicate scan review UI (show found dupes in table)
+[ ] (P2) Collection workspace — virtual list for very large track sets
+[ ] (P2) Library maintenance — expose orphan-scan results via API endpoint (for Collection UI)
+[ ] (P3) Library maintenance — quarantine browser in Collection UI (review quarantined files)
+[x] (P1) Artist Intelligence — Phase 2 hardening complete (2026-04-19)
+[x] (P1) Artist Intelligence — Phase 3: pollution guards, feat dedup, personal-name split (2026-04-19)
+[x] (P1) Artist Intelligence — Phase 4: nested separator split, casing normalization, confidence boost (2026-04-19)
 
 
 ----------------------------------------------------------------------
 ONLINE ENRICHMENT (completed 2026-04-18)
 ----------------------------------------------------------------------
 [x] (P1) intelligence/enrichment/ package: schema, matcher, Spotify, Deezer, runner
+[x] (P1) enrichment: review queue CLI + move-ignored operational features (2026-04-20)
+         review-queue subcommand, _enqueue_for_review, _move_to_ignored, --move-ignored flag
+[x] (P1) metadata_matcher: title normalization — non-trailing label brackets, bare BPM, dupe collapse (2026-04-20)
+[x] (P1) metadata_matcher: album filter + title pre-clean + label reason codes (2026-04-20)
+         album_rejected_compilation, title_cleaned_for_match, label_match_boost/label_alias_boost
+[x] (P1) metadata_matcher: multi-artist subset matching + version tolerance (2026-04-20)
+         subset_artist_match (0.88), partial_artist_match (0.82/logged), version_missing_tolerated
+[x] (P1) metadata-enrich-online: strict multi-factor validation layer (2026-04-20)
+         Gates: title_sim>=0.92, artist_sim>=0.85, version alignment
+         Scoring: title(50%)+artist(30%)+version(20%), label as booster
+         Thresholds: apply>=0.90, review 0.75-0.89, skip<0.75
+         decision_code on EnrichmentMatch, canonical artist from artist-intelligence
 [x] (P1) metadata-enrich-online CLI subcommand wired into pipeline.py
 [x] (P1) config.py: SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, ENRICH_ONLINE_MIN_CONFIDENCE
 [x] (P1) Dataset JSONL logging: enrichment_queue, enrichment_accepted, enrichment_rejected
 [x] (P1) Lower default threshold 0.92 → 0.80 (config.py + runner.py + pipeline.py)
+[ ] (P3) metadata-enrich-online: duration booster — add duration_ms to EnrichmentCandidate
+         and parse from Spotify/Deezer/Traxsource responses (+0.03 boost when within 3s)
 [x] (P1) Version mismatch safeguard: block apply when both titles carry different version tokens
          (metadata_matcher.py: _extract_version_label + best_match() safeguard block)
 [x] (P1) Scoring weights rebalanced: title 0.45→0.30, version 0.10→0.25
@@ -78,15 +128,23 @@ REVIEW DATASET / FEW-SHOT PIPELINE (completed 2026-04-18)
 
 
 ----------------------------------------------------------------------
-ARTIST INTELLIGENCE (Phase 1 complete 2026-04-15)
+ARTIST INTELLIGENCE (Phase 2 hardening complete 2026-04-19)
 ----------------------------------------------------------------------
 [x] (P1) artist_intelligence package: schema, normalizer, parser, alias store, runner
 [x] (P1) CLI: artist-intelligence subcommand wired into pipeline.py
 [x] (P1) Config: ARTIST_ALIAS_STORE, ARTIST_REVIEW_QUEUE paths added
 [x] (P1) Seed alias: Heavy K / Heavy-K in data/intelligence/artist_aliases.json
-[ ] (P2) Phase 2: populate alias store from existing library scan (auto-discover variants)
-[ ] (P2) Phase 2: add --add-alias CLI flag (artist-intelligence --add-alias "Heavy-K" "Heavy K")
-[ ] (P2) Phase 2: review queue approval workflow (artist-intelligence --approve-queue)
+[x] (P1) Phase 2 hardening: structured change reasons, conservative alias, feat normalization
+[x] (P1) Phase 3 hardening: multi-artist split, pollution guards, feat dedup (2026-04-19)
+         ArtistAliasStore.lookup_with_method() tracks exact/normalized/ci match type.
+         CI-only alias matches cap confidence to 0.70 → go to review queue as skipped_ambiguous_alias.
+         _propose_artist uses direct == (not names_are_equivalent) so feat_normalized changes surface.
+         _compute_change_reasons: feat_normalized, alias_resolved, separator_normalized,
+         spacing_fixed. Reasons in diff, preview, JSON output, APPLIED log line, summary breakdown.
+         47 unit tests in tests/test_artist_intelligence.py (all passing).
+[ ] (P2) Phase 3: populate alias store from existing library scan (auto-discover variants)
+[ ] (P2) Phase 3: add --add-alias CLI flag (artist-intelligence --add-alias "Heavy-K" "Heavy K")
+[ ] (P2) Phase 3: review queue approval workflow (artist-intelligence --approve-queue)
 [ ] (P3) Future: label_intelligence package mirroring this same pattern
 
 
@@ -375,6 +433,16 @@ LABEL INTELLIGENCE
 ----------------------------------------------------------------------
 PIPELINE INFRASTRUCTURE
 ----------------------------------------------------------------------
+[x] (P1) Automatic persistent run logging for intelligence pipeline (2026-04-20)
+    .log + .jsonl + _summary.json written to logs/<command>/ on every run.
+    RunLogger in utils/prompt_logger.py; --log-dir flag on all 4 commands.
+    Files: config.py, utils/prompt_logger.py, pipeline.py
+[x] (P1) Production-grade observability: paged detail files + rich summary JSON (2026-04-21)
+    record_outcome() → modified/skipped/errors paged JSON (max 200/page).
+    inc()/set_counter() → nested results/ai/quality/sanitize summary.
+    Pre-sanitize context detection (sanitize_changed/sanitize_clean prefixes).
+    Memory-safe for 8000+ file runs. Files: all 6 modified.
+
 [ ] (P2) Per-run config snapshots
     Store config JSON in pipeline_runs table
     Enables debugging of historical runs
@@ -383,6 +451,11 @@ PIPELINE INFRASTRUCTURE
     Ollama-backed; preview-first; safe write with --apply + --min-confidence gate.
     Files: ai/__init__.py, ai/ollama_client.py, ai/metadata_schema.py, ai/normalizer.py
     Config keys: OLLAMA_BASE_URL, OLLAMA_DEFAULT_MODEL, OLLAMA_TIMEOUT
+[x] (P1) ai-normalize production hardening (2026-04-19)
+    MIN_AI_CONFIDENCE=0.80 constant; NormalizeResult type; structured rejection reasons
+    (low_confidence, schema_invalid, guardrail_violation, parsed_conflict, ai_error);
+    _check_parsed_alignment(); _apply_hard_guards returns tuple; guardrail_fired flag;
+    all rejections logged at INFO; JSON output includes rejection_reason.
 
 [ ] (P3) ai-normalize: add --resume / skip-already-normalized flag
     Skip files whose tags were already written by a previous --apply run

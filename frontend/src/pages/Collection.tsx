@@ -1,24 +1,26 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import {
   ChevronRight, ChevronDown, FolderOpen, Folder,
-  Columns3, Play, ChevronUp, X, Search, Wrench,
+  Columns3, Play, ChevronUp, X, Search, Wrench, BarChart2,
 } from 'lucide-react'
 import { submitJob, fetchJob, fetchJobLogs, cancelJob } from '../api/jobs'
-import { fetchLibraryTree, fetchLibraryStats } from '../api/library'
+import { fetchLibraryTree, fetchLibraryStats, fetchRunList, fetchRunSummary, fetchRunDetail } from '../api/library'
 import { fetchTracks, fetchTrackStats } from '../api/tracks'
 import type { LibraryNode as ApiLibraryNode } from '../api/library'
-import type { JobStatus } from '../types/job'
+import type { JobStatus, RunDetailEntry, ResultGroup, RunListItem, RunSummary } from '../types/job'
 import type { TrackSummary } from '../types/track'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type SortKey = 'artist' | 'title' | 'bpm' | 'key' | 'duration' | 'quality' | 'filename'
-type SortDir = 'asc' | 'desc'
-type Preset  = 'Clean' | 'Normalize' | 'Enrich' | 'Full Pass'
+type SortKey    = 'artist' | 'title' | 'bpm' | 'key' | 'duration' | 'quality' | 'filename'
+type SortDir    = 'asc' | 'desc'
+type Preset     = 'Clean' | 'Normalize' | 'Enrich' | 'Full Pass'
+type CenterView = 'tracks' | 'results'
 
-interface ActiveJob { id: string; status: JobStatus; command: string }
+interface ActiveJob        { id: string; status: JobStatus; command: string }
+interface SelectedRunEntry { entry: RunDetailEntry; group: ResultGroup }
 
 // ---------------------------------------------------------------------------
 // Column definitions — scoped to real TrackSummary fields
@@ -442,6 +444,321 @@ function MaintenancePanel({
 }
 
 // ---------------------------------------------------------------------------
+// Run results inspector + browser
+// ---------------------------------------------------------------------------
+
+const GROUP_LABELS: Record<ResultGroup, string> = {
+  modified: 'Modified',
+  skipped:  'Skipped',
+  errors:   'Errors',
+}
+
+function RunEntryInspector({
+  entry, group, onClose,
+}: {
+  entry:   RunDetailEntry
+  group:   ResultGroup
+  onClose: () => void
+}) {
+  const filename  = entry.filepath?.split('/').pop() ?? '—'
+  const badgeCls  = group === 'errors' ? 'error' : group === 'skipped' ? 'stale' : 'ok'
+  const detailStr = entry.details != null
+    ? (typeof entry.details === 'string' ? entry.details : JSON.stringify(entry.details, null, 2))
+    : null
+
+  return (
+    <div className="collection-inspector">
+      <div className="inspector-header">
+        <span className="inspector-title">Result</span>
+        <button className="btn btn--ghost btn--xs" onClick={onClose}><X size={12} /></button>
+      </div>
+      <div className="inspector-cover">
+        <div className="inspector-cover-art" style={{ fontSize: 9, letterSpacing: 0 }}>
+          {group === 'modified' ? 'MOD' : group === 'skipped' ? 'SKP' : 'ERR'}
+        </div>
+        <div className="inspector-track-name">
+          <div className="inspector-artist">
+            <span className={`badge badge--track-${badgeCls}`}>{group}</span>
+          </div>
+          <div className="inspector-track-title" style={{ wordBreak: 'break-all' }}>{filename}</div>
+        </div>
+      </div>
+      {entry.reason && (
+        <div className="inspector-section">
+          <div className="inspector-section-label">Reason</div>
+          <p style={{ fontSize: 12, padding: '2px 0' }}>{entry.reason}</p>
+        </div>
+      )}
+      {detailStr && (
+        <div className="inspector-section">
+          <div className="inspector-section-label">Details</div>
+          <pre style={{ fontSize: 10, whiteSpace: 'pre-wrap', wordBreak: 'break-all', opacity: 0.8, margin: 0 }}>
+            {detailStr}
+          </pre>
+        </div>
+      )}
+      {entry.filepath && (
+        <div className="inspector-section">
+          <div className="inspector-section-label">Path</div>
+          <p className="inspector-note" style={{ wordBreak: 'break-all' }}>{entry.filepath}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RunResultsPanel({
+  onEntrySelect,
+  selectedEntry,
+}: {
+  onEntrySelect: (entry: RunDetailEntry | null, group?: ResultGroup) => void
+  selectedEntry: SelectedRunEntry | null
+}) {
+  const [runList, setRunList]               = useState<RunListItem[]>([])
+  const [listLoading, setListLoading]       = useState(true)
+  const [listError, setListError]           = useState<string | null>(null)
+  const [selectedRunKey, setSelectedRunKey] = useState('')
+  const [summary, setSummary]               = useState<RunSummary | null>(null)
+  const [summaryLoading, setSummaryLoading] = useState(false)
+  const [activeGroup, setActiveGroup]       = useState<ResultGroup>('modified')
+  const [activePage, setActivePage]         = useState('')
+  const [detail, setDetail]                 = useState<RunDetailEntry[]>([])
+  const [detailLoading, setDetailLoading]   = useState(false)
+  const [detailError, setDetailError]       = useState<string | null>(null)
+  const [selectedRowKey, setSelectedRowKey] = useState<string | null>(null)
+
+  useEffect(() => {
+    setListLoading(true)
+    setListError(null)
+    fetchRunList(undefined, 50)
+      .then((items) => {
+        setRunList(items)
+        if (items.length > 0) setSelectedRunKey(`${items[0].command}|${items[0].prefix}`)
+      })
+      .catch((e: unknown) => setListError(String(e)))
+      .finally(() => setListLoading(false))
+  }, [])
+
+  const parts  = selectedRunKey.split('|')
+  const selCmd = parts[0] ?? ''
+  const selPfx = parts[1] ?? ''
+
+  useEffect(() => {
+    if (!selCmd || !selPfx) { setSummary(null); return }
+    setSummaryLoading(true)
+    setSummary(null)
+    fetchRunSummary(selCmd, selPfx)
+      .then((s) => {
+        setSummary(s)
+        const firstGroup = (['modified', 'skipped', 'errors'] as ResultGroup[]).find(
+          (g) => (s.detail_groups[g]?.length ?? 0) > 0,
+        )
+        if (firstGroup) {
+          setActiveGroup(firstGroup)
+          setActivePage(s.detail_groups[firstGroup][0])
+        } else {
+          setActivePage('')
+        }
+      })
+      .catch(() => setSummary(null))
+      .finally(() => setSummaryLoading(false))
+  }, [selCmd, selPfx])
+
+  useEffect(() => {
+    if (!selCmd || !selPfx || !activePage) { setDetail([]); return }
+    setDetailLoading(true)
+    setDetailError(null)
+    fetchRunDetail(selCmd, selPfx, activeGroup, activePage)
+      .then(setDetail)
+      .catch((e: unknown) => { setDetail([]); setDetailError(String(e)) })
+      .finally(() => setDetailLoading(false))
+  }, [selCmd, selPfx, activeGroup, activePage])
+
+  function switchGroup(g: ResultGroup) {
+    setActiveGroup(g)
+    setSelectedRowKey(null)
+    onEntrySelect(null)
+    setActivePage(summary?.detail_groups[g]?.[0] ?? '')
+  }
+
+  function switchPage(page: string) {
+    setActivePage(page)
+    setSelectedRowKey(null)
+    onEntrySelect(null)
+  }
+
+  const pages   = summary?.detail_groups[activeGroup] ?? []
+  const pageIdx = pages.indexOf(activePage)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+
+      {/* Run selector */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        <span className="muted" style={{ fontSize: 11 }}>Run:</span>
+        {listLoading ? (
+          <span className="muted" style={{ fontSize: 11 }}>Loading…</span>
+        ) : listError ? (
+          <span style={{ fontSize: 11, color: 'var(--status-failed)' }}>{listError}</span>
+        ) : runList.length === 0 ? (
+          <span className="muted" style={{ fontSize: 11 }}>No runs found in logs/</span>
+        ) : (
+          <select
+            style={{
+              background: 'var(--bg-secondary)', color: 'var(--text)',
+              border: '1px solid var(--border)', borderRadius: 3,
+              fontSize: 11, padding: '2px 6px', maxWidth: 400,
+            }}
+            value={selectedRunKey}
+            onChange={(e) => { setSelectedRunKey(e.target.value); setSelectedRowKey(null); onEntrySelect(null) }}
+          >
+            {runList.map((r) => (
+              <option key={`${r.command}|${r.prefix}`} value={`${r.command}|${r.prefix}`}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      {/* Summary stats bar */}
+      {summaryLoading && (
+        <div className="muted" style={{ fontSize: 11, padding: '4px 12px', flexShrink: 0 }}>Loading summary…</div>
+      )}
+      {summary && !summaryLoading && (
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '2px 16px', padding: '5px 12px', borderBottom: '1px solid var(--border)', fontSize: 11, flexShrink: 0 }}>
+          <span><b>{summary.files_scanned ?? '—'}</b> scanned</span>
+          <span><b>{summary.files_processed ?? '—'}</b> processed</span>
+          <span style={{ color: 'var(--status-succeeded)' }}><b>{summary.changed ?? '—'}</b> changed</span>
+          <span style={{ color: 'var(--accent)' }}><b>{summary.skipped ?? '—'}</b> skipped</span>
+          <span style={{ color: 'var(--status-failed)' }}><b>{summary.errors ?? '—'}</b> errors</span>
+          {(summary.review_count ?? 0) > 0 && (
+            <span className="muted"><b>{summary.review_count}</b> review</span>
+          )}
+          {summary.started_at && (
+            <span className="muted" style={{ marginLeft: 'auto' }}>
+              {summary.started_at.slice(0, 19).replace('T', ' ')}
+              {summary.duration != null && ` · ${summary.duration.toFixed(1)}s`}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Group tabs */}
+      {summary && (
+        <div style={{ display: 'flex', gap: 0, padding: '0 8px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+          {(['modified', 'skipped', 'errors'] as ResultGroup[]).map((g) => {
+            const pgCount = summary.detail_groups[g]?.length ?? 0
+            const isAct   = activeGroup === g
+            return (
+              <button
+                key={g}
+                className={`btn btn--ghost btn--xs${isAct ? ' btn--active' : ''}`}
+                style={{
+                  borderRadius: 0,
+                  borderBottom: isAct ? '2px solid var(--accent)' : '2px solid transparent',
+                  marginBottom: -1,
+                  opacity: pgCount === 0 ? 0.4 : 1,
+                }}
+                onClick={() => switchGroup(g)}
+              >
+                {GROUP_LABELS[g]}
+                {pgCount > 0 && (
+                  <span className="muted" style={{ marginLeft: 4, fontSize: 10 }}>{pgCount}p</span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Detail table */}
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        {!summary && !summaryLoading && !listLoading && runList.length > 0 && (
+          <p className="empty-state" style={{ padding: '20px 12px' }}>Select a run above.</p>
+        )}
+        {!listLoading && runList.length === 0 && !listError && (
+          <p className="empty-state" style={{ padding: '20px 12px' }}>No pipeline runs found in logs/.</p>
+        )}
+        {summary && pages.length === 0 && !detailLoading && (
+          <p className="empty-state" style={{ padding: '20px 12px' }}>No {activeGroup} entries for this run.</p>
+        )}
+        {detailError && (
+          <p className="empty-state" style={{ padding: '20px 12px', color: 'var(--status-failed)' }}>{detailError}</p>
+        )}
+        {detailLoading && (
+          <p className="empty-state" style={{ padding: '20px 12px' }}>Loading…</p>
+        )}
+        {!detailLoading && detail.length > 0 && (
+          <table className="table" style={{ width: '100%', tableLayout: 'fixed' }}>
+            <thead>
+              <tr>
+                <th style={{ width: '40%' }}>File</th>
+                <th style={{ width: '24%' }}>Reason</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {detail.map((entry, i) => {
+                const rowKey  = `${activePage}:${i}`
+                const isSel   = selectedRowKey === rowKey
+                const fname   = entry.filepath?.split('/').pop() ?? entry.filepath ?? '—'
+                const preview = entry.details != null
+                  ? (typeof entry.details === 'string' ? entry.details : JSON.stringify(entry.details)).slice(0, 100)
+                  : '—'
+                return (
+                  <tr
+                    key={rowKey}
+                    className={`track-row${isSel ? ' track-row--selected' : ''}`}
+                    title={entry.filepath ?? ''}
+                    onClick={() => {
+                      const next = isSel ? null : rowKey
+                      setSelectedRowKey(next)
+                      onEntrySelect(next ? entry : null, activeGroup)
+                    }}
+                  >
+                    <td className="td-mono" style={{ fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {fname}
+                    </td>
+                    <td style={{ fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {entry.reason ?? '—'}
+                    </td>
+                    <td className="muted" style={{ fontSize: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {preview}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Pagination */}
+      {pages.length > 1 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 12px', borderTop: '1px solid var(--border)', fontSize: 11, flexShrink: 0 }}>
+          <button
+            className="btn btn--ghost btn--xs"
+            disabled={pageIdx <= 0}
+            onClick={() => switchPage(pages[pageIdx - 1])}
+          >
+            ‹ Prev
+          </button>
+          <span className="muted">Page {pageIdx + 1} / {pages.length}</span>
+          <button
+            className="btn btn--ghost btn--xs"
+            disabled={pageIdx >= pages.length - 1}
+            onClick={() => switchPage(pages[pageIdx + 1])}
+          >
+            Next ›
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
@@ -480,6 +797,10 @@ export default function Collection() {
 
   // ── Maintenance job ───────────────────────────────────────────────────────
   const [maintJob, setMaintJob] = useState<ActiveJob | null>(null)
+
+  // ── Results browser ───────────────────────────────────────────────────────
+  const [centerView, setCenterView]         = useState<CenterView>('tracks')
+  const [selectedRunEntry, setSelectedRunEntry] = useState<SelectedRunEntry | null>(null)
 
   // ── Log panel ─────────────────────────────────────────────────────────────
   const [logOpen, setLogOpen]     = useState(true)
@@ -768,6 +1089,18 @@ export default function Collection() {
         </div>
 
         <div className="toolbar-right">
+          <button
+            className={`btn btn--ghost btn--sm${centerView === 'results' ? ' btn--active' : ''}`}
+            onClick={() => {
+              setCenterView((v) => v === 'results' ? 'tracks' : 'results')
+              setSelectedRunEntry(null)
+              setSelectedTrack(null)
+            }}
+            title="Browse pipeline run results"
+          >
+            <BarChart2 size={12} />
+            Results
+          </button>
           <div className="toolbar-search">
             <Search size={12} className="toolbar-search-icon" />
             <input
@@ -824,8 +1157,14 @@ export default function Collection() {
           <MaintenancePanel activeJob={maintJob} onRun={handleMaintenance} />
         </div>
 
-        {/* Center: analysis bar + table */}
+        {/* Center: analysis bar + table OR run results */}
         <div className="collection-main">
+          {centerView === 'results' ? (
+            <RunResultsPanel
+              onEntrySelect={(e, g) => setSelectedRunEntry(e && g ? { entry: e, group: g } : null)}
+              selectedEntry={selectedRunEntry}
+            />
+          ) : (<>
           <div className="collection-analysis-bar">
             <div className="analysis-widget">
               <div className="analysis-widget-label">Camelot</div>
@@ -941,17 +1280,25 @@ export default function Collection() {
               </table>
             )}
           </div>
+          </>)}
         </div>
 
         {/* Right: inspector */}
-        {selectedTrack
-          ? <Inspector track={selectedTrack} onClose={() => setSelectedTrack(null)} />
-          : (
-            <div className="collection-inspector collection-inspector--empty">
-              <span className="muted" style={{ fontSize: 12 }}>Select a track to inspect</span>
-            </div>
-          )
-        }
+        {centerView === 'results' && selectedRunEntry ? (
+          <RunEntryInspector
+            entry={selectedRunEntry.entry}
+            group={selectedRunEntry.group}
+            onClose={() => setSelectedRunEntry(null)}
+          />
+        ) : selectedTrack ? (
+          <Inspector track={selectedTrack} onClose={() => setSelectedTrack(null)} />
+        ) : (
+          <div className="collection-inspector collection-inspector--empty">
+            <span className="muted" style={{ fontSize: 12 }}>
+              {centerView === 'results' ? 'Click a row to inspect' : 'Select a track to inspect'}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* ── Log panel ────────────────────────────────────────────────── */}

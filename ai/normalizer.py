@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import config
+import modules.run_logger as _proc
 from ai.metadata_schema import (
     NormalizedMetadata, NormalizeResult,
     MIN_AI_CONFIDENCE,
@@ -972,13 +973,33 @@ def run_ai_normalize(args) -> int:
     mode_label = "DRY-RUN" if dry_run else ("APPLY" if do_apply else "PREVIEW")
     print(f"Mode: {mode_label}  |  Model: {model}  |  Min confidence: {min_confidence}\n")
 
+    # RunLogger integration
+    from utils.prompt_logger import get_run_logger as _grl
+    _rl = _grl()
+    if _rl:
+        _rl.inc("files_scanned", len(files))
+        _rl.set_counter("input_path", str(input_path))
+        _rl.set_counter("limit", limit)
+        _rl.set_counter("applied", do_apply)
+
     # Per-file processing
     results = []
     n_applied = n_skipped = n_errors = n_no_change = 0
     # Rejection reason breakdown counters
     rejection_counts: Dict[str, int] = {}
 
+    _stage = "ai-normalize"
+    _force = getattr(args, "force", False)
+    if getattr(args, "reset_stage", False):
+        _proc.clear_stage(_stage)
+    n_skip_unchanged = 0
+
     for path in files:
+        if not _force and not dry_run and _proc.should_skip(_stage, path):
+            n_skip_unchanged += 1
+            continue
+        if _rl:
+            _rl.inc("files_processed")
         result      = _normalize_track(path, client, min_confidence)
         current_tags = result.current_tags
         proposed     = result.proposed
@@ -990,27 +1011,81 @@ def run_ai_normalize(args) -> int:
             result.rejection_reason == REJECTION_SCHEMA_INVALID
         ):
             n_errors += 1
+            if not dry_run:
+                _proc.record(_stage, path, "error", result.rejection_reason or "")
             rejection_counts[result.rejection_reason] = (
                 rejection_counts.get(result.rejection_reason, 0) + 1
             )
+            if _rl:
+                _rl.inc("errors")
+                _rl.record_outcome(
+                    "errors", str(path),
+                    result.rejection_reason or "",
+                    result.error or "",
+                )
+                if result.rejection_reason == REJECTION_SCHEMA_INVALID:
+                    _rl.inc("json_failures")
         elif result.rejected:
             n_skipped += 1
+            if not dry_run:
+                _proc.record(_stage, path, "skipped", result.rejection_reason or "")
             rejection_counts[result.rejection_reason] = (  # type: ignore[index]
                 rejection_counts.get(result.rejection_reason, 0) + 1  # type: ignore[arg-type]
             )
+            if _rl:
+                _rl.inc("skipped")
+                _rl.record_outcome(
+                    "skipped", str(path),
+                    result.rejection_reason or "",
+                    "",
+                )
+                if result.rejection_reason == REJECTION_GUARDRAIL:
+                    _rl.inc("guard_rejections")
         else:
+            if _rl:
+                _rl.inc("valid_responses")
+                conf = proposed.confidence
+                if conf >= 0.85:
+                    _rl.inc("high_confidence")
+                elif conf >= 0.75:
+                    _rl.inc("medium_confidence")
+                else:
+                    _rl.inc("low_confidence")
             changes = compute_diff(current_tags, proposed)
             if not changes:
                 n_no_change += 1
+                if not dry_run:
+                    _proc.record(_stage, path, "no_change")
+                if _rl:
+                    _rl.inc("unchanged")
             elif do_apply:
                 ok = apply_normalized(path, proposed, changes, dry_run=False)
                 if ok:
                     applied = True
                     n_applied += 1
+                    _proc.record(_stage, path, "success")
                     log.info("APPLIED: %s", path.name)
+                    if _rl:
+                        _rl.inc("changed")
+                        _rl.record_outcome(
+                            "modified", str(path), "applied",
+                            "; ".join(f"{c['field']}:{c['new']}" for c in changes),
+                        )
                 else:
                     write_error = "tag write failed"
                     n_errors += 1
+                    _proc.record(_stage, path, "error", "write_failed")
+                    if _rl:
+                        _rl.inc("errors")
+                        _rl.record_outcome("errors", str(path), "write_failed", "")
+            else:
+                # preview / dry-run — changes found but not written
+                if _rl:
+                    _rl.inc("changed")
+                    _rl.record_outcome(
+                        "modified", str(path), "preview",
+                        "; ".join(f"{c['field']}:{c['new']}" for c in changes),
+                    )
 
         _print_file_result(
             path, current_tags, proposed, changes,
@@ -1042,6 +1117,8 @@ def run_ai_normalize(args) -> int:
         print(f"  Rejected       : {n_skipped}")
     print(f"  No change      : {n_no_change}")
     print(f"  Errors         : {n_errors}")
+    if n_skip_unchanged:
+        print(f"  Skipped unchanged: {n_skip_unchanged}")
     if preview_only and any(r["changes"] for r in results):
         changeable = sum(1 for r in results if r["changes"] and not r["rejection_reason"])
         print(f"\n  {changeable} change(s) ready — re-run with --apply to write them.")

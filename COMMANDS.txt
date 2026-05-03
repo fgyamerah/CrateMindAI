@@ -145,3 +145,29 @@ EXAMPLES
 
   python3 pipeline.py review-queue
   python3 pipeline.py review-queue --list-only
+
+----------------------------------------------------------------------
+filename-normalize — Rename audio files to {artist} - {title} ({version}).ext using embedded tags. Preview by default; --apply to commit.
+----------------------------------------------------------------------
+
+  Version deduplication: if version is already in the title, it is not appended.
+  No overwrite: collisions get a safe suffix ' (1)', ' (2)', ...
+  Tags are never modified. BPM, key, and cues are untouched.
+  Skipped if artist or title tag is missing.
+
+FLAGS
+
+  --input DIR
+        Directory of audio files to process. Required.
+
+  --apply
+        Commit renames. Without this flag, preview only.
+
+  --verbose
+        Show skipped and no-change files; enable debug logging.
+
+EXAMPLES
+
+  python3 pipeline.py filename-normalize --input ~/Music/inbox
+  python3 pipeline.py filename-normalize --input ~/Music/inbox --apply
+  python3 pipeline.py filename-normalize --input /mnt/music_ssd/KKDJ/sorted --apply

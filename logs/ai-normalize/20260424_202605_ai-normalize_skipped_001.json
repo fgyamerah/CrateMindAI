@@ -1,0 +1,1002 @@
+[
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/&ME/&ME Blitz - 7A - 123.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/&ME/&ME Everless - 9A - 122.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/&ME/&ME Locust - 9A - 120.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/2point1/2Point1 Don't Say (1) - 8A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/4th Measure Men/4th Measure Men You - 2A - 123.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Breaking' It Down (original album version) - 8A - 100.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Can't Get Enough (vocal club mix) - 9A - 128.mp3",
+    "reason": "parsed_conflict",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Cherry (Miguel Migs Salted vocal edit) - 8A - 121.mp3",
+    "reason": "parsed_conflict",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Close Your Eyes - 6A - 120.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Don't Stop - 11A - 122.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Giving It All (Migs Salted dub Deluxe) - 7A - 122.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - He Is The Joy (U.B.P Classic mix) - 5A - 123.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - (These Are the) Good Old Days (DC's B.H.Q. remake) - 7A - 128.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - 33rd Street Anthem - 10A - 123.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Bass Tone (Underground Network mix) - 10A - 123.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Beautiful People (original club mix) - 9A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Believe - 8A - 118.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Bliss (D's Boom Bap Bleep Edition) - 6A - 126.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Boiling Point (B.H.Q. Private Stock) - 8A - 128.mp3",
+    "reason": "low_confidence",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Bon Bon - 2A - 128.mp3",
+    "reason": "low_confidence",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Boomerang - 7A - 127.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Chocolate Girl (Julien Jabre remix) - 5A - 127.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Church Lady - 6A - 126.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Come Into My Room (take It Back mix) - 3A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Curious (vocal mix) - 9A - 123.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Da Bump (Masters at Work remix) - 9A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Dance (Do That Thing) (MAW mix) - 11A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Dance to the Rhythm - 5B - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Diamond Life (dance Ritual mix) - 12A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Dom Dom Jump - 7A - 123.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Don't Hold Back - 8A - 127.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Don't Stop (original mix) - 1A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Elle (EOL Ritual) - 10A - 127.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Everybody Be Somebody - 10A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Finally (Dance Ritual mix) - 8B - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Finally (original extended mix) - 8B - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Forever (main mix) - 12B - 127.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Freaky (The _Bar Heads_ mix) - 12A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Grateful (DF’s Razen Yo Handz Vox mix) - 5A - 126.mp3",
+    "reason": "parsed_conflict",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - He Is (Ferrer & Sydenham Inc Vox mix) - 8A - 127.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - How Do I Let Go - 1A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - I Called U (The Conversation) (ATFC’s Heated Conversation) - 10A - 128.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - I Can't Stop (original mix) - 8A - 128.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - I Can’t Get No Sleep (Ken Lou 12” mix) - 1A - 123.mp3",
+    "reason": "parsed_conflict",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - I Get Lifted (Underground Network mix) - 7A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - It's Yours (David Penn vocal mix) - 6B - 126.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Jealousy (Dennis Ferrer ‘Haters’ club mix) - 6A - 125.mp3",
+    "reason": "parsed_conflict",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Let It Go - 2A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Life - 11A - 130.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Love & Happiness (Yemaya Y Ochun) (David Penn vocal mix) - 6A - 127.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Love & Happiness (Yemeya y ochun) (12″ club mix) - 6A - 93.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Love Love Love (original mix) - 3A - 123.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Love Plus (Derrick Carter's Love Groove mix) - 5A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - To Be in Love (MAW club edit) - 5A - 122.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - Backfired (Joey Negro club mix) - 8A - 127.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - Begun 2 Luv U (Joey Negro original mix) - 7A - 127.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - Can't Get Over Your Love (Dave Lee's Full Length Mix) - 12A - 121.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - Can’t Get High Without U (Joey Negro Philly World mix) - 3A - 128.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - Dancin’ & Prancin’ (Joey Negro’s disco blend mix) - 8A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - Direct Me (Joey Negro disco blend mix) - 12A - 122.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - Do What You Feel (Expanded mix) - 3A - 122.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - Don’t Change (Joey Negro Playout edit) - 7A - 127.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - Don’t Change (Joey Negro club mix) - 8B - 127.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - Everyday (full length album mix) - 9A - 105.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - Far Beyond (Full album mix) - 9A - 105.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - Forever Together (Forever United mix) - 1A - 123.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - Garden of Love (Joey Negro club mix) - 12A - 127.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - Get Your Own (Joey Negro club mix) - 1A - 126.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - Haven’t You Heard (Joey Negro extended disco mix) - 12A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - He Is (Joey Negro club mix) - 7A - 126.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - How Do You See Me Now_ (Joey Negro club mix) - 2A - 121.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - I Know You, I Live You (Joey Negro club mix) - 7A - 127.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - I Need Somebody Tonight (Joey Negro original Serious mix) - 7A - 121.mp3",
+    "reason": "low_confidence",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - Journey to the Sun (Dennis Ferrer mix) - 7A - 126.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists    - Rocking Music (Joey Negro Club Edit) - 9A - 128.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Ain’t Nobody (Hallucinogenic version) - 2A - 105.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Baby Wants to Ride - 8A - 133.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Barbara - 7B - 110.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Beautiful Love (extended) - 10A - 94.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Blind (Frankie Knuckles remix) - 7A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Breathe - 5A - 126.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Bring Me Love (Classic Frankie) - 10A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Change (Knuckles mix) - 7A - 106.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Chasing #125 - 1B - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Cocktail d’amore - 8A - 92.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Dem People Go! (DF’s Get Out! mix) - 7A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Envision (Yoruba Soul mix) - 2A - 123.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Everybody Be Somebody - 10A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Fall For You feat. April (Sandy Rivera's Classic Mix) - 6A - 123.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Front 2 Back (Kenny Dope Old Skool remix) - 4A - 126.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Get Into My Life (Mr. Jack's Speedy Garage mix) - 6A - 131.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Hangin’ on a String (Frankie Knuckles club mix) - 1A - 103.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Hidden Sun - 8A - 128.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - I Can’t Get No Sleep (radio version) - 2A - 123.mp3",
+    "reason": "parsed_conflict",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - I Don’t Know Why I Love You (Kenny Dope remix) - 8A - 126.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - I Know! (Soggy mix) - 10A - 129.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - If You Don’t Go To The Party - 2A - 120.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - In Alto Mare - 7A - 102.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Insatiable (Junior Jack & Kid Creme vocal mix) - 10A - 128.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - It’s Hard Sometime (FK Classic club) - 5A - 104.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Joy (Mr. Jack Smooth dub) - 3A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Just Deep - 6A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Let No Man Put Asunder (Frankie Knuckles 12_ remix) - 12A - 122.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Let the Music (Use You) - 4A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Life - 8A - 126.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Tool #127 - 11A - 127.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists Samba (club mix) - 5A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/AVG (IT)/Discover - 2A - 123.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Adam Rios/Adam Rios Afro - 2A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Addvibe, Tamba Benoit/Addvibe, Tamba Benoit Sada (N'Dinga Gaba Diplomacy Soul Remix) - 5A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Aero Manyelo/Aero Manyelo Feat. Oluhle If Only (Da Capo Deep Tribe Mix) - 2A - 122.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Aero Manyelo/Aero Manyelo, Fluida Man to Many - 5A - 121.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - I Hear You Calling (Feat. Lebo) - 3A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - Let's Dance (Feat. Afrikan Roots) - 6A - 120.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - Remembering Thami Mnyele - 8A - 125.mp3",
+    "reason": "low_confidence",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - Thula Moboto - 5A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - Time to Go (Feat. Steve Univers & Koki) - 8A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots 8 Prophets (feat. Black Motion) - 3A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots Cross Over (feat. Zano) - 3A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots I Hear You Calling (feat. Lebo) - 3A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots Ko Morago (feat. DJ Buckz) - 10A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots Let Go - 5A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots Prophets - 3A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots Stories from Creation (feat. Pain Killer) (1) - 3A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots ft. Buckz Sesha - 6A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots uMoya (Remix) - 11A - 126.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots uMoya - 11A - 126.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots, Costa, Zulu Naja Mabyala - 2A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots, DJ Buckz Kora (Vinyl Version) - 2A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots, Royalty Wololo - 9A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots Bebucho Q Kua/Afrikan Roots Bebucho Q Kua - Akulu Woo (Reprise) - 2A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots Bebucho Q Kua/Afrikan Roots Bebucho Q Kua - Akulu Woo (Vocal) - 2A - 156.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots Bebucho Q Kua/Afrikan Roots Bebucho Q Kua - Akulu Woo - 2A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Brotherz/Afro Brotherz Ama Gents - 3A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Brotherz/Afro Brotherz Gibela (feat. Vinny Kay) - 10A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Brotherz/Afro Brotherz Tick Tock (Pastor Snow Remix) - 3A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Brotherz/Afro Brotherz, DR Thulz, Ntsikee, Nunicky, Tebza De Guitar, Thulasizwe The Vocal - Sabela - 10A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Brotherz Prince Kaybee Lady Zamar/Afro Brotherz Prince Kaybee Lady Zamar - Own The Night (Edit) - 2A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Carrib/Afro Carrib Kasaye - 7A - 120.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Dj Pupo/Afro Dj Pupo Wena Waborra - 8A - 126.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Dj Pupo/Afro Dj Pupo ft. Uruca Machine Wena Waborra (Original) - 8A - 126.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro House/Afro House - Say Yes - 11A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro House/Afro House - uMoya - 11A - 126.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro House/Afro House Do It in Church (Original) - 2A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Swanky/Afro Swanky - Kingdom (InQfive & Thab De Soul Special Xchanger) - 11A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Swanky/Afro Swanky Kingdom (Ceeychris Remix) - 11A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Swanky/Afro Swanky Kingdom (Silvva Remix) - 11A - 123.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Warriors/Afro Warriors Goodbye (Vocal) - 8A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Warriors/Afro Warriors On My Way (feat. Anabela Aya) - 12A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Warriors/Afro Warriors Uyankentenza (feat Toshi) (Original) - 7A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Warriors/Afro Warriors ft. Toshi Uyankenteza (Hyenah remix) - 7A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Warriors/Afro Warriors, Drumetic Boyz, AfroZone 13th Friday - 4A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Warriors & Zano/Afro Warriors & Zano Higher (1) - 12A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrokillerz/Afrokillerz Canibal (Original) - 3A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrokillerz/Afrokillerz Futeceros (Original) - 1A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrokillerz/Afrokillerz Vandalism (Original) - 11A - 126.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afroman/Afroman BASIER - Black Mambo - 7A - 123.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Ahmed Spins, Idd Aziz/Ahmed Spins, Idd Aziz Sawa (Satelite Remix) - 8A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Ahmed Spins, Idd Aziz/Ahmed Spins, Idd Aziz Sawa - 8A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Airon (Ca)/Glory124 - 9A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Alessio Pagliaroli Ft Rancidos Gwaisa/Alessio Pagliaroli Ft Rancidos Gwaisa Land Of The Sacred - 8A - 123.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Alex Seda/Alex Seda Mbinguni feat Idd Aziz - 7A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Alexander Wall, Aluku Rebels, Lmichael/Midnight - 6A - 122.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Alou Sangar/Alou Sangar Tgur (Tte de la course Remix) - 12A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Amanxeba/Toshi, Dr Feel120 - 3A - 120.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Anane/Anane - Alafia - Cuebur Vocal Spirit Mix Remastered - 8A - 122.mp3",
+    "reason": "low_confidence",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Anane & Arnaud D, Ade Alafia/Anane & Arnaud D, Ade Alafia Feeling Music (Anane's Rework) (1) - 6A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Anane & Arnaud D, Ade Alafia/Anane & Arnaud D, Ade Alafia Feeling Music (Anane's Rework) - 6A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Andyboi/Andyboi Abafazi - 9A - 126.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Angel Ndlela, DJ Angelo & Naqua SA/Angel Ndlela, DJ Angelo & Naqua SA Truly True (1) - 8A - 154.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Angel Ndlela, DJ Angelo & Naqua SA/Angel Ndlela, DJ Angelo & Naqua SA Truly True - 8A - 154.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Angelo Ferreri, Moon Rocket/Angelo Ferreri, Moon Rocket Inspirational (Extended Mix) - 8A - 122.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Ankhoi, Rita/Ankhoi, Rita Ohiboki - 6A - 120.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Antonello Coghe/Antonello Coghe Malfunction (Original Mix) - 5A - 121.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Antonello Coghe/Antonello Coghe Malfunction - 5A - 121.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Antonio Ocasio/Antonio Ocasio Ft. Anjani Distant Moment (Original) - 5A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Armand Van Helden/Ghandi Khan - 1A - 130.mp3",
+    "reason": "low_confidence",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Atjazz/Atjazz Ooto (Out Of The Ordinary) - 6A - 123.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Awen Caiiro/Awen Caiiro - Your Voice (Enoo Napa Remix) - 11A - 120.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Awen Caiiro/Awen Caiiro - Your Voice (Radio Edit) - 11A - 120.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Awen Caiiro/Awen Caiiro - Your Voice - 11A - 120.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Axwell & Bob Sinclar ft. Ron Carroll/What A Wonderful World - 8A - 128.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Ayala (IT)/Ayala (IT) Magnolia - 7A - 120.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Azee Project/Azee Project Pescador (Abicahs 2015 Rework) (1) - 8A - 120.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Azee Project/Azee Project Pescador (Abicahs 2015 Rework) - 8A - 120.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/B Show/B Show People From Thabanka - 4A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/BSC/BSC Ubatuba - Louie Vega & Agev Munsen Feat Anane (Roots Mix) - 1A - 126.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Babes Wodumo/Babes Wodumo Babes Wodumo - 2A - 126.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Baila/Amine'o, Lilyass, Ottmann122 - 9A - 122.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bakermattarella, Zico House Junkie/Bakermattarella, Zico House Junkie Retrospect (Afro Mix) - 8A - 123.mp3",
+    "reason": "low_confidence",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bantwanas/Bantwanas Ngithanda feat Samthing Soweto (Acoustic) (1) - 10A - 122.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bantwanas/Bantwanas Ngithanda feat Samthing Soweto (Acoustic) - 10A - 122.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bekzin Terris/Bekzin Terris Bekzin B3at (Original) (1) - 2A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bekzin Terris/Bekzin Terris Bekzin B3at (Original) - 2A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bekzin Terris/Bekzin Terris High - 9A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Beyonce Feat. Jay-Z/Beyonce Feat. Jay-Z Drunk In Love (DJ Nova Afro Remix) - 4A - 127.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bhizer & Oskido/Bhizer & Oskido Dlaaaala Mamazi (Original Mix) - 8A - 127.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bhizer & Oskido/Bhizer & Oskido Dlaaaala Mamazi - 8A - 127.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bhizer x Busiswa/Bhizer x Busiswa Gobisiqolo (Club Mix 2016) - 8A - 126.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Big Nuz/Big Nuz Ft. Lombo Haleluja - 2B - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  }
+]

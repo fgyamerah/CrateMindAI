@@ -9,8 +9,13 @@ from pathlib import Path
 # Root paths
 # ---------------------------------------------------------------------------
 MUSIC_ROOT   = Path(os.environ.get("DJ_MUSIC_ROOT", "/music"))
+
+# Operational/maintenance storage root — intentionally hidden so scanners skip it.
+# All non-library folders live here; never place active library content inside.
+BIN_DIR      = MUSIC_ROOT / ".BIN"
+
 INBOX        = MUSIC_ROOT / "inbox"
-PROCESSING   = MUSIC_ROOT / "processing"
+PROCESSING   = BIN_DIR / "PROCESSING"   # pipeline staging area (was MUSIC_ROOT/processing)
 LIBRARY      = MUSIC_ROOT / "library"
 SORTED       = LIBRARY / "sorted"
 UNSORTED     = SORTED / "_unsorted"
@@ -28,13 +33,11 @@ BOOTLEGS     = LIBRARY / "bootlegs"
 LIVE         = LIBRARY / "live"
 UNKNOWN_ROUTE = LIBRARY / "unknown"   # for tracks with too little metadata
 
-DUPLICATES   = MUSIC_ROOT / "duplicates"
-REJECTED     = MUSIC_ROOT / "rejected"
+DUPLICATES   = BIN_DIR / "DUPLICATES"   # was: MUSIC_ROOT/duplicates
+REJECTED     = BIN_DIR / "REJECTED"     # was: MUSIC_ROOT/rejected
 # Quarantine folder for corrupt/unreadable audio files.
 # Overridable via config_local.py or the --corrupt-dir CLI flag.
-# Default keeps corrupt files within the main music tree; override to use
-# a path closer to the actual SSD library (e.g. /mnt/music_ssd/KKDJ/_corrupt).
-CORRUPT_DIR  = LIBRARY / "_corrupt"
+CORRUPT_DIR  = BIN_DIR / "CORRUPT"     # was: LIBRARY/_corrupt
 PLAYLISTS        = MUSIC_ROOT / "playlists"
 M3U_DIR          = PLAYLISTS / "m3u"
 GENRE_M3U_DIR    = M3U_DIR / "Genre"    # genre-based M3U playlists
@@ -144,8 +147,37 @@ SET_BUILDER_OUTPUT_DIR     = Path("/mnt/music_ssd/KKDJ/_SETS")
 # harmonic-suggest subcommand
 HARMONIC_SUGGEST_OUTPUT_DIR = LOGS_DIR / "harmonic_suggest"
 
-# dedupe subcommand — where duplicate files are moved (never deleted outright)
-DEDUPE_QUARANTINE_DIR = SORTED / "_duplicates"
+# Enrichment move-to-ignored destination (was hardcoded in enrichment runner).
+IGNORED_DIR = BIN_DIR / "IGNORED"
+
+# dedupe subcommand — where duplicate files are moved (never deleted outright).
+# Lives under .BIN so it is excluded from all library scans automatically.
+DEDUPE_QUARANTINE_DIR = BIN_DIR / "QUARANTINE"
+
+# ---------------------------------------------------------------------------
+# Scan exclusion rules
+# ---------------------------------------------------------------------------
+# Exact directory-name components that scanners must skip.
+# Checked against every part of a candidate path.
+MAINTENANCE_SKIP_DIRS: frozenset = frozenset({
+    ".BIN",
+    "QUARANTINE", "IGNORED", "CORRUPT", "DUPLICATES", "REJECTED",
+    "_duplicates", "_corrupt",
+    "__pycache__",
+})
+# Note: scanners also skip any path component that starts with "." (hidden dirs),
+# which covers .BIN and any other hidden operational folders implicitly.
+
+# filename-normalize subcommand — extends MAINTENANCE_SKIP_DIRS with output dirs
+# that should never have their contents renamed (exports, logs, sets).
+FILENAME_NORMALIZE_SKIP_DIRS: frozenset = MAINTENANCE_SKIP_DIRS | frozenset({
+    "exports", "logs", "sets",
+})
+
+# library-organize subcommand — same exclusions as filename-normalize.
+LIBRARY_ORGANIZE_SKIP_DIRS: frozenset = MAINTENANCE_SKIP_DIRS | frozenset({
+    "exports", "logs", "sets",
+})
 
 # ---------------------------------------------------------------------------
 # Beets
@@ -249,6 +281,9 @@ ENRICH_ONLINE_MIN_CONFIDENCE = float(
 AI_ENRICH_QUEUE    = _INTEL_DIR / "enrichment_queue.jsonl"
 AI_ENRICH_ACCEPTED = _INTEL_DIR / "enrichment_accepted.jsonl"
 AI_ENRICH_REJECTED = _INTEL_DIR / "enrichment_rejected.jsonl"
+
+# Pipeline run logging
+PIPELINE_LOGS_DIR = Path(__file__).parent / "logs"
 
 # ---------------------------------------------------------------------------
 # Local overrides (git-ignored, create config_local.py to override anything)

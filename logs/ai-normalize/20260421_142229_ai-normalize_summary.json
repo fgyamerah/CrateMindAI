@@ -1,0 +1,9 @@
+{
+  "command": "ai-normalize",
+  "started_at": "2026-04-21T14:22:29.946119",
+  "finished_at": "2026-04-21T14:23:10.323867",
+  "duration_sec": 40.377748,
+  "input_path": "/home/koolkatdj/Music/music/library/sorted/",
+  "applied": true,
+  "exit_code": 0
+}

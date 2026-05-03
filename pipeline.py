@@ -116,8 +116,26 @@ def _resolve_path(path_arg: str | None) -> Path | None:
     return root
 
 
+def _resolve_library_root(scan_path: Path) -> Path:
+    """
+    Derive the library system root from a scan path.
+
+    When the leaf directory is named 'sorted' (case-insensitive) the root is
+    its parent — matching the convention <lib_root>/sorted.
+    Otherwise the scan path itself is the root.
+
+    Examples:
+        /mnt/music_ssd/KKDJ/sorted → /mnt/music_ssd/KKDJ
+        /home/user/Music/inbox     → /home/user/Music/inbox
+    """
+    if scan_path.name.lower() == "sorted":
+        return scan_path.parent
+    return scan_path
+
+
 def _collect_audio_from_dir(root: Path) -> list:
-    """Return all audio files under root (recursive, deduplicated)."""
+    """Return all audio files under root, excluding maintenance/quarantine directories."""
+    skip = config.MAINTENANCE_SKIP_DIRS
     files = []
     for ext in config.AUDIO_EXTENSIONS:
         files.extend(root.rglob(f"*{ext}"))
@@ -126,9 +144,16 @@ def _collect_audio_from_dir(root: Path) -> list:
     result = []
     for f in sorted(files):
         key = str(f)
-        if key not in seen:
-            seen.add(key)
-            result.append(f)
+        if key in seen:
+            continue
+        # skip exact maintenance dir names
+        if any(part in skip for part in f.parts):
+            continue
+        # skip hidden directories (any path component starting with ".")
+        if any(part.startswith(".") for part in f.parts):
+            continue
+        seen.add(key)
+        result.append(f)
     return result
 
 
@@ -769,9 +794,17 @@ def run_dedupe(args) -> int:
     _setup_logging(getattr(args, "verbose", False))
     db.init_db()
 
-    custom_path   = _resolve_path(getattr(args, "path", None))
+    custom_path    = _resolve_path(getattr(args, "path", None))
     quarantine_raw = getattr(args, "quarantine_dir", None)
-    quarantine_dir = Path(quarantine_raw) if quarantine_raw else config.DEDUPE_QUARANTINE_DIR
+
+    # Derive quarantine under the selected library root, not the global config default.
+    # Explicit --quarantine-dir always wins; otherwise derive from the scan path.
+    if quarantine_raw:
+        quarantine_dir = Path(quarantine_raw)
+    elif custom_path is not None:
+        quarantine_dir = _resolve_library_root(custom_path) / ".BIN" / "QUARANTINE"
+    else:
+        quarantine_dir = config.DEDUPE_QUARANTINE_DIR
 
     if custom_path is not None:
         _log_active_path("DEDUPE", custom_path)
@@ -791,19 +824,122 @@ def run_dedupe(args) -> int:
             )
         return 0
 
-    dry_run = getattr(args, "dry_run", False)
+    do_apply = getattr(args, "apply", False)
+    dry_run  = not do_apply
 
+    source_root = custom_path if custom_path is not None else Path(config.SORTED)
+
+    print(f"  Quarantine : {quarantine_dir}")
     log.info(
         "Dedupe: %d track(s) to scan  dry_run=%s  quarantine=%s",
         len(paths), dry_run, quarantine_dir,
     )
 
     scanned, groups, quarantined, bytes_freed = library_dedupe.run(
-        paths         = paths,
-        dry_run       = dry_run,
+        paths          = paths,
+        dry_run        = dry_run,
         quarantine_dir = quarantine_dir,
+        source_root    = source_root,
     )
 
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Orphan scan
+# ---------------------------------------------------------------------------
+def run_orphan_scan(args) -> int:
+    """
+    Detect two categories of orphan records:
+
+      stale_db_rows   — DB rows (non-stale) whose file no longer exists on disk
+      untracked_files — audio files on disk that have no DB row
+
+    Preview by default; use --apply to write stale status to the DB.
+    Untracked files are always reported only (never auto-added or deleted).
+    """
+    _setup_logging(getattr(args, "verbose", False))
+    db.init_db()
+
+    lib_root = _resolve_path(getattr(args, "path", None)) or Path(config.SORTED)
+    do_apply = getattr(args, "apply", False)
+    no_untracked = getattr(args, "no_untracked", False)
+    verbose_list = getattr(args, "verbose_list", False)
+
+    _log_active_path("ORPHAN-SCAN", lib_root)
+
+    stale_rows, untracked = db.scan_orphans(
+        lib_root,
+        include_untracked=not no_untracked,
+        scan_root=lib_root,
+    )
+
+    print(f"\n=== orphan-scan {'APPLY' if do_apply else 'PREVIEW'} ===\n")
+    print(f"  Scan root       : {lib_root}")
+    print(f"  stale_db_rows   (DB record, file missing) : {len(stale_rows)}")
+    print(f"  untracked_files (file on disk, no DB row) : {len(untracked)}")
+
+    if stale_rows:
+        print("\n── Stale DB rows ────────────────────────────────────────")
+        for fp in sorted(stale_rows):
+            print(f"  STALE  {fp}")
+        if do_apply:
+            with db.get_conn() as conn:
+                conn.executemany(
+                    "UPDATE tracks SET status='stale', error_msg=? WHERE filepath=?",
+                    [("orphan-scan: file not found on disk", fp) for fp in stale_rows],
+                )
+            print(f"\n  Marked {len(stale_rows)} row(s) as stale in DB.")
+        else:
+            print(f"\n  Run with --apply to mark {len(stale_rows)} row(s) as stale.")
+
+    if untracked:
+        print("\n── Untracked files ──────────────────────────────────────")
+
+        from collections import defaultdict as _dd
+        folder_counts: dict = _dd(int)
+        ext_counts: dict = _dd(int)
+        for _p in untracked:
+            try:
+                _rel = _p.relative_to(lib_root)
+                _top = _rel.parts[0] if len(_rel.parts) > 1 else "(root)"
+            except ValueError:
+                _top = "(other)"
+            folder_counts[_top] += 1
+            ext_counts[_p.suffix.lower()] += 1
+
+        print("\n  By folder:")
+        _fcol = max((len(k) for k in folder_counts), default=6)
+        for _folder, _count in sorted(folder_counts.items(), key=lambda x: -x[1]):
+            print(f"    {_folder:<{_fcol}}  : {_count}")
+
+        print("\n  By extension:")
+        _ecol = max((len(k) for k in ext_counts), default=4)
+        for _ext, _count in sorted(ext_counts.items(), key=lambda x: -x[1]):
+            print(f"    {_ext:<{_ecol}}  : {_count}")
+
+        if len(untracked) > 1000:
+            print(f"\n  WARNING: {len(untracked):,} untracked files — large count.")
+            if not verbose_list:
+                print("  Run with --verbose-list to print all paths.")
+
+        if verbose_list:
+            print()
+            for _p in sorted(untracked):
+                print(f"  UNTRACKED  {_p}")
+
+        print(f"\n  {len(untracked):,} untracked file(s) — review manually.")
+        print("  (Run the main pipeline or 'metadata-clean' to ingest them.)")
+
+    if not stale_rows and not untracked:
+        print("  No orphans found.")
+
+    print()
+    from modules.textlog import log_action
+    log_action(
+        f"ORPHAN-SCAN {'APPLY' if do_apply else 'PREVIEW'}: "
+        f"{len(stale_rows)} stale_db_rows, {len(untracked)} untracked_files"
+    )
     return 0
 
 
@@ -1316,6 +1452,115 @@ def run_tag_normalize(args) -> int:
             )
         print()
 
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Filename normalize
+# ---------------------------------------------------------------------------
+def run_filename_normalize(args) -> int:
+    """
+    Rename audio files to {artist} - {title} ({version}).ext using embedded tags.
+    Preview by default; use --apply to commit renames.
+    """
+    db.init_db()
+    _setup_logging(getattr(args, "verbose", False))
+
+    input_path = _resolve_path(getattr(args, "input", None))
+    if not input_path:
+        print("ERROR: --input DIR is required.", file=sys.stderr)
+        return 1
+
+    from modules.filename_normalize import run as _fn_run
+
+    stats = _fn_run(
+        input_path,
+        apply=getattr(args, "apply", False),
+        verbose=getattr(args, "verbose", False),
+        force=getattr(args, "force", False),
+        reset_stage=getattr(args, "reset_stage", False),
+        limit=getattr(args, "limit", None),
+        move_artist_review=getattr(args, "move_artist_review", False),
+    )
+
+    print("── Summary ──────────────────────────────────────────────")
+    print(f"  Files scanned            : {stats['scanned']}")
+    print(f"  Rename candidates        : {stats['candidates']}")
+    print(f"  Renamed                  : {stats['renamed']}")
+    print(f"  Skipped (no artist/title): {stats['skipped_no_tags']}")
+    print(f"  Skipped (unsafe artist)  : {stats['skipped_unsafe_artist']}")
+    print(f"  Artist review queued     : {stats['artist_review_count']}")
+    print(f"  Artist review moved      : {stats['moved_to_artist_review']}")
+    print(f"  Skipped (no change)      : {stats['skipped_no_change']}")
+    print(f"  Collision renames        : {stats['collisions']}")
+    print(f"  Version stripped (junk)  : {stats['stripped_version']}")
+    print(f"  Errors                   : {stats['skipped_errors']}")
+    if not getattr(args, "apply", False) and stats["candidates"] > 0:
+        print(f"\n  Run with --apply to rename {stats['candidates']} file(s).")
+    if not getattr(args, "apply", False) and stats["artist_review_count"] > 0:
+        print(f"  Run with --move-artist-review --apply to quarantine {stats['artist_review_count']} review file(s).")
+    print()
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Library Organize
+# ---------------------------------------------------------------------------
+def run_library_organize(args) -> int:
+    """
+    Reorganize audio files into <sorted_root>/<letter>/<primary-artist>/<filename>.
+    Preview by default; use --apply to commit moves.
+    """
+    db.init_db()
+    _setup_logging(getattr(args, "verbose", False))
+
+    input_path = _resolve_path(getattr(args, "input", None))
+    if not input_path:
+        print("ERROR: --input DIR is required.", file=sys.stderr)
+        return 1
+
+    from modules.library_organize import run as _lo_run
+
+    flatten             = getattr(args, "flatten_collab_folders", False)
+    move_unsafe_artists = getattr(args, "move_unsafe_artists", False)
+
+    stats = _lo_run(
+        input_path,
+        apply=getattr(args, "apply", False),
+        verbose=getattr(args, "verbose", False),
+        force=getattr(args, "force", False),
+        reset_stage=getattr(args, "reset_stage", False),
+        limit=getattr(args, "limit", None),
+        flatten_collab_folders=flatten,
+        move_unsafe_artists=move_unsafe_artists,
+    )
+
+    if flatten:
+        print("── Flatten Summary ───────────────────────────────────────")
+        print(f"  Files scanned            : {stats['scanned']}")
+        print(f"  Flatten candidates       : {stats['candidates']}")
+        print(f"  Flattened                : {stats['moved']}")
+        print(f"  Already correct          : {stats['skipped_already_correct']}")
+        print(f"  Collisions               : {stats['collisions']}")
+        print(f"  Errors                   : {stats['skipped_errors']}")
+        if not getattr(args, "apply", False) and stats["candidates"] > 0:
+            print(f"\n  Run with --apply to flatten {stats['candidates']} file(s).")
+    else:
+        print("── Summary ──────────────────────────────────────────────")
+        print(f"  Files scanned            : {stats['scanned']}")
+        print(f"  Move candidates          : {stats['candidates']}")
+        print(f"  Moved                    : {stats['moved']}")
+        print(f"  Skipped (unchanged)      : {stats['skipped_unchanged']}")
+        print(f"  Skipped (no artist)      : {stats['skipped_no_artist']}")
+        print(f"  Unsafe artist (total)    : {stats['unsafe_artist_count']}")
+        print(f"  → Moved to CHKARTISTNAMES: {stats['moved_to_chkartistnames']}")
+        print(f"  → Left in place          : {stats['skipped_unsafe_artist']}")
+        print(f"  Skipped (already correct): {stats['skipped_already_correct']}")
+        print(f"  Collision renames        : {stats['collisions']}")
+        print(f"  Errors                   : {stats['skipped_errors']}")
+        if not getattr(args, "apply", False) and stats["candidates"] > 0:
+            print(f"\n  Run with --apply to move {stats['candidates']} file(s).")
+    print()
     return 0
 
 
@@ -2061,6 +2306,125 @@ def main() -> None:
         help="Scan this directory instead of the default sorted library",
     )
 
+    # ----- filename-normalize subcommand -----
+    p_fnorm = subparsers.add_parser(
+        "filename-normalize",
+        help="Rename audio files to {artist} - {title} ({version}).ext using embedded tags",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Rename audio files using trusted embedded tags.\n\n"
+            "Naming pattern:\n"
+            "  {artist} - {title} ({version}).ext\n"
+            "  {artist} - {title}.ext   (version absent or already embedded in title)\n\n"
+            "Examples:\n"
+            "  DJ Shimza - African Woman.mp3\n"
+            "  Black Coffee - Superman (Original Mix).flac\n"
+            "  Caiiro - The Akan (Da Capo Remix).aiff\n\n"
+            "Safety:\n"
+            "  Preview by default — no files renamed without --apply.\n"
+            "  No overwrite — collisions get a safe suffix: ' (1)', ' (2)', ...\n"
+            "  Tags are never modified. BPM, key, and cues are untouched.\n"
+            "  Skipped if artist or title tag is missing.\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py filename-normalize --input ~/Music/inbox\n"
+            "  python3 pipeline.py filename-normalize --input ~/Music/inbox --apply\n"
+        ),
+    )
+    p_fnorm.add_argument(
+        "--input", metavar="DIR", required=True,
+        help="Directory of audio files to process.",
+    )
+    p_fnorm.add_argument(
+        "--apply", action="store_true",
+        help="Commit renames. Without this flag, preview only.",
+    )
+    p_fnorm.add_argument(
+        "--verbose", action="store_true",
+        help="Show skipped and no-change files; enable debug logging.",
+    )
+    p_fnorm.add_argument(
+        "--limit", metavar="N", type=int, default=None,
+        help="Process at most N files.",
+    )
+    p_fnorm.add_argument(
+        "--force", action="store_true",
+        help="Reprocess all files, ignoring processed-state tracking.",
+    )
+    p_fnorm.add_argument(
+        "--reset-stage", action="store_true", dest="reset_stage",
+        help="Clear processed-state tracking for this stage before running.",
+    )
+    p_fnorm.add_argument(
+        "--move-artist-review", action="store_true", dest="move_artist_review",
+        help="Move unsafe-artist files to .BIN/ARTIST_REVIEW/ (requires --apply).",
+    )
+
+    # ----- library-organize subcommand -----
+    p_lorg = subparsers.add_parser(
+        "library-organize",
+        help="Reorganize files into <sorted>/<letter>/<primary-artist>/<filename>",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Reorganize audio files into a deterministic folder hierarchy:\n\n"
+            "  <sorted_root>/<first-letter>/<primary-artist>/<filename>\n\n"
+            "Primary artist = first artist before any collaboration separator\n"
+            "(feat. / ft. / & / , / ; / x / vs. / with / pres.).\n\n"
+            "Examples:\n"
+            "  'Papik feat. Michele Ranieri - Track.mp3'\n"
+            "     → sorted/P/Papik/Papik feat. Michele Ranieri - Track.mp3\n"
+            "  'Black Coffee, Bucie - Song.flac'\n"
+            "     → sorted/B/Black Coffee/Black Coffee, Bucie - Song.flac\n\n"
+            "Safety:\n"
+            "  Preview by default — no files moved without --apply.\n"
+            "  No overwrite — collisions get a safe suffix: ' (1)', ' (2)', ...\n"
+            "  Tags are never modified. BPM, key, and cues are untouched.\n"
+            "  Skips files missing artist tag or with unsafe concatenated names.\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py library-organize --input /mnt/music_ssd/KKDJ/sorted\n"
+            "  python3 pipeline.py library-organize --input /mnt/music_ssd/KKDJ/sorted --apply\n"
+        ),
+    )
+    p_lorg.add_argument(
+        "--input", metavar="DIR", required=True,
+        help="Directory of audio files to organize.",
+    )
+    p_lorg.add_argument(
+        "--apply", action="store_true",
+        help="Commit moves. Without this flag, preview only.",
+    )
+    p_lorg.add_argument(
+        "--verbose", action="store_true",
+        help="Show already-correct files; enable debug logging.",
+    )
+    p_lorg.add_argument(
+        "--limit", metavar="N", type=int, default=None,
+        help="Process at most N files.",
+    )
+    p_lorg.add_argument(
+        "--force", action="store_true",
+        help="Reprocess all files, ignoring processed-state tracking.",
+    )
+    p_lorg.add_argument(
+        "--reset-stage", action="store_true", dest="reset_stage",
+        help="Clear processed-state tracking for this stage before running.",
+    )
+    p_lorg.add_argument(
+        "--flatten-collab-folders", action="store_true", dest="flatten_collab_folders",
+        help=(
+            "Repair mode: move files out of nested collaborator sub-folders. "
+            "sorted/<L>/<Artist>/<Collab>/file → sorted/<L>/<Artist>/file. "
+            "Does not read tags; uses existing folder structure only."
+        ),
+    )
+    p_lorg.add_argument(
+        "--move-unsafe-artists", action="store_true", dest="move_unsafe_artists",
+        help=(
+            "Move files with unsafe concatenated artist names to "
+            ".BIN/CHKARTISTNAMES/ for manual review. Requires --apply to execute. "
+            "Without --apply, shows WOULD MOVE TO CHKARTISTNAMES preview."
+        ),
+    )
+
     # ----- db-prune-stale subcommand -----
     p_dps = subparsers.add_parser(
         "db-prune-stale",
@@ -2185,15 +2549,15 @@ def main() -> None:
             "  • Ambiguous quality ties are skipped (manual review)\n"
             "  • Case C (versions) is never auto-removed\n\n"
             "Examples:\n"
-            "  python pipeline.py dedupe --dry-run\n"
-            "  python pipeline.py dedupe\n"
+            "  python pipeline.py dedupe                   # preview only (default)\n"
+            "  python pipeline.py dedupe --apply           # quarantine duplicates\n"
             "  python pipeline.py dedupe --path /mnt/music_ssd/KKDJ/\n"
-            "  python pipeline.py dedupe --quarantine-dir /music/review/\n"
+            "  python pipeline.py dedupe --apply --quarantine-dir /music/review/\n"
         ),
     )
     p_dd.add_argument(
-        "--dry-run", action="store_true",
-        help="Preview duplicate groups — move no files",
+        "--apply", action="store_true",
+        help="Move duplicate files to quarantine (default: preview only)",
     )
     p_dd.add_argument(
         "--path", metavar="DIR",
@@ -2213,6 +2577,44 @@ def main() -> None:
     p_dd.add_argument(
         "--verbose", "-v", action="store_true",
         help="Enable debug logging",
+    )
+
+    # ----- orphan-scan subcommand -----
+    p_or = subparsers.add_parser(
+        "orphan-scan",
+        help="Find DB rows with missing files and untracked audio files on disk",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Detect two distinct categories of orphans:\n\n"
+            "  stale_db_rows   — rows in DB whose file no longer exists on disk\n"
+            "  untracked_files — audio files on disk with no matching DB row\n\n"
+            "Preview by default. Use --apply to mark stale rows in the DB.\n"
+            "Untracked files are always reported only — never auto-deleted.\n\n"
+            "Examples:\n"
+            "  python pipeline.py orphan-scan                 # preview\n"
+            "  python pipeline.py orphan-scan --apply         # write stale status\n"
+            "  python pipeline.py orphan-scan --no-untracked  # DB audit only\n"
+        ),
+    )
+    p_or.add_argument(
+        "--apply", action="store_true",
+        help="Mark stale_db_rows as status='stale' in the DB (default: preview only)",
+    )
+    p_or.add_argument(
+        "--path", metavar="DIR",
+        help="Library root to scan for untracked files (default: config.SORTED)",
+    )
+    p_or.add_argument(
+        "--no-untracked", action="store_true",
+        help="Skip the disk scan — only check DB rows for missing files",
+    )
+    p_or.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Enable debug logging",
+    )
+    p_or.add_argument(
+        "--verbose-list", action="store_true",
+        help="Print every untracked file path (default: summary only)",
     )
 
     # ----- playlists subcommand -----
@@ -2928,6 +3330,84 @@ def main() -> None:
         "--verbose", "-v", action="store_true",
         help="Enable debug logging and show unmodified corrupt files.",
     )
+    p_msan.add_argument(
+        "--log-dir", metavar="DIR", default=None, dest="log_dir",
+        help="Directory for run logs (.log, .jsonl, _summary.json). Default: logs/metadata-sanitize/",
+    )
+    p_msan.add_argument(
+        "--force", action="store_true",
+        help="Reprocess all files, ignoring processed-state tracking.",
+    )
+    p_msan.add_argument(
+        "--reset-stage", action="store_true", dest="reset_stage",
+        help="Clear processed-state tracking for this stage before running.",
+    )
+
+    # ----- artist-repair subcommand -----
+    p_arep = subparsers.add_parser(
+        "artist-repair",
+        help="Detect and repair broken concatenated artist tags (preview by default)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Detect artist tags where two names were merged without a separator,\n"
+            "e.g. 'Afrikan RootsLebo' → 'Afrikan Roots, Lebo'.\n\n"
+            "Detection signal: [a-z][A-Z] boundary NOT at a word start.\n"
+            "  Merge    : 'Afrikan RootsLebo'       → 's' not preceded by space ✓\n"
+            "  Safe     : 'Alan Dixon mOat (UK)'    → 'm' preceded by space → skipped\n"
+            "  Safe     : 'AVG (IT)'                → no lowercase→uppercase transitions\n\n"
+            "Confidence gates:\n"
+            "  HIGH (≥ 0.85) both sides are known artists → eligible with --apply\n"
+            "  MEDIUM (0.65) one side known → review queue only\n"
+            "  LOW    (0.45) neither side known → review queue only\n\n"
+            "Review queue : data/intelligence/artist_repair_queue.json\n"
+            "Quarantine   : .BIN/CHKARTISTNAMES/ (with --move-artist-review --apply)\n\n"
+            "Recommended position in pipeline:\n"
+            "  metadata-sanitize → artist-repair → artist-intelligence → ai-normalize\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py artist-repair --input /mnt/music_ssd/KKDJ/sorted/A\n"
+            "  python3 pipeline.py artist-repair --input /mnt/music_ssd/KKDJ/sorted --apply\n"
+            "  python3 pipeline.py artist-repair --input /mnt/music_ssd/KKDJ/sorted "
+            "--apply --move-artist-review\n"
+        ),
+    )
+    p_arep.add_argument(
+        "--input", metavar="DIR", required=True,
+        help="Directory of audio files to scan (recursive).",
+    )
+    p_arep.add_argument(
+        "--apply", action="store_true",
+        help=(
+            "Write HIGH-confidence repairs to artist tags. "
+            "Medium/low-confidence candidates are queued for review — never auto-applied."
+        ),
+    )
+    p_arep.add_argument(
+        "--move-artist-review", action="store_true", dest="move_artist_review",
+        help=(
+            "Move review-queue files to .BIN/CHKARTISTNAMES/ for manual correction. "
+            "Requires --apply to execute; preview shows WOULD MOVE."
+        ),
+    )
+    p_arep.add_argument(
+        "--limit", metavar="N", type=int, default=None,
+        help="Maximum number of files to process in this run.",
+    )
+    p_arep.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Enable debug logging.",
+    )
+    p_arep.add_argument(
+        "--force", action="store_true",
+        help="Reprocess all files, ignoring processed-state tracking.",
+    )
+    p_arep.add_argument(
+        "--reset-stage", action="store_true", dest="reset_stage",
+        help="Clear processed-state tracking for this stage before running.",
+    )
+    p_arep.add_argument(
+        "--log-dir", metavar="DIR", default=None, dest="log_dir",
+        help="Directory for run logs. Default: logs/artist-repair/",
+    )
 
     # ----- artist-intelligence subcommand -----
     p_ari = subparsers.add_parser(
@@ -2958,8 +3438,8 @@ def main() -> None:
         help="Directory of audio files to process (scanned recursively)",
     )
     p_ari.add_argument(
-        "--limit", metavar="N", type=int, default=50,
-        help="Maximum number of files to process in this run. Default: 50",
+        "--limit", metavar="N", type=int, default=None,
+        help="Maximum number of files to process in this run (default: no limit)",
     )
     p_ari.add_argument(
         "--dry-run", action="store_true",
@@ -2981,6 +3461,18 @@ def main() -> None:
     p_ari.add_argument(
         "--verbose", "-v", action="store_true",
         help="Enable debug logging",
+    )
+    p_ari.add_argument(
+        "--log-dir", metavar="DIR", default=None, dest="log_dir",
+        help="Directory for run logs (.log, .jsonl, _summary.json). Default: logs/artist-intelligence/",
+    )
+    p_ari.add_argument(
+        "--force", action="store_true",
+        help="Reprocess all files, ignoring processed-state tracking.",
+    )
+    p_ari.add_argument(
+        "--reset-stage", action="store_true", dest="reset_stage",
+        help="Clear processed-state tracking for this stage before running.",
     )
 
     # ----- ai-normalize subcommand -----
@@ -3076,6 +3568,18 @@ def main() -> None:
             "so the model sees clean input. "
             "Respects --apply: without it both steps preview only, no files are written."
         ),
+    )
+    p_ain.add_argument(
+        "--log-dir", metavar="DIR", default=None, dest="log_dir",
+        help="Directory for run logs (.log, .jsonl, _summary.json). Default: logs/ai-normalize/",
+    )
+    p_ain.add_argument(
+        "--force", action="store_true",
+        help="Reprocess all files, ignoring processed-state tracking.",
+    )
+    p_ain.add_argument(
+        "--reset-stage", action="store_true", dest="reset_stage",
+        help="Clear processed-state tracking for this stage before running.",
     )
 
     # ----- build-fewshot subcommand -----
@@ -3208,6 +3712,18 @@ def main() -> None:
             "Use with --apply to combine enrichment writes with cleanup in one pass."
         ),
     )
+    p_meo.add_argument(
+        "--log-dir", metavar="DIR", default=None, dest="log_dir",
+        help="Directory for run logs (.log, .jsonl, _summary.json). Default: logs/metadata-enrich-online/",
+    )
+    p_meo.add_argument(
+        "--force", action="store_true",
+        help="Reprocess all files, ignoring processed-state tracking.",
+    )
+    p_meo.add_argument(
+        "--reset-stage", action="store_true", dest="reset_stage",
+        help="Clear processed-state tracking for this stage before running.",
+    )
 
     # ----- review-queue subcommand -----
     p_rq = subparsers.add_parser(
@@ -3274,6 +3790,12 @@ def main() -> None:
     if args.command == "tag-normalize":
         sys.exit(run_tag_normalize(args))
 
+    if args.command == "filename-normalize":
+        sys.exit(run_filename_normalize(args))
+
+    if args.command == "library-organize":
+        sys.exit(run_library_organize(args))
+
     if args.command == "db-prune-stale":
         sys.exit(run_db_prune_stale(args))
 
@@ -3282,6 +3804,9 @@ def main() -> None:
 
     if args.command == "dedupe":
         sys.exit(run_dedupe(args))
+
+    if args.command == "orphan-scan":
+        sys.exit(run_orphan_scan(args))
 
     if args.command == "playlists":
         sys.exit(run_playlists(args))
@@ -3305,14 +3830,40 @@ def main() -> None:
         sys.exit(run_harmonic_suggest(args))
 
     if args.command == "metadata-sanitize":
+        db.init_db()
         from modules.metadata_sanitize import run_metadata_sanitize
-        sys.exit(run_metadata_sanitize(args))
+        from utils.prompt_logger import start_run
+        _rl = start_run("metadata-sanitize", Path(getattr(args, "log_dir", None) or config.PIPELINE_LOGS_DIR))
+        _rl.print_paths()
+        print()
+        _rc = run_metadata_sanitize(args)
+        _rl.finish(exit_code=_rc)
+        sys.exit(_rc)
+
+    if args.command == "artist-repair":
+        db.init_db()
+        from modules.artist_repair import run_artist_repair
+        _rc = run_artist_repair(args)
+        sys.exit(_rc)
 
     if args.command == "artist-intelligence":
+        db.init_db()
         from intelligence.artist.runner import run_artist_intelligence
-        sys.exit(run_artist_intelligence(args))
+        from utils.prompt_logger import start_run
+        _rl = start_run("artist-intelligence", Path(getattr(args, "log_dir", None) or config.PIPELINE_LOGS_DIR))
+        _rl.print_paths()
+        print()
+        _rc = run_artist_intelligence(args)
+        _rl.finish(exit_code=_rc)
+        sys.exit(_rc)
 
     if args.command == "ai-normalize":
+        db.init_db()
+        from ai.normalizer import run_ai_normalize
+        from utils.prompt_logger import start_run
+        _rl = start_run("ai-normalize", Path(getattr(args, "log_dir", None) or config.PIPELINE_LOGS_DIR))
+        _rl.print_paths()
+        print()
         if getattr(args, "pre_sanitize", False):
             import argparse as _ap
             from modules.metadata_sanitize import run_metadata_sanitize
@@ -3325,13 +3876,22 @@ def main() -> None:
             )
             _rc = run_metadata_sanitize(_san_args)
             if _rc != 0:
+                _rl.finish(exit_code=_rc)
                 sys.exit(_rc)
-        from ai.normalizer import run_ai_normalize
-        sys.exit(run_ai_normalize(args))
+        _rc = run_ai_normalize(args)
+        _rl.finish(exit_code=_rc)
+        sys.exit(_rc)
 
     if args.command == "metadata-enrich-online":
+        db.init_db()
         from intelligence.enrichment.runner import run_metadata_enrich_online
-        sys.exit(run_metadata_enrich_online(args))
+        from utils.prompt_logger import start_run
+        _rl = start_run("metadata-enrich-online", Path(getattr(args, "log_dir", None) or config.PIPELINE_LOGS_DIR))
+        _rl.print_paths()
+        print()
+        _rc = run_metadata_enrich_online(args)
+        _rl.finish(exit_code=_rc)
+        sys.exit(_rc)
 
     if args.command == "review-queue":
         from intelligence.enrichment.runner import run_review_queue

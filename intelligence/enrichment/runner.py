@@ -53,6 +53,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import config
+import modules.run_logger as _proc
 from ai.normalizer import _collect_files, _apply_tags
 
 from intelligence.enrichment.enrichment_schema import EnrichmentCandidate, EnrichmentMatch
@@ -80,7 +81,7 @@ _ENRICH_REVIEW_QUEUE: Path = config.AI_ENRICH_QUEUE.parent / "enrichment_review_
 
 # Root directory for files that cannot be confidently enriched.
 # Structure under IGNORED mirrors the original library layout.
-_ENRICH_IGNORED_DIR: Path = Path("/home/koolkatdj/Music/music/IGNORED")
+_ENRICH_IGNORED_DIR: Path = config.IGNORED_DIR
 
 # ---------------------------------------------------------------------------
 # Junk metadata detection
@@ -1027,6 +1028,14 @@ def run_metadata_enrich_online(args) -> int:
         return 0
     print(f"Found {len(files)} file(s) to process.")
 
+    from utils.prompt_logger import get_run_logger as _grl
+    _rl = _grl()
+    if _rl:
+        _rl.inc("files_scanned", len(files))
+        _rl.set_counter("input_path", str(input_path))
+        _rl.set_counter("limit", limit)
+        _rl.set_counter("applied", do_apply)
+
     if clean_junk_only:
         mode_label = "JUNK-CLEAN-ONLY (DRY-RUN)" if not do_apply else "JUNK-CLEAN-ONLY (APPLY)"
     else:
@@ -1079,7 +1088,18 @@ def run_metadata_enrich_online(args) -> int:
     n_junk_cleaned  = 0   # fields cleared by the junk cleaner (across all files)
     n_moved         = 0   # files moved to IGNORED/ (--move-ignored only)
 
+    _stage = "metadata-enrich-online"
+    _force = getattr(args, "force", False)
+    if getattr(args, "reset_stage", False):
+        _proc.clear_stage(_stage)
+    n_skip_unchanged = 0
+
     for path in files:
+        if not _force and not dry_run and _proc.should_skip(_stage, path):
+            n_skip_unchanged += 1
+            continue
+        if _rl:
+            _rl.inc("files_processed")
         current_tags = _read_full_tags(path)
         current_isrc = _read_isrc(path)
 
@@ -1144,6 +1164,15 @@ def run_metadata_enrich_online(args) -> int:
 
         _dc = match.decision_code   # machine-readable decision from matcher
 
+        if _rl and match.candidate:
+            conf = match.confidence
+            if conf >= 0.85:
+                _rl.inc("high_confidence")
+            elif conf >= 0.70:
+                _rl.inc("medium_confidence")
+            else:
+                _rl.inc("low_confidence")
+
         if match.source_used == "none":
             n_no_result += 1 if artist or title else 0
 
@@ -1151,22 +1180,35 @@ def run_metadata_enrich_online(args) -> int:
             # Hard rejection by matcher — log reason exactly
             skipped_reason = _dc
             n_skipped += 1
+            _proc.record(_stage, path, "skipped", _dc)
             log.info("SKIPPED (%s): %s  conf=%.2f", _dc, path.name, match.confidence)
+            if _rl:
+                _rl.inc("skipped")
+                _rl.record_outcome("skipped", str(path), _dc, f"conf={match.confidence:.2f}")
             if move_ignored:
                 if _move_to_ignored(path, _ENRICH_IGNORED_DIR):
                     n_moved += 1
                     moved = True
                     skipped_reason = f"{_dc} [moved_to_ignored]"
+                    if _rl:
+                        _rl.inc("moved_to_ignored")
 
         elif _dc in ("review_ambiguous", "review"):
             # Needs human review — never auto-apply; persist to review queue
             skipped_reason = _dc
             n_review += 1
             log.info("REVIEW (%s): %s  conf=%.2f", _dc, path.name, match.confidence)
+            if _rl:
+                _rl.inc("review_count")
+                _rl.record_outcome("skipped", str(path), _dc, f"conf={match.confidence:.2f}")
             _enqueue_for_review(_ENRICH_REVIEW_QUEUE, path, current_tags, current_isrc, match)
 
         elif not match.proposed_changes:
             n_no_change += 1
+            if not dry_run:
+                _proc.record(_stage, path, "no_change")
+            if _rl:
+                _rl.inc("unchanged")
 
         elif do_apply:
             # decision_code is "ready" — check confidence against user threshold
@@ -1175,19 +1217,36 @@ def run_metadata_enrich_online(args) -> int:
                     f"confidence {match.confidence:.2f} < {min_confidence} threshold"
                 )
                 n_skipped += 1
+                _proc.record(_stage, path, "skipped", "below_threshold")
+                if _rl:
+                    _rl.inc("skipped")
+                    _rl.record_outcome("skipped", str(path), "below_threshold", f"conf={match.confidence:.2f}")
             else:
                 ok, written_fields = _apply_enrichment(path, match, dry_run=False)
                 if ok:
                     applied = True
                     n_applied += 1
+                    _proc.record(_stage, path, "success")
                     log.info(
                         "APPLIED: %s  source=%s  conf=%.2f  isrc=%s",
                         path.name, match.source_used, match.confidence,
                         "yes" if match.isrc_matched else "no",
                     )
+                    if _rl:
+                        _rl.inc("changed")
+                        fields_str = ", ".join(c["field"] for c in match.proposed_changes)
+                        _rl.record_outcome(
+                            "modified", str(path),
+                            match.source_used,
+                            f"conf={match.confidence:.2f} fields={fields_str}",
+                        )
                 else:
                     error = "tag write failed"
                     n_errors += 1
+                    _proc.record(_stage, path, "error", "write_failed")
+                    if _rl:
+                        _rl.inc("errors")
+                        _rl.record_outcome("errors", str(path), "write_failed", "")
 
         else:
             # Preview / dry-run (decision_code == "ready")
@@ -1196,6 +1255,16 @@ def run_metadata_enrich_online(args) -> int:
                     f"confidence {match.confidence:.2f} < {min_confidence} threshold"
                 )
                 n_skipped += 1
+                if _rl:
+                    _rl.inc("skipped")
+                    _rl.record_outcome("skipped", str(path), "below_threshold", f"conf={match.confidence:.2f}")
+            elif match.proposed_changes and _rl:
+                _rl.inc("changed")
+                fields_str = ", ".join(c["field"] for c in match.proposed_changes)
+                _rl.record_outcome(
+                    "modified", str(path), "preview",
+                    f"conf={match.confidence:.2f} fields={fields_str}",
+                )
 
         _print_result(
             path, current_tags, current_isrc, match,
@@ -1237,6 +1306,8 @@ def run_metadata_enrich_online(args) -> int:
         print(f"  No change       : {n_no_change}")
         print(f"  No API result   : {n_no_result}")
         print(f"  Errors          : {n_errors}")
+    if n_skip_unchanged:
+        print(f"  Skipped unchanged: {n_skip_unchanged}")
     if preview_only and any(r["match"]["proposed_changes"] for r in results):
         changeable = sum(
             1 for r in results

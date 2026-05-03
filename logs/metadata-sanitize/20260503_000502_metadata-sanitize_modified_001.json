@@ -1,0 +1,52 @@
+[
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/A.M.R (De)/A.M.R (De) - Una Mattina (Extended Mix) (Kontor Records) 120.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Adam Rios/Adam Rios - 3 Afro.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Addvibe/Addvibe, Tamba Benoit - 2 Sada (N'Dinga Gaba Diplomacy Soul Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Aduld Musician/Aduld Musician, Dj Maxido, Lessphonik - Kanana (Shungi Music) 124.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Aero Glide/Aero Glide - Naak, Volka (Sa) (Original Mix) 122.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/African Rhythm/Afrikan Roots/African RhythmAfrikan Roots - Let's Dance (Feat. Afrikan Roots).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/African Roots/Lebo/African RootsLebo - I Hear You Calling (Feat. Lebo).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - 2 I Hear You Calling (feat. Lebo).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - Its All Right (Feat. Oddessy).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots feat. Buckz - 2 Sesha.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  }
+]

@@ -1,0 +1,117 @@
+[
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/A.M.R (De)/A.M.R (De) - Una Mattina (Extended Mix) (Kontor Records) 120.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Adam Rios/Adam Rios - 3 Afro.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Addvibe/Addvibe, Tamba Benoit - 2 Sada (N'Dinga Gaba Diplomacy Soul Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Aduld Musician/Aduld Musician, Dj Maxido, Lessphonik - Kanana (Shungi Music) 124.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Aero Glide/Aero Glide - Naak, Volka (Sa) (Original Mix) 122.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/African Rhythm/Afrikan Roots/African RhythmAfrikan Roots - Let's Dance (Feat. Afrikan Roots).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/African Roots/Lebo/African RootsLebo - I Hear You Calling (Feat. Lebo).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - 2 I Hear You Calling (feat. Lebo).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - Its All Right (Feat. Oddessy).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots feat. Buckz - 2 Sesha.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots, Costa, Zulu Naja - 2 Mabyala.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots, DJ Buckz - 2 Kora (Vinyl Version).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots, RootedSoul feat. Bucks - 2 Do It in Church (Original).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots; Andy Boi - 2 uMoya (Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots; Andy Boi - 3 uMoya.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/NewTone MajorSteve Univers Koki - Time to Go (Feat. Steve Univers & Koki).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Oddessy/Afrikan RootsOddessy - It�s All Right (Feat. Oddessy).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Silly West/Afrikan RootsSilly West - Mosadi (Feat. Silly West).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Silly West/Afrikan RootsSilly West - Sunrise (Feat. Silly West).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Thami/Afrikan RootsThami - Break Me Down (Feat. Thami).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Xoli M/Afrikan RootsXoli M - Your Angel (Feat. Xoli M).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Brotherz/Afro Brotherz - 2 Gibela (feat. Vinny Kay).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Brotherz/Afro Brotherz - 3 Ama Gents.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  }
+]

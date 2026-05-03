@@ -1,15 +1,26 @@
 """
 Library tree + stats routes.
 
-GET /api/library/tree   — real directory tree under MUSIC_ROOT
-GET /api/library/stats  — global + folder-scoped track counts from the pipeline DB
+GET /api/library/tree                                    — directory tree under MUSIC_ROOT
+GET /api/library/stats                                   — global + folder-scoped track counts
+GET /api/library/runs                                    — list recent pipeline run summaries
+GET /api/library/runs/{command}/{prefix}/summary         — full run summary JSON
+GET /api/library/runs/{command}/{prefix}/detail/{g}/{p} — paged detail file (modified/skipped/errors)
 """
 from __future__ import annotations
 
+import json as _json
+import re as _re
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Query
+# Logs directory — try config first, fall back to project root /logs
+try:
+    from ...core.config import LOGS_DIR as _LOGS_DIR  # type: ignore[attr-defined]
+except (ImportError, AttributeError):
+    _LOGS_DIR: Path = Path(__file__).resolve().parents[4] / "logs"
+
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from ...core.config import MUSIC_ROOT
@@ -161,6 +172,214 @@ async def get_library_stats(
     except Exception:
         return empty
 
+
+# ---------------------------------------------------------------------------
+# Run results — Pydantic models
+# ---------------------------------------------------------------------------
+
+class RunListItem(BaseModel):
+    prefix:     str
+    command:    str
+    started_at: Optional[str] = None
+    label:      str
+
+
+class RunSummary(BaseModel):
+    prefix:           str
+    command:          str
+    started_at:       Optional[str] = None
+    finished_at:      Optional[str] = None
+    duration:         Optional[float] = None
+    files_scanned:    Optional[int] = None
+    files_processed:  Optional[int] = None
+    changed:          Optional[int] = None
+    skipped:          Optional[int] = None
+    errors:           Optional[int] = None
+    review_count:     Optional[int] = None
+    moved_to_ignored: Optional[int] = None
+    detail_groups:    Dict[str, List[str]] = {}
+
+
+class RunDetailEntry(BaseModel):
+    filepath: Optional[str] = None
+    reason:   Optional[str] = None
+    details:  Optional[Any] = None
+
+
+# ---------------------------------------------------------------------------
+# Run results — helpers
+# ---------------------------------------------------------------------------
+
+def _valid_slug(s: str) -> bool:
+    return bool(_re.match(r'^[a-zA-Z0-9_-]+$', s))
+
+
+def _valid_prefix(s: str) -> bool:
+    return bool(_re.match(r'^[a-zA-Z0-9_.-]+$', s))
+
+
+def _logs_path(command: str, filename: str) -> Optional[Path]:
+    """Return resolved path only if it stays within _LOGS_DIR/command."""
+    cmd_dir = (_LOGS_DIR / command).resolve()
+    try:
+        candidate = (cmd_dir / filename).resolve()
+        candidate.relative_to(cmd_dir)
+        return candidate
+    except (ValueError, OSError):
+        return None
+
+
+# ---------------------------------------------------------------------------
+# GET /api/library/runs
+# ---------------------------------------------------------------------------
+
+@router.get("/library/runs", response_model=List[RunListItem])
+async def list_runs(
+    command: Optional[str] = Query(default=None),
+    limit:   int           = Query(default=20, ge=1, le=100),
+) -> List[RunListItem]:
+    """List recent pipeline runs sorted by start time, newest first."""
+    if not _LOGS_DIR.exists():
+        return []
+
+    cmd_dirs: List[Path] = []
+    if command:
+        if not _valid_slug(command):
+            raise HTTPException(status_code=400, detail="Invalid command name")
+        d = _LOGS_DIR / command
+        if d.is_dir():
+            cmd_dirs = [d]
+    else:
+        try:
+            cmd_dirs = [d for d in _LOGS_DIR.iterdir() if d.is_dir()]
+        except (PermissionError, OSError):
+            return []
+
+    items: List[RunListItem] = []
+    for cmd_dir in cmd_dirs:
+        try:
+            for sf in sorted(
+                cmd_dir.glob("*_summary.json"),
+                key=lambda f: f.stat().st_mtime,
+                reverse=True,
+            ):
+                prefix = sf.name[: -len("_summary.json")]
+                try:
+                    started_at = _json.loads(sf.read_text("utf-8")).get("started_at")
+                except Exception:
+                    started_at = None
+                items.append(RunListItem(
+                    prefix=prefix,
+                    command=cmd_dir.name,
+                    started_at=started_at,
+                    label=f"{cmd_dir.name} · {prefix}",
+                ))
+        except (PermissionError, OSError):
+            continue
+
+    items.sort(key=lambda r: r.started_at or "", reverse=True)
+    return items[:limit]
+
+
+# ---------------------------------------------------------------------------
+# GET /api/library/runs/{command}/{prefix}/summary
+# ---------------------------------------------------------------------------
+
+@router.get("/library/runs/{command}/{prefix}/summary", response_model=RunSummary)
+async def get_run_summary(command: str, prefix: str) -> RunSummary:
+    if not _valid_slug(command):
+        raise HTTPException(status_code=400, detail="Invalid command")
+    if not _valid_prefix(prefix):
+        raise HTTPException(status_code=400, detail="Invalid prefix")
+
+    p = _logs_path(command, f"{prefix}_summary.json")
+    if p is None or not p.exists():
+        raise HTTPException(status_code=404, detail="Summary not found")
+
+    try:
+        data: Dict[str, Any] = _json.loads(p.read_text("utf-8"))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+    detail_groups: Dict[str, List[str]] = {}
+    cmd_dir = _LOGS_DIR / command
+    for group in ("modified", "skipped", "errors"):
+        pages = []
+        for pg in sorted(cmd_dir.glob(f"{prefix}_{group}_*.json")):
+            m = _re.search(r'_(\d+)\.json$', pg.name)
+            if m:
+                pages.append(m.group(1))
+        if pages:
+            detail_groups[group] = pages
+
+    return RunSummary(
+        prefix=prefix,
+        command=command,
+        started_at=data.get("started_at"),
+        finished_at=data.get("finished_at"),
+        duration=data.get("duration"),
+        files_scanned=data.get("files_scanned"),
+        files_processed=data.get("files_processed"),
+        changed=data.get("changed"),
+        skipped=data.get("skipped"),
+        errors=data.get("errors"),
+        review_count=data.get("review_count"),
+        moved_to_ignored=data.get("moved_to_ignored"),
+        detail_groups=detail_groups,
+    )
+
+
+# ---------------------------------------------------------------------------
+# GET /api/library/runs/{command}/{prefix}/detail/{group}/{page}
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/library/runs/{command}/{prefix}/detail/{group}/{page}",
+    response_model=List[RunDetailEntry],
+)
+async def get_run_detail(
+    command: str,
+    prefix:  str,
+    group:   str,
+    page:    str,
+) -> List[RunDetailEntry]:
+    if not _valid_slug(command):
+        raise HTTPException(status_code=400, detail="Invalid command")
+    if not _valid_prefix(prefix):
+        raise HTTPException(status_code=400, detail="Invalid prefix")
+    if group not in ("modified", "skipped", "errors"):
+        raise HTTPException(status_code=400, detail="Invalid group")
+    if not _re.match(r'^\d{1,6}$', page):
+        raise HTTPException(status_code=400, detail="Invalid page")
+
+    p = _logs_path(command, f"{prefix}_{group}_{page}.json")
+    if p is None or not p.exists():
+        raise HTTPException(status_code=404, detail="Detail file not found")
+
+    try:
+        raw = _json.loads(p.read_text("utf-8"))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+    if not isinstance(raw, list):
+        raise HTTPException(status_code=422, detail="Expected JSON array")
+
+    entries: List[RunDetailEntry] = []
+    for item in raw:
+        if isinstance(item, dict):
+            entries.append(RunDetailEntry(
+                filepath=item.get("filepath") or item.get("path") or item.get("file"),
+                reason=item.get("reason"),
+                details=item.get("details") or item.get("changes") or item.get("error"),
+            ))
+        elif isinstance(item, str):
+            entries.append(RunDetailEntry(filepath=item))
+    return entries
+
+
+# ---------------------------------------------------------------------------
+# Library tree
+# ---------------------------------------------------------------------------
 
 @router.get("/library/tree", response_model=LibraryTreeResponse)
 async def get_library_tree(

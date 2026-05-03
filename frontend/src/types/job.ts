@@ -50,3 +50,38 @@ export const ALLOWED_COMMANDS = [
 ] as const
 
 export type AllowedCommand = (typeof ALLOWED_COMMANDS)[number]
+
+// ---------------------------------------------------------------------------
+// Pipeline run results
+// ---------------------------------------------------------------------------
+
+export interface RunListItem {
+  prefix:     string
+  command:    string
+  started_at: string | null
+  label:      string
+}
+
+export interface RunSummary {
+  prefix:           string
+  command:          string
+  started_at:       string | null
+  finished_at:      string | null
+  duration:         number | null
+  files_scanned:    number | null
+  files_processed:  number | null
+  changed:          number | null
+  skipped:          number | null
+  errors:           number | null
+  review_count:     number | null
+  moved_to_ignored: number | null
+  detail_groups:    Record<string, string[]>
+}
+
+export interface RunDetailEntry {
+  filepath: string | null
+  reason:   string | null
+  details:  unknown
+}
+
+export type ResultGroup = 'modified' | 'skipped' | 'errors'

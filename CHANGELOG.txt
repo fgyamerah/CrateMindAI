@@ -8,6 +8,475 @@ Rules:
 - Focus on WHY, not just WHAT
 
 ----------------------------------------------------------------------
+[2026-05-02] — feat: metadata-sanitize new title rules + artist-repair subcommand
+----------------------------------------------------------------------
+TYPE: Feature
+SUMMARY: Deterministic title cleanup expanded; new artist-repair stage detects merged artist names.
+DETAILS:
+  metadata-sanitize — new _sanitize_title() rules:
+    - Strip leading bare track numbers ("3 Afro" → "Afro", "2 Sada..." → "Sada...")
+      Guard: result must be >= 2 chars to fire.
+    - Strip trailing BPM noise (80–160 range) at end of title (" 122", ")122")
+      Order matters: BPM strips first, then label suffix — handles "Title (Label)122" in one pass.
+    - Strip domain/piracy paren tokens globally: .com/.net/.org, blogspot, hulkshare, fordjonly, etc.
+    - Strip label-like trailing paren suffix containing label keywords
+      (Records, Recordings, Music, Distrokid, etc.) + known-label set (Shockit, etc.)
+      Protected: parens containing mix/version words (Original Mix, Extended Mix, Radio Edit,
+      Dub Mix, Remix, Reprise, Rework, Club Edit...) are NEVER stripped.
+    - Normalize (Feat. → (feat. casing in titles.
+    - New helper: _strip_label_suffix(value) → (str, str) — also exported for direct use.
+  artist-repair — new module (modules/artist_repair.py):
+    - Detects merged [a-z][A-Z] boundaries mid-word: "African RootsLebo" → split at 's'→'L'.
+    - Country suffix guard: strips (IT), (De), (UK), (ZA) before analysis; restored in output.
+    - Prefix guard: boundaries within first 3 chars of a word skipped (Mc, De, La).
+    - Word-start guard: 'm' preceded by space ('mOat') not flagged — lookbehind (?<=[^ ]).
+    - Known-artist dict built from: folder hierarchy (depth 1+2) + audio tag sampling + alias JSON.
+    - Confidence: HIGH 0.85 (both sides known) → write-eligible; MEDIUM 0.65 / LOW 0.45 → review.
+    - Review queue: data/intelligence/artist_repair_queue.json.
+    - --move-artist-review: quarantine flagged files to .BIN/CHKARTISTNAMES/.
+    - Incremental skip via run_logger; --force, --reset-stage, --limit, --verbose.
+  pipeline.py:
+    - Added artist-repair subparser between metadata-sanitize and artist-intelligence.
+    - Dispatch block: `if args.command == "artist-repair": from modules.artist_repair import ...`
+  Tests:
+    - tests/test_metadata_sanitize.py — 37 tests, 7 classes (all new title rules + protected parens).
+    - tests/test_artist_repair.py — 36 tests, 4 classes (strip suffix, merge positive/negative, propose).
+    - All 73 tests pass (0.82s).
+  Recommended pipeline order updated:
+    metadata-sanitize → artist-repair → artist-intelligence → ai-normalize →
+    metadata-enrich-online → filename-normalize → library-organize
+FILES:
+  modules/metadata_sanitize.py — new constants, _strip_label_suffix(), _sanitize_title() rewrite
+  modules/artist_repair.py — new file
+  pipeline.py — artist-repair subparser + dispatch
+  tests/test_metadata_sanitize.py — new file (37 tests)
+  tests/test_artist_repair.py — new file (36 tests)
+IMPACT: No breaking changes. All existing sanitize behaviour preserved. artist-repair is additive.
+NOTES: On the real library (/mnt/music_ssd/KKDJ/sorted/A), all 3 detected merges were LOW confidence
+  (0.45) — correctly queued for review, never auto-applied.
+
+----------------------------------------------------------------------
+[2026-04-25] — fix: library-organize: nested folder bug, unsafe detection gap, filename fallback, flatten mode
+----------------------------------------------------------------------
+TYPE: Bug Fix + Feature
+SUMMARY: Three bugs fixed; two features added in library_organize.py.
+DETAILS:
+  BUG 1 — Nested collaborator folders (e.g. sorted/S/Shaun Frank/SNBRN/Dope Earth Alien/):
+    Root cause: artist tags using '/' separator (e.g. "Shaun Frank / SNBRN / Dope Earth Alien")
+    were not split, so primary="Shaun Frank / SNBRN / Dope Earth Alien" — Python's pathlib
+    then interpreted the embedded '/' as path separators.
+    Fix: added \s*/\s* alternative to _COLLAB_SEP_RE; added _sanitize_dirname() as safety net.
+
+  BUG 2 — "Zakes BantwiniKasango" not detected as unsafe (only 1 total CamelCase transition):
+    Fix: added word-level check in _extract_primary: any space-separated word whose [a-z][A-Z]
+    transition appears at offset >= 3 within the word is flagged unsafe.
+    Protects 2-char prefixes (Mc, De, La) which have transition at offset < 3.
+
+  FEATURE 1 — Filename fallback: if artist tag missing, parse from "Artist - Title.ext".
+    _artist_from_filename() returns '' if ' - ' separator absent (low confidence).
+
+  FEATURE 2 — --flatten-collab-folders flag: repair mode.
+    _run_flatten(): finds files at depth > 3 relative to sorted_root and moves them
+    to sorted_root/<letter>/<artist>/<file>. No tag reads; uses existing folder names.
+    Collision-safe. _proc.rename_path() called on successful moves.
+FILES:
+  - modules/library_organize.py
+  - pipeline.py  (new flag, split summary for flatten vs organize modes)
+IMPACT: Non-breaking for existing correct structure. --flatten-collab-folders is opt-in.
+
+----------------------------------------------------------------------
+[2026-04-25] — fix: library-organize: &ME / &lez wrongly skipped as unsafe_primary_artist
+----------------------------------------------------------------------
+TYPE: Bug Fix
+SUMMARY: Artist names starting with & (e.g. &ME, &lez) were split at the & and produced
+         an empty primary artist, triggering unsafe_primary_artist skip. First-letter
+         bucket was also wrong (returned 'M' for &ME instead of '#').
+DETAILS:
+  - _COLLAB_SEP_RE: split & into its own alternative (\s+&\s*) requiring at least one
+    leading space. Comma/semicolon keep optional-space form (\s*[,;]\s*).
+    "Papik & Bengi" still splits; "&ME" no longer splits.
+  - _first_letter: replaced forward-scan-for-first-alpha with single first-char check.
+    &ME → '#', 2Point1 → '#', Papik → 'P'.  (was: &ME → 'M' — wrong)
+FILES:
+  - modules/library_organize.py
+IMPACT: Non-breaking. Artists starting with & now correctly organized under sorted/#/<name>/.
+
+----------------------------------------------------------------------
+[2026-04-25] — fix: preview runs must not write processed_state records
+----------------------------------------------------------------------
+TYPE: Bug Fix
+SUMMARY: library-organize and filename-normalize preview runs were writing DB records,
+         causing --apply to skip files as "unchanged" instead of processing them.
+DETAILS:
+  - All _proc.record() calls in the scan loop are now gated on apply=True.
+  - Statuses written only during --apply: "skipped", "no_change" (deterministic),
+    "success", "error" (already were apply-only).
+  - Preview runs produce zero DB writes — entirely read-only.
+  - --force continues to bypass processed_state as before.
+  - library_organize.run() now returns skipped_unchanged in the stats dict for
+    proper pipeline.py summary display.
+FILES:
+  - modules/library_organize.py
+  - modules/filename_normalize.py
+IMPACT: Non-breaking. Files incorrectly marked by a previous preview run are
+        unblocked by --force; clean state is restored after the next --apply run.
+
+----------------------------------------------------------------------
+[2026-04-25] — feat: library-organize subcommand — sort files into letter/artist folders
+----------------------------------------------------------------------
+TYPE: Feature
+SUMMARY: New deterministic stage that reorganizes audio files into <sorted>/<letter>/<primary-artist>/<filename>.
+DETAILS:
+  - New modules/library_organize.py:
+      _extract_primary(): splits on feat./ft./&/,/;/x/vs./with/pres. (first separator only)
+      _find_sorted_root(): walks up from --input to find "sorted" dir (≤5 levels)
+      _first_letter(): uppercase first alpha char or '#' for non-alpha
+      _safe_target(): collision-safe with ' (1)', ' (2)' suffix
+      run(): collect → plan → output/apply; full processed-state tracking
+  - config.py: LIBRARY_ORGANIZE_SKIP_DIRS added (= MAINTENANCE_SKIP_DIRS + exports/logs/sets)
+  - pipeline.py: run_library_organize() handler; p_lorg subparser with 6 flags;
+    dispatch; _resolve_library_root() already available
+  - COMMANDS.md: TOC, Core Pipeline line, Incremental Processing list, and full
+    ## library-organize section with table, rebuild order, examples
+FILES:
+  - modules/library_organize.py  (new)
+  - config.py
+  - pipeline.py
+  - COMMANDS.md
+IMPACT: Non-breaking. New stage only. No existing commands changed.
+
+----------------------------------------------------------------------
+[2026-04-25] — fix: dedupe quarantine placed under selected library root, not global /music/.BIN
+----------------------------------------------------------------------
+TYPE: Bug Fix
+SUMMARY: Quarantine path now derives from the --path argument instead of the global config default.
+DETAILS:
+  - New _resolve_library_root(scan_path) helper: if leaf dir is "sorted", returns parent; else returns scan_path
+  - run_dedupe(): quarantine_dir derivation priority:
+      1. --quarantine-dir (explicit override, unchanged)
+      2. _resolve_library_root(custom_path) / ".BIN" / "QUARANTINE"  (new, when --path given)
+      3. config.DEDUPE_QUARANTINE_DIR  (unchanged fallback, DB-based run with no --path)
+  - Quarantine path printed to console before scan begins
+  - No change to library_dedupe.py or config.py
+FILES:
+  - pipeline.py
+IMPACT: Non-breaking. Default (no --path) behaviour unchanged. --path runs now quarantine locally.
+NOTES:
+  - /mnt/music_ssd/KKDJ/sorted  → quarantine: /mnt/music_ssd/KKDJ/.BIN/QUARANTINE
+  - .BIN is in MAINTENANCE_SKIP_DIRS so quarantine is excluded from all future scans automatically
+
+----------------------------------------------------------------------
+[2026-04-25] — feat: filename-normalize artist review queue + --move-artist-review
+----------------------------------------------------------------------
+TYPE: Feature
+SUMMARY: Unsafe-artist files are now queued for manual review instead of silently skipped.
+DETAILS:
+  - _read_tags() extended to include album field (TALB / Vorbis ALBUM / M4A ©alb)
+  - _write_review_entry(): appends JSONL entry to data/review/artist_review_queue.jsonl
+    with timestamp, file_path, current_artist, title, album, suggested_action, moved/moved_to
+  - run() now collects unsafe-artist files in artist_review list; writes queue entries for all;
+    moves files to .BIN/ARTIST_REVIEW/ when --move-artist-review --apply passed
+  - Stats: artist_review_count, moved_to_artist_review added
+  - pipeline.py: move_artist_review kwarg passed to _fn_run; --move-artist-review flag added
+    to p_fnorm; 2 new summary lines; dry-run hint for review files
+  - COMMANDS.md: --limit and --move-artist-review added to flags table;
+    "Unsafe Artist Review" section added with queue path, quarantine dir, workflow examples
+FILES:
+  - modules/filename_normalize.py
+  - pipeline.py
+  - COMMANDS.md
+IMPACT: Non-breaking. New JSONL file written on first unsafe-artist encounter.
+        .BIN/ARTIST_REVIEW/ created on first --move-artist-review --apply run.
+
+----------------------------------------------------------------------
+[2026-04-23] — feat: persistent per-stage processed-state tracking
+----------------------------------------------------------------------
+TYPE: Feature
+SUMMARY: All five pipeline stages now skip unchanged files on repeat runs using SQLite-backed mtime+size fingerprints.
+DETAILS:
+  - New processed_state table in db.py (UNIQUE(stage, filepath), mtime+size columns)
+  - New modules/run_logger.py: should_skip(), record(), clear_stage(), rename_path()
+  - Integrated into: modules/metadata_sanitize.py, ai/normalizer.py,
+    intelligence/artist/runner.py, intelligence/enrichment/runner.py,
+    modules/filename_normalize.py
+  - SKIP_STATUSES = {success, no_change, skipped, ignored}; error/review always retried
+  - --force and --reset-stage flags added to 5 subparsers in pipeline.py
+  - Skipped unchanged count shown in every stage summary
+  - filename_normalize.run() gains force/reset_stage params; rename_path() called after
+    successful renames to keep prior-stage records valid under new path
+FILES:
+  db.py, modules/run_logger.py (new), modules/metadata_sanitize.py, ai/normalizer.py,
+  intelligence/artist/runner.py, intelligence/enrichment/runner.py,
+  modules/filename_normalize.py, pipeline.py, COMMANDS.md, README.md
+IMPACT: No breaking changes. Existing DBs auto-migrate via CREATE TABLE IF NOT EXISTS.
+NOTES: First run processes everything; subsequent runs skip unchanged files.
+       Use --force or --reset-stage for full reprocessing.
+
+----------------------------------------------------------------------
+[2026-04-24] — feat: filename-normalize subcommand
+----------------------------------------------------------------------
+TYPE: Feature
+SUMMARY: New CLI command to rename audio files using embedded tags.
+DETAILS:
+  - New module modules/filename_normalize.py
+    * Walks audio files under --input dir, reads tags via mutagen
+    * Renames to {artist} - {title} ({version}).ext pattern
+    * Version deduplication: skips appending version if already in title
+    * Collision-safe: appends ' (1)', ' (2)', ... when target exists
+    * Skips files missing artist or title — never guesses
+    * Excludes: .BIN, QUARANTINE, IGNORED, _duplicates, exports, logs, sets
+  - config.py: added FILENAME_NORMALIZE_SKIP_DIRS
+  - pipeline.py: run_filename_normalize(), argparse subparser, dispatch
+  - All doc files updated: COMMANDS.md, COMMANDS.txt, COMMANDS.html, README.md
+FILES: modules/filename_normalize.py (new), config.py, pipeline.py,
+       COMMANDS.md, COMMANDS.txt, COMMANDS.html, README.md
+IMPACT: New standalone subcommand — no existing behavior changed.
+NOTES: Preview by default. Run --apply only after tags are trusted
+       (after metadata-sanitize + ai-normalize + artist-intelligence).
+
+----------------------------------------------------------------------
+[2026-04-23] — tests: dedupe fixture generator (9 controlled test cases)
+----------------------------------------------------------------------
+TYPE: Test tooling
+SUMMARY: Standalone fixture script that generates minimal but mutagen-parseable
+         MP3/FLAC stubs covering all 9 dedupe engine test scenarios.
+
+DETAILS:
+  - tests/create_dedupe_test_fixture.py
+      • 9 cases: exact dupes, format quality, bitrate quality,
+        version protection, remix protection, false-positive prevention,
+        acapella protection, near-duplicate names, nested folder structure
+      • Raw MPEG1 Layer3 frame generator (_build_mpeg_frame): valid sync word
+        0xFF 0xFB + correct bitrate index byte → mutagen reads bitrate correctly
+      • Minimal FLAC generator (_build_flac): valid fLaC + STREAMINFO (34B,
+        44100Hz/stereo/16bps) + VORBIS_COMMENT → mutagen reads format + tags
+      • ID3v2.3 tag generator (_build_id3): TIT2 + TPE1 frames → dedupe reads
+        title + artist from tags, not filenames
+      • Exact-copy cases (1 and 9) use shared byte content → identical SHA-256
+      • --cleanup flag with interactive confirmation
+      • No pipeline imports, no new dependencies, stdlib only
+
+FILES:
+  tests/create_dedupe_test_fixture.py (new)
+
+----------------------------------------------------------------------
+[2026-04-23] — Operational storage refactor: all maintenance paths under .BIN/
+----------------------------------------------------------------------
+TYPE: Refactor
+SUMMARY: All operational/maintenance folders consolidated under MUSIC_ROOT/.BIN/
+         so active library scanners never see non-library content. Scan exclusion
+         rules generalised to cover hidden dirs (dot-prefix) across all walkers.
+
+DETAILS:
+  - config.py
+      • Added BIN_DIR = MUSIC_ROOT / ".BIN" — single operational root
+      • PROCESSING → BIN_DIR/PROCESSING  (was MUSIC_ROOT/processing)
+      • DUPLICATES  → BIN_DIR/DUPLICATES  (was MUSIC_ROOT/duplicates)
+      • REJECTED    → BIN_DIR/REJECTED    (was MUSIC_ROOT/rejected)
+      • CORRUPT_DIR → BIN_DIR/CORRUPT     (was LIBRARY/_corrupt)
+      • IGNORED_DIR = BIN_DIR/IGNORED     (new constant; was hardcoded string in runner.py)
+      • DEDUPE_QUARANTINE_DIR → BIN_DIR/QUARANTINE  (was MUSIC_ROOT/QUARANTINE)
+      • MAINTENANCE_SKIP_DIRS expanded: .BIN, QUARANTINE, IGNORED, CORRUPT,
+        DUPLICATES, REJECTED, _duplicates, _corrupt, __pycache__
+      • Comment added: scanners also skip any path part starting with "."
+  - pipeline.py
+      • _collect_audio_from_dir(): added hidden-dir check (part.startswith("."))
+  - db.py
+      • scan_orphans(): _in_maintenance() now also excludes hidden-dir parts;
+        untracked rglob loop gains matching hidden-dir guard
+  - modules/library_dedupe.py
+      • _is_maintenance_path(): extended to cover hidden dirs + updated fallback set
+  - intelligence/enrichment/runner.py
+      • _ENRICH_IGNORED_DIR hardcoded path replaced with config.IGNORED_DIR
+
+FILES:
+  config.py, pipeline.py, db.py, modules/library_dedupe.py,
+  intelligence/enrichment/runner.py
+
+MIGRATION:
+  See migration steps in NEXT_TASKS.txt or run: python pipeline.py orphan-scan
+
+----------------------------------------------------------------------
+[2026-04-23] — Library maintenance: fix quarantine path isolation
+----------------------------------------------------------------------
+TYPE: Fix
+SUMMARY: Quarantine directory moved outside the active library tree; all scans
+         now exclude maintenance paths; nested quarantine moves prevented.
+
+DETAILS:
+  - config.py
+      • DEDUPE_QUARANTINE_DIR: SORTED/"_duplicates" → MUSIC_ROOT/"QUARANTINE"
+        (outside library tree; respects DJ_MUSIC_ROOT env var)
+      • MAINTENANCE_SKIP_DIRS frozenset added: {"_duplicates", "IGNORED", "QUARANTINE"}
+  - pipeline.py
+      • _collect_audio_from_dir(): skips any path containing a MAINTENANCE_SKIP_DIRS
+        component — prevents quarantine/ignored files appearing in all subcommand scans
+  - db.py
+      • scan_orphans(): excludes maintenance paths from known_fps (stale_db_rows)
+        and from the untracked rglob walk — quarantine rows no longer pollute counts
+  - modules/library_dedupe.py
+      • _is_maintenance_path() helper added (uses config.MAINTENANCE_SKIP_DIRS)
+      • apply_changes(): skips removal candidates already in a maintenance path
+      • _quarantine_file(): safety-net guard — returns None without moving if file
+        is already inside a maintenance directory
+
+FILES:
+  config.py, pipeline.py, db.py, modules/library_dedupe.py
+
+MIGRATION:
+  • Old quarantine was SORTED/_duplicates — files there are safe but no longer
+    auto-discovered by scans. Move them to MUSIC_ROOT/QUARANTINE if desired.
+
+----------------------------------------------------------------------
+[2026-04-23] — Library maintenance layer: dedupe + orphan-scan (Phase 1)
+----------------------------------------------------------------------
+TYPE: Feature
+SUMMARY: Built the operational library maintenance layer — preview-first duplicate
+         quarantine (--apply required to act) and a two-category orphan detector
+         (stale_db_rows vs untracked_files, never merged).
+
+DETAILS:
+  - modules/library_dedupe.py
+      • _quarantine_file() now accepts source_root — preserves relative folder
+        structure inside QUARANTINE/ (fallback: flat if path not relative to root)
+      • apply_changes() gains source_root parameter, passes it to _quarantine_file
+      • run() default changed to dry_run=True (preview-first); gains source_root param
+      • CLI hint updated to "Run with --apply to quarantine N file(s)."
+  - db.py
+      • scan_orphans(lib_root, *, include_untracked=True) added after prune_stale_tracks()
+        Single DB pass: stale_db_rows = non-stale rows missing on disk;
+        untracked_files = audio files on disk absent from DB.
+        Returns (stale_db_rows: list[str], untracked_files: list[Path])
+  - pipeline.py
+      • run_dedupe() updated: --dry-run replaced by --apply flag; source_root passed
+      • dedupe subparser: --dry-run → --apply; examples updated
+      • run_orphan_scan() added: preview by default; --apply writes stale status to DB
+      • orphan-scan subparser + dispatch added
+  - backend/app/services/track_service.py
+      • get_orphan_stats() → Dict[str, int] with stale_db_rows + active_rows
+
+FILES:
+  modules/library_dedupe.py, db.py, pipeline.py,
+  backend/app/services/track_service.py
+
+MIGRATION:
+  • dedupe CLI callers: replace --dry-run with --apply when wanting to quarantine
+  • All quarantine moves now preserve source folder structure inside QUARANTINE/
+
+----------------------------------------------------------------------
+[2026-04-23] — Collection workspace: pipeline run results browser (Phase 5)
+----------------------------------------------------------------------
+TYPE: Feature
+SUMMARY: Plugged pipeline run output files directly into the Collection UI.
+         Clicking "Results" in the toolbar switches the center panel to a run
+         browser — shows recent runs, summary stats, grouped tabs (Modified /
+         Skipped / Errors), paginated detail tables, and a row inspector.
+
+DETAILS:
+  - Backend: 3 new read-only endpoints in library.py
+      GET /api/library/runs                             — list runs (newest first)
+      GET /api/library/runs/{command}/{prefix}/summary  — summary JSON + page index
+      GET /api/library/runs/{command}/{prefix}/detail/{group}/{page} — paged entries
+    Looks for logs under $LOGS_DIR (config) or project_root/logs/{command}/
+    Strict path validation (regex + resolve().relative_to()) prevents traversal.
+  - Frontend: RunListItem/RunSummary/RunDetailEntry/ResultGroup types in job.ts;
+    fetchRunList/fetchRunSummary/fetchRunDetail in library.ts;
+    RunResultsPanel + RunEntryInspector components added to Collection.tsx.
+  - Center view toggles between "tracks" and "results" via BarChart2 "Results"
+    button in toolbar. Right panel shows RunEntryInspector when a result row
+    is selected.
+
+FILES:
+  backend/app/api/routes/library.py
+  frontend/src/types/job.ts
+  frontend/src/api/library.ts
+  frontend/src/pages/Collection.tsx
+
+IMPACT: Read-only. No pipeline behaviour changed. No new dependencies.
+NOTES: Logs must follow the <prefix>_summary.json + <prefix>_{group}_{page}.json
+       convention under logs/{command}/ for discovery to work.
+
+----------------------------------------------------------------------
+[2026-04-21] — Production-grade observability: paged detail files + rich summary JSON
+----------------------------------------------------------------------
+TYPE: Enhancement
+SUMMARY: Upgraded the run logging system across all four intelligence pipeline
+         commands. Adds grouped paged detail files (modified/skipped/errors,
+         max 200 entries/page), structured JSONL events, and a full summary JSON
+         with nested results/ai/quality/sanitize subsections. Memory-safe for
+         large runs (8000+ files).
+
+DETAILS:
+  utils/prompt_logger.py:
+    - RunLogger completely rewritten:
+      record_outcome(group, path, reason, details) → paged JSON files
+      inc(counter) / set_counter(key, value) → summary counters
+      log_file_event() → rich structured JSONL entries
+      finish() assembles nested summary JSON (results/ai/quality/sanitize/detail_files)
+    - _PAGE_SIZE = 200 per group page
+    - detail_files in summary references page filenames only (not duplicated inline)
+
+  modules/metadata_sanitize.py:
+    - files_scanned, files_processed, changed/unchanged/skipped/errors counters
+    - Pre-sanitize mode detection: uses sanitize_changed/sanitize_clean prefixes
+      when running as --pre-sanitize step inside ai-normalize
+
+  ai/normalizer.py:
+    - valid_responses, json_failures, guard_rejections AI subsection counters
+    - high_confidence / medium_confidence / low_confidence quality buckets
+    - record_outcome for modified (applied/preview), skipped, errors groups
+
+  intelligence/artist/runner.py:
+    - files_scanned, files_processed, changed/unchanged/review_count counters
+    - record_outcome for modified/skipped/errors groups
+    - Preview mode tracked in modified group
+
+  intelligence/enrichment/runner.py:
+    - high/medium/low_confidence quality tracking
+    - review_count, moved_to_ignored counters
+    - record_outcome for all decision branches
+    - Preview mode tracked in modified group
+
+  pipeline.py:
+    - start_run() moved before pre-sanitize step so it captures sanitize stats
+    - finish() now only needs exit_code; all other counters set inside runners
+    - print_paths() format matches spec: Log file / JSONL file / Summary file
+
+FILES: utils/prompt_logger.py, modules/metadata_sanitize.py, ai/normalizer.py,
+       intelligence/artist/runner.py, intelligence/enrichment/runner.py, pipeline.py
+IMPACT: Additive only — no pipeline behavior changed.
+NOTES: Paged files written to logs/<command>/<prefix>_<group>_NNN.json
+
+----------------------------------------------------------------------
+[2026-04-20] — Automatic persistent run logging for intelligence pipeline commands
+----------------------------------------------------------------------
+TYPE: Feature
+SUMMARY: All four intelligence pipeline commands now write per-run .log, .jsonl,
+         and _summary.json files automatically under logs/<command>/.
+
+DETAILS:
+  config.py:
+    - Added PIPELINE_LOGS_DIR = Path(__file__).parent / "logs"
+
+  utils/prompt_logger.py:
+    - Added _JsonlHandler: attaches to root logger; appends structured JSON to .jsonl
+    - Added RunLogger: manages FileHandler + _JsonlHandler lifecycle per run;
+      writes _summary.json with command, started_at, finished_at, duration_sec,
+      input_path, applied, exit_code on finish()
+    - Added start_run(command, log_root) → RunLogger
+    - Added get_run_logger() → RunLogger | None
+
+  pipeline.py:
+    - Added --log-dir flag to metadata-sanitize, artist-intelligence, ai-normalize,
+      metadata-enrich-online parsers
+    - Wrapped all four dispatch blocks with start_run() / finish() calls
+    - Prints [run log] paths at start of each run
+
+FILES: config.py, utils/prompt_logger.py, pipeline.py
+IMPACT: No behaviour change; purely additive. logs/ directory created on first run.
+NOTES: --log-dir overrides PIPELINE_LOGS_DIR. Default: logs/<command>/ in project root.
+
+----------------------------------------------------------------------
 [2026-04-20] — Project renamed to CrateMindAI; intelligence pipeline production-ready
 ----------------------------------------------------------------------
 TYPE: Major milestone

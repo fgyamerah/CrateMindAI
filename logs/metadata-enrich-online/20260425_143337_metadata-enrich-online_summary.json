@@ -1,0 +1,50 @@
+{
+  "command": "metadata-enrich-online",
+  "input_path": "/mnt/music_ssd/KKDJ/sorted",
+  "limit": 8000,
+  "started_at": "2026-04-25T14:33:37.667900",
+  "finished_at": "2026-04-25T19:29:47.422161",
+  "duration_sec": 17769.754261,
+  "files_scanned": 6553,
+  "files_processed": 6553,
+  "applied": true,
+  "results": {
+    "changed": 2260,
+    "unchanged": 687,
+    "skipped": 479,
+    "errors": 31
+  },
+  "quality": {
+    "high_confidence": 3164,
+    "medium_confidence": 325,
+    "low_confidence": 97
+  },
+  "review_count": 129,
+  "moved_to_ignored": 479,
+  "exit_code": 1,
+  "detail_files": {
+    "modified": [
+      "20260425_143337_metadata-enrich-online_modified_001.json",
+      "20260425_143337_metadata-enrich-online_modified_002.json",
+      "20260425_143337_metadata-enrich-online_modified_003.json",
+      "20260425_143337_metadata-enrich-online_modified_004.json",
+      "20260425_143337_metadata-enrich-online_modified_005.json",
+      "20260425_143337_metadata-enrich-online_modified_006.json",
+      "20260425_143337_metadata-enrich-online_modified_007.json",
+      "20260425_143337_metadata-enrich-online_modified_008.json",
+      "20260425_143337_metadata-enrich-online_modified_009.json",
+      "20260425_143337_metadata-enrich-online_modified_010.json",
+      "20260425_143337_metadata-enrich-online_modified_011.json",
+      "20260425_143337_metadata-enrich-online_modified_012.json"
+    ],
+    "skipped": [
+      "20260425_143337_metadata-enrich-online_skipped_001.json",
+      "20260425_143337_metadata-enrich-online_skipped_002.json",
+      "20260425_143337_metadata-enrich-online_skipped_003.json",
+      "20260425_143337_metadata-enrich-online_skipped_004.json"
+    ],
+    "errors": [
+      "20260425_143337_metadata-enrich-online_errors_001.json"
+    ]
+  }
+}

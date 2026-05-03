@@ -1,0 +1,42 @@
+[
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Anna Palmarola/Anna Palmarola - Let It Go (Cafe Creme Music Records) 121.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Antonello Coghe/Antonello Coghe - 2 Malfunction.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Antonio Alterino/Antonio Alterino - No Scrubs (Original Mix) (Distrokid) 122.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Antonio Sax/Antonio Sax, Piruchi Apo - Saborabo (Elvis Castellano Remix) (Xumba Recordings) 122.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Apollo Soule/Apollo Soule, Kelvin Blaque - Ezweni (Shungi Music) 97.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Asombro/Asombro - Sebastiann 122.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Ayan Zh (Kz)/Ayan Zh (Kz) - Deeper (Extended Mix) (Afrokhin) 120.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Azee Project/Azee Project - 2 Pescador (Abicahs 2015 Rework).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  }
+]

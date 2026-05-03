@@ -30,6 +30,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import config
+import modules.run_logger as _proc
 from ai.normalizer import _collect_files, _read_full_tags, _apply_tags
 from intelligence.artist.artist_schema import ArtistParseResult
 from intelligence.artist.artist_parser import parse_artist_string, _try_personal_name_split
@@ -62,6 +63,11 @@ REASON_CASING_SKIPPED_ACRONYM   = "casing_skipped_acronym"
 REASON_CASING_NORMALIZED_WORD   = "casing_normalized_word"
 REASON_CONFIDENCE_BOOSTED       = "confidence_boosted"
 REASON_ALIAS_CANDIDATE          = "alias_candidate_detected"
+
+# Slash/pipe separator guard — catches unrepaired corrupted artist fields.
+# Allowlist mirrors modules/artist_repair._SLASH_ARTIST_ALLOWLIST.
+_SUSPICIOUS_SEP_RE = re.compile(r'[/|\\]')
+_INTEL_SLASH_ALLOWLIST: frozenset = frozenset({"ac/dc"})
 
 # Matches non-canonical feat tokens (not "feat." exactly)
 _FEAT_NON_CANONICAL_RE = re.compile(r"\b(featuring|ft)\.?\b", re.IGNORECASE)
@@ -401,8 +407,22 @@ def run_artist_intelligence(args) -> int:
     print(f"Review queue : {config.ARTIST_REVIEW_QUEUE}")
 
     # Collect files
+    verbose = getattr(args, "verbose", False)
     print(f"\nScanning {input_path} ...")
-    files = _collect_files(input_path, limit)
+    files_all = _collect_files(input_path, None)  # full scan before limit
+    if verbose:
+        total_on_disk = sum(1 for p in input_path.rglob("*") if p.is_file())
+        skipped_unsupported = total_on_disk - len(files_all)
+        log.info(
+            "Discovery: %d total files on disk, %d supported audio, %d unsupported/skipped",
+            total_on_disk, len(files_all), skipped_unsupported,
+        )
+    if limit is not None and limit > 0:
+        files = files_all[:limit]
+        if verbose:
+            log.info("Limit applied: processing %d of %d supported files", len(files), len(files_all))
+    else:
+        files = files_all
     if not files:
         print("No supported audio files found.")
         return 0
@@ -411,6 +431,14 @@ def run_artist_intelligence(args) -> int:
     mode_label = "DRY-RUN" if dry_run else ("APPLY" if do_apply else "PREVIEW")
     print(f"Mode: {mode_label}  |  Min confidence: {min_confidence}\n")
 
+    from utils.prompt_logger import get_run_logger as _grl
+    _rl = _grl()
+    if _rl:
+        _rl.inc("files_scanned", len(files))
+        _rl.set_counter("input_path", str(input_path))
+        _rl.set_counter("limit", limit)
+        _rl.set_counter("applied", do_apply)
+
     results          = []
     n_applied        = 0
     n_skipped        = 0
@@ -418,9 +446,52 @@ def run_artist_intelligence(args) -> int:
     n_no_change      = 0
     reason_counts: Dict[str, int] = {}
 
+    _stage = "artist-intelligence"
+    _force = getattr(args, "force", False)
+    if getattr(args, "reset_stage", False):
+        _proc.clear_stage(_stage)
+    n_skip_unchanged = 0
+
     for path in files:
+        if not _force and not dry_run and _proc.should_skip(_stage, path):
+            n_skip_unchanged += 1
+            continue
+        if _rl:
+            _rl.inc("files_processed")
         current_tags, result = _process_track(path, alias_store)
         current_artist = (current_tags.get("artist") or "").strip()
+
+        # Intercept unresolved slash/pipe separators.  These should have been
+        # fixed by artist-repair upstream.  Normalizing them as a valid artist
+        # string is unsafe — send straight to review queue.
+        if (current_artist
+                and _SUSPICIOUS_SEP_RE.search(current_artist)
+                and current_artist.lower() not in _INTEL_SLASH_ALLOWLIST):
+            _note = "unsafe_separator_artist"
+            review_queue.add(
+                file=str(path),
+                raw_artist=current_artist,
+                normalized_candidate="",
+                existing_title=(current_tags.get("title") or "").strip(),
+                confidence=0.0,
+                notes=_note,
+            )
+            review_queued  = True
+            n_review      += 1
+            if not dry_run:
+                _proc.record(_stage, path, "review", _note)
+            if _rl:
+                _rl.inc("review_count")
+                _rl.record_outcome("skipped", str(path), _note, "")
+            log.info("REVIEW [unsafe_separator_artist] %s  artist=%r", path.name, current_artist)
+            _print_track_result(path, current_tags, result, [], False, None, True)
+            results.append({
+                "file": str(path), "current_artist": current_artist,
+                "proposed_artist": None, "confidence": 0.0, "changes": [],
+                "change_reasons": [_note], "applied": False,
+                "skipped_reason": None, "review_queued": True, "notes": _note,
+            })
+            continue
 
         proposed_artist = _propose_artist(current_artist, result)
 
@@ -437,6 +508,10 @@ def run_artist_intelligence(args) -> int:
 
         if not changes:
             n_no_change += 1
+            if not dry_run:
+                _proc.record(_stage, path, "no_change")
+            if _rl:
+                _rl.inc("unchanged")
 
         elif result.confidence < min_confidence:
             # Determine review reason: ci-only alias match vs general low-confidence
@@ -460,6 +535,9 @@ def run_artist_intelligence(args) -> int:
             )
             review_queued = True
             n_review += 1
+            if _rl:
+                _rl.inc("review_count")
+                _rl.record_outcome("skipped", str(path), REASON_SKIPPED_AMBIGUOUS if has_ci_alias else "low_confidence", review_note)
             log.info(
                 "REVIEW [%s] %s  confidence=%.2f",
                 REASON_SKIPPED_AMBIGUOUS if has_ci_alias else "low_confidence",
@@ -471,6 +549,7 @@ def run_artist_intelligence(args) -> int:
             if ok:
                 applied = True
                 n_applied += 1
+                _proc.record(_stage, path, "success")
                 log.info(
                     "APPLIED [%s] %s  %r → %r",
                     ", ".join(change_reasons), path.name,
@@ -478,9 +557,28 @@ def run_artist_intelligence(args) -> int:
                 )
                 for r in change_reasons:
                     reason_counts[r] = reason_counts.get(r, 0) + 1
+                if _rl:
+                    _rl.inc("changed")
+                    _rl.record_outcome(
+                        "modified", str(path),
+                        ", ".join(change_reasons),
+                        f"{changes[0]['old']} → {changes[0]['new']}",
+                    )
             else:
                 skipped_reason = "tag write failed"
                 n_skipped += 1
+                _proc.record(_stage, path, "error", "write_failed")
+                if _rl:
+                    _rl.inc("errors")
+                    _rl.record_outcome("errors", str(path), "write_failed", "")
+        else:
+            # preview / dry-run with proposed changes
+            if _rl:
+                _rl.inc("changed")
+                _rl.record_outcome(
+                    "modified", str(path), "preview",
+                    f"{changes[0]['old']} → {changes[0]['new']}",
+                )
 
         _print_track_result(
             path, current_tags, result, changes,
@@ -516,6 +614,8 @@ def run_artist_intelligence(args) -> int:
     print(f"  Skipped        : {n_skipped}")
     print(f"  Review queued  : {n_review}  (confidence < {min_confidence})")
     print(f"  No change      : {n_no_change}")
+    if n_skip_unchanged:
+        print(f"  Skipped unchanged: {n_skip_unchanged}")
 
     preview_pending = sum(
         1 for r in results

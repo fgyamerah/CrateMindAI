@@ -1,0 +1,1002 @@
+[
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Swanky Tunes/Maneye - 6A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/The Sauce, Jakes/3 Dots - 9A - 88.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/The Stoned/Been in Love - 7A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/The Stoned/Search For Ur Dreams - 7A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/The Stoned/Take Me Away - 3A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/The Sunburst Band/He Is - 8A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/The Supermen Lovers/Starlight - 5A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/sEEn Vybe/Esoteric - 9A - 108.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/TEYMORI/Valley Of Peace - 10A - 118.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/TRESOR/TRESOR - Sondela - 7A - 109.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/TRESOR/TRESOR - Speed Of Sound - 7A - 116.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/TSOS & Nalize/Open Your Eyes - 5A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Ta Gali/How Deep Is Your House - 1A - 115.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Taola/Freedom - 12A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tarantulaz feat. Tiffany Lorén/I Wasn’t Kidding - 2A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tayllor/My Neck My Back - 9A - 118.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tayllor/My Neck, My Back - 8A - 118.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tayllor, Marasi/Besame Mucho - 2A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tayllor, Marasi/Tayllor, Marasi - Besame Mucho (Extended Mix) - 2A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Taz Morale, Nonzwakazii/Impumelelo - 6A - 115.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Team Distant/Team Distant - Drum Session - 5A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/All I Need - 5A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/All The People - 12A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Beggin' (1) - 7A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Beggin' - 7A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Bella Ciao - 9A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Belly Dancer - 3A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Candy Shop - 9A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Close - 7A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Disconnected - 6A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Do Yo Dance - 4A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Don't Want No Scrubs - 1A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Drinkee - 8A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Goldigger - 9B - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/HEY! - 7A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Hit The Road Jack - 1A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Holla - 12A - 130.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/I Don't Think U Do - 6A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/I Wanna Love You - 4A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/In Da Getto - 9A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/In The Club - 8A - 130.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Is It You - 11A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Jump Around - 9A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Lollipop - 4A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Maracatu - 4A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Move Ya Body - 11A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/P 2 Da J - 11A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Party's Jumpin - 12A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Rainfall - 6A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=title, album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Really Really Hot - 11A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Records U Play - 7A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Shine - 7A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Silver Screen - 4A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Think About It - 8A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tech House/Tripasia - 8A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Technasia/I Am Somebody - 4A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Technoir/Techtube - 2B - 118.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Teddy Douglas/Betcha wouldnt hurt me - 5A - 117.mp3",
+    "reason": "deezer",
+    "details": "conf=0.93 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Teddy Douglas Ultra Nate/Searching - 9A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tee Smith/Carry On - 10A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tee Smith feat. Emily Holligan/Keep On Going - 1A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Teresa Jenee'/Remember - 4A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Terry Dexter/Renegade - 8A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Terry Dexter/With You - 8A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Thab De Soul/Kuzolunga - 1A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Thakzin/Men & The Birds - 12A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Thakzin, Divine Keys/Changing Times - 2A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Thandi Draai & Dj Beekay/Letha - 12A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/The Truffle Tribe x Belladonna/Hidden Harmony - 5A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/The Truffle Tribe x Belladonna/Tangent - 12A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Themba/Paliva - 4A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Thimble/Thimble Opposite - 7A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Those Guys/Tonite - 7A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tiga/Bugatti - 4A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Todd Edwards & Sinden/Deeper - 8A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Todd Terje/Inspector Norse - 7B - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Todd Terry & Gypsymen/Babarabatiri - 7A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Todd Terry & Riva Starr/This Is The Sound - 8A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tokyo Cartel/All That Jive - 4B - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tom Bug & Grooveline/Love Will Shine - 7A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tom Conrad Carla Prather/Speechless - 8A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tom Glide/You Are My Light - 2A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tom Trago/Use Me Again - 6A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tommy Bones/Dub Style - 3A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Toomy Disco/Oscillation - 2A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Torren Foot/Candy - 11A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tortured Soul/Might Do Something Wrong - 8A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.99 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Toshi/Toshi, Hatha Grateful - 8A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Toshi, Soulroots/Mabali - 2A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tough Love/The Light - 12A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Touzani/Alhambra - 7A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Travis Emmons/Gabriel - 10A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Trigga, Chase & Status, Irah, Flowdan, Bou/Baddadan - 4A - 87.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Truth Committee/Salsa Revolution - 2A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tube & Berger/Imprint of Pleasure - 8A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tuccillo/The Waves - 2A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tumelo/Tumelo - Oya Go Down - 9A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tumelo/Tumelo Feat. Rorisang Not Sleeping Alone - 12A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tunnelvisions/Guava - 3A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Turbojazz ft Jennyfire/Optimistic - 2A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Turbojazz, Rona Ray/Like You - 3A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Turntable Orchestra/You're Gonna Miss Me - 12A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Two Lee/Lost Inside - 10A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/UMEK, Matteo Vitanza/Trouble so Hard - 3A - 133.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/UPZ & PM Project Sofiya Nzau/Na Wose - 5A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Ugo Banchi/Dance With Ibiza - 9A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Underground Ministries feat. Kenny Bobien/I Shall Not Be Moved - 1A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/United Funk Order/Zone 3 2.0 - 10A - 152.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Aurora Dance - 8A - 119.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Cash - 10A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Chagu (1) - 2A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Dreamin’ - 7A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Famax - 4A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Get Lucky - 11A - 114.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Girl - 11B - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Gold - 7A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Hallelujah - 1B - 114.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/I Am One With The Universe - 11A - 118.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/I Wanna Feel You - 12A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Imamou - 5A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Inkonzo Yesibili - 5A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/It Feels Good - 12A - 118.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Jazz Carnival - 6A - 132.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Let You Go - 8A - 118.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Mantra - 3A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Marrakech - 9A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Mi Casa - 11A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Mysteries - 9A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Niaje - 10A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/No Give Without Take - 8A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Oh Boy - 3A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Panko Day - 12A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Peperuke - 10A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Rebound.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Siyobalekelaphi.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Spirits.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Stay Focused.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Therapy.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Tierjag.mp3",
+    "reason": "deezer",
+    "details": "conf=0.97 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Track Model 17.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Unknown Artist - 2 Above Smoke (Original Mix).mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Unknown Artist - 2 Fulani.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Want U Again.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/We Rise And We Fall.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/You Can Do It.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/You Know.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/You're a Freak.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Urban Blues Project/Your Heaven (1) - 5A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Urban Blues ProjectBobby Pruitt/We Are One - 11A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/The Visionary/My Life Is Music - 2A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/1000 Years from Today - 11A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.97 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/80's Throwback - 6A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/A Safe and Happy Place - 6A - 116.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/All I Need - 9A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Beau Mot Plage - 10A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Black Shoes White Socks - 11A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Breathe - 5A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Bring That Beat Back - 4A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Can You Feel The Sunshine - 2A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Can't You Believe - 3B - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Circle Track - 6A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Come On Over - 7A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Cro-Magnon - 9A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Dance Warriors - 8A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Dancing for Heaven - 3A - 132.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/DiscoEyes - 2A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Dr. Funk - 6A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Enjoy Music - 10A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Fantasy Light - 2A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Fly Away - 6A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Flying High - 9A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Follow Me - 5B - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Forgiven - 7A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Go Downtown - 6A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/God Made Me Phunky - 3A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Hazin' + Phazin' - 7A - 130.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Head Held High - 2A - 132.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/I Can See The Light - 5A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/I Love - 2A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/I Love Liverpool - 2A - 132.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/I Might Be - 3A - 132.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/I Want to Be in Fabric - 8A - 132.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/In Loving Memory - 1A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/In My Head - 8A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Javid Khan - 4A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Jean's Train Of Thought - 7A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Jump Into The Light - 10A - 115.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Jus Dance - 10A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Keep Bouncing - 2A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Leave My Head Alone Brain - 6A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Main Vibe - 9A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Make Peace - 7A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Melondrop - 5A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Mongobonix - 7A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Mr. Bongo - 5A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/No Place Like London - 5A - 132.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Oohhh Baby - 7A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Origins - 6A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Perfect Love - 9A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VA Defected House Masters/Piknik - 7A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=isrc"
+  }
+]

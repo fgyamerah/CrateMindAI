@@ -484,27 +484,62 @@ def print_dry_run_summary(scanned: int, groups: List[DupeGroup]) -> None:
                 print(f"    • {i.path.name}  ({i.fmt})")
             print(f"  Reason: {g.reason}")
 
-    print(f"\nRun without --dry-run to quarantine {total_remove} file(s).")
+    print(f"\nRun with --apply to quarantine {total_remove} file(s).")
 
 
 # ---------------------------------------------------------------------------
 # Apply mode
 # ---------------------------------------------------------------------------
 
-def _quarantine_file(info: FileInfo, quarantine_dir: Path) -> Optional[int]:
+def _is_maintenance_path(path: Path) -> bool:
+    """Return True if path passes through a quarantine, ignored, or hidden directory."""
+    try:
+        skip = config.MAINTENANCE_SKIP_DIRS
+    except AttributeError:
+        skip = frozenset({".BIN", "QUARANTINE", "IGNORED", "CORRUPT", "_duplicates"})
+    parts = path.parts
+    return (
+        any(part in skip for part in parts)
+        or any(part.startswith(".") for part in parts)
+    )
+
+
+def _quarantine_file(
+    info: FileInfo,
+    quarantine_dir: Path,
+    source_root: Optional[Path] = None,
+) -> Optional[int]:
     """
-    Move info.path to quarantine_dir.
+    Move info.path to quarantine_dir, preserving the folder structure relative
+    to source_root.  Falls back to a flat quarantine if source_root is None or
+    the path cannot be made relative.
+
     Returns file size in bytes on success, None on failure.
     """
-    quarantine_dir.mkdir(parents=True, exist_ok=True)
-    dest = quarantine_dir / info.path.name
+    # Safety net: never quarantine files already inside a maintenance location.
+    if _is_maintenance_path(info.path):
+        log.warning("SKIP quarantine (already in maintenance path): %s", info.path)
+        return None
 
-    # Avoid silently overwriting a different file in quarantine
+    if source_root is not None:
+        try:
+            rel      = info.path.relative_to(source_root)
+            dest_dir = quarantine_dir / rel.parent
+        except ValueError:
+            dest_dir = quarantine_dir
+    else:
+        dest_dir = quarantine_dir
+
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / info.path.name
+
+    # Avoid silently overwriting a different file already in quarantine
     if dest.exists():
-        dest = quarantine_dir / f"{info.path.stem}__{info.sha256[:8]}{info.path.suffix}"
+        dest = dest_dir / f"{info.path.stem}__{info.sha256[:8]}{info.path.suffix}"
 
     try:
         shutil.move(str(info.path), str(dest))
+        log.info("  → %s", dest)
         return info.size
     except Exception as exc:
         log.error("Could not move %s → %s: %s", info.path, dest, exc)
@@ -515,6 +550,7 @@ def apply_changes(
     groups: List[DupeGroup],
     quarantine_dir: Path,
     dry_run: bool,
+    source_root: Optional[Path] = None,
 ) -> Tuple[int, int]:
     """
     Move duplicate files to quarantine_dir.
@@ -532,6 +568,10 @@ def apply_changes(
                 log.warning("File already gone: %s", r.path)
                 continue
 
+            if _is_maintenance_path(r.path):
+                log.warning("SKIP (already in maintenance path): %s", r.path)
+                continue
+
             log.info(
                 "QUARANTINE [%s]  %s  (%s %.1f MB)  reason: %s",
                 g.group_type.upper(), r.path.name, r.fmt, r.size_mb, g.reason,
@@ -543,7 +583,7 @@ def apply_changes(
             )
 
             if not dry_run:
-                freed = _quarantine_file(r, quarantine_dir)
+                freed = _quarantine_file(r, quarantine_dir, source_root=source_root)
                 if freed is not None:
                     quarantined += 1
                     bytes_freed += freed
@@ -590,16 +630,19 @@ def print_apply_summary(
 
 def run(
     paths: List[Path],
-    dry_run: bool = False,
+    dry_run: bool = True,
     quarantine_dir: Optional[Path] = None,
+    source_root: Optional[Path] = None,
 ) -> Tuple[int, int, int, int]:
     """
     Scan paths for duplicates and optionally quarantine them.
 
     Args:
         paths:          List of audio file paths to scan.
-        dry_run:        If True, report only — do not move any files.
+        dry_run:        If True (default), report only — do not move any files.
+                        Pass dry_run=False (via --apply) to actually quarantine.
         quarantine_dir: Where to move duplicates (default: config.DEDUPE_QUARANTINE_DIR).
+        source_root:    Root directory for preserving relative folder structure in quarantine.
 
     Returns:
         (files_scanned, groups_found, files_quarantined, bytes_freed)
@@ -634,7 +677,7 @@ def run(
             sum(r.size for r in g.remove) for g in actionable
         )
 
-    quarantined, bytes_freed = apply_changes(groups, quarantine_dir, dry_run=False)
+    quarantined, bytes_freed = apply_changes(groups, quarantine_dir, dry_run=False, source_root=source_root)
 
     print_apply_summary(scanned, groups, quarantined, bytes_freed, quarantine_dir, dry_run=False)
 

@@ -1,0 +1,1002 @@
+[
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/11. Bontan/11. Bontan, Surya Sen - Wile Out (Feat. Surya Sen) (fordjonly.com).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/2point1/2Point1; Butana; Phlyvocals; Berita - 3 Batho Bana (Monocles & Vidasoul Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/4th Measure Men/4th Measure Men - 4 You.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/84Bit/84Bit - 2 Surlash (Extended Mix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Cafe De Anatolia/Cafe De Anatolia, 90psi - Heart In Me (Original Mix) (Cafe De Anatolia Hub) 120.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Cafe De Anatolia/Cafe De Anatolia, Alex Malagoli - Unadunda Feat Nicolas Tanda (Original Mix) (Cafe De Anatolia Hub) 120.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Cafe De Anatolia/Cafe De Anatolia, Golden (Fr) - Aleinou (Extended Mix) (Cafe De Anatolia Hub) 123.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Cafe De Anatolia/Cafe De Anatolia, Leonidas K - Silencio (Original Mix) (Cafe De Anatolia Hub) 120.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Cafe De Anatolia/Cafe De Anatolia, Muntego - Sibi Makedo (Original Mix) (Cafe De Anatolia Hub) 124.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Cafe De Anatolia/Cafe De Anatolia, Pëtäk - Yemanjá (Original Mix) (Cafe De Anatolia Hub) 120.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Cafe De Anatolia/Cafe De Anatolia, Sadei - Hanina (Extended Mix) (Cafe De Anatolia Hub) 120.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Cafe De Anatolia/Cafe De Anatolia, Sqln - Zema (Original Mix) (Cafe De Anatolia Hub) 120.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caianda/Caianda - 3 No Telling.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiano/Caiano - Amani (Extended Mix) (Union Records (It)) 122.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiano/Caiano - Amani (Union Records (It)) 122.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 0 Entabeni (feat. Pixie L).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 1 Agora.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 1 Fela.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 1 The Rise.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 1 Yawela.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 2 Abiro.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 2 Abobaba.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 2 Africa.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 2 Around Mars.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 2 Bright Chamber.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 2 D.I.M.P.H.O.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 2 Drummotions.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 2 Herero.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 2 Huhudi.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 2 In Ibiza.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 2 Kulum.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 2 Kwipiri.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 2 Moon Seeker.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 2 Nakuru.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 2 No Freedom.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 2 Ntyilo Ntyilo (feat. Anda Cass).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 2 Thanda (feat. Pixie L).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro - 2 Vuselela (feat. Mpumi).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Cassio Ware/Cassio Ware feat. Sajaeda - Fantasy (Feat. Sajaeda).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Ceevox/Ceevox, Oba Frank Lords - How My Drum Goes (Micfreak & Dj Spen Mix) (Unquantize) 125.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Celestial Mayan/Celestial Mayan - Gata Only (Original Mix) (Tablinum Records) 115.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Chiwasa/Chiwasa feat. Phatmega - 3 Moyo.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Chomee/Chomee - 3 Hamba Uyolala (Part 2) [feat. Professor & Trademark].mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Chomee/Chomee, Professor - 3 Amaplan.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Chris River/Chris River, Mark Pigato - Ritmos (Extended Mix) (Ethica Records) 125.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Chrisoul Inactive/Chrisoul Inactive, Lungi Mandebele, Trinity - 2 Isizwe (Afro Mix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Christos Fourkis/Christos Fourkis - 2 Summer Love feat. Joahn Dashi (Stones & Bones Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Christos Fourkis/Christos Fourkis - 3 Djembe Fever.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Christos Fourkis/Christos Fourkis - 3 Doumasi.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Citizen Deep/Citizen Deep, Mash O feat. Tsoseletso - 2 Falling.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Claudio Ricci/Claudio Ricci, Megablast - 4 Amour (Brigado Crew African Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Copyright/Copyright, Shovell - Kama Yeah (Samm, Maxi Meraki, Marlin Remix) 122.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Coste/Coste - Qué Tal (Extended Mix) (Armada Music) 120.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Craftman/Craftman - Yamil (David Mayer Remix) 120.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Cristian Vinci/Cristian Vinci - 3 Nairobi.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Cuebur/Cuebur - 3 Tamba (Feat. DJ Maphorisa & Sha Sha).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Cuebur/Cuebur - Tamba (Feat. DJ Maphorisa & Sha Sha).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Culoe De Song/Culoe De Song - 2 Ambush.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Culoe De Song/Culoe De Song - 2 Gyser.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Culoe De Song/Culoe De Song - 2 Woman Woman.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Culoe De Song/Culoe De Song - 3 Y.O.U.D.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Culoe De Song/Culoe De Song feat. Thandiswa Mazwai - 3 Nguwe Lo (Original).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Culoe De Song/Culoe de Song - 1 Webaba (1).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Cupuaçu/Cupuaçu - Lucas Aoki, Raul Vidal (Extended Mix) 120.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/D Banj/D Banj - 3 Oliver Twist (Triger Sixkay Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/D-zaya/D-zaya feat. Shisaboy - 3 BBM Dance.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/D.General/D.General, Mahume - 1 Misconception.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DASCO/DASCO - 3 African Power.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ/DJ X-Trio - 2 Ewe (AfroFlava Mix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ/DJ X-Trio feat. Dji Tafinha - 2 Welelo.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ/DJ X-trio, Kreative Nativez - 2 Jasmine Thompson - Aint Nobody.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ/Dj X-Trio - 2 Africa Feat. Luzolo (NuLu Music).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ/Dj X-Trio feat. Francis Boy - 3 Dagella (Afroflava Mix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Angelo/DJ Angelo - 1 Sira Kuruni (feat. Farafi).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Angelo/DJ Angelo - 2 Carnaval Dream.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Angelo/DJ Angelo, Myrto Joyce - 2 See the Sea (Original).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Barata/DJ Barata, Jackbass - 4 Super Mario.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Clock/Dj Clock - 3 Crazy (feat. Thiwe) (1).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Cndo Invaders/DJ Cndo Invaders feat. Mpume & Joocy - 2 Ubusuku Nemini.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Damiloy Daniel/Dj Damiloy Daniel, Zuma Webber - 3 Good Vibe.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Damiloy Daniel/Dj Damiloy Daniel, Zuma Webber - 3 Star Magui (Vocal).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Demo Coppola/DJ Demo Coppola - 3 I Am African (Fante Twi).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Fresh (SA)/DJ Fresh (SA), Eltonnick - 2 I'll House You.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Fudge/Dj Fudge, Jinadu, Hallex M - Black Hole Sun (Original Mix) (United Music Records) 123.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Fudge/Dj Fudge, Jinadu, Hallex M - Black Hole Sun (Radio Edit) (United Music Records) 123.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Ganyani/DJ Ganyani - 2 You're not so Far.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Ganyani/DJ Ganyani, Kimosabe - 3 Heaven.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Ganyani/DJ Ganyani, Mlu, Big Nuz - 3 Be There.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Kabila/DJ Kabila feat. WendySoni - 2 Somnyama.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Kent/DJ Kent - 2 Don't Let Go (feat Mo-T).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Kent/DJ Kent feat. Liquideep - 2 Top of the World.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Kent/DJ Kent feat. Malehloka Hlalele - 3 Falling (DJ Kents Unreleased Mix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Kent/DJ Kent feat. Mo T - 2 Don't Let Go (Extended Mix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Kobus/DJ Kobus feat. Elton K - 3 You were mine.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Maphorisa/DJ Maphorisa, Breyth - 3 Vuvushka ft. Moonchild Sanelly & Yasira Bhelz.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Merlon/DJ Merlon - 2 Inhliziyo (feat. Ndu Shezi) [Urban Mix].mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Merlon/DJ Merlon - 2 Izimvula (feat. Sandile) [Extended].mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Merlon/DJ Merlon - 2 Uqobolwami (feat. Mbuso Khoza & Mondli Ngcobo).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Merlon/DJ Merlon - 3 She's All Yours (feat. Ziphoh).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Merlon/DJ Merlon, Black Coffee, Khaya Mthethwa - 2 Reflections (Cuebur & D-Malice Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Mlungu/DJ Mlungu feat. Makau - 3 Mister DJ (Original).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Mlungu/Dj Mlungu - 2 The Sax Song (Vikiss Drum Edit) (1).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Mshega/DJ Mshega - 2 How Do You Feel (feat. Ziyon).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Mshega/DJ Mshega - 2 Impilo (feat Nomcebo).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Mshega/DJ Mshega - 3 Do For Love (feat Dominic Neill).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Mshega/Dj Mshega - 3 Get Down (Whistle Song) (feat. Busi N) (1).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Mshega/Dj Mshega, Busi N - 2 Who (1).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Qness/DJ Qness - 2 Umkhehlo feat. Lizwi.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Satelite/DJ Satelite - 3 Groove Elevation.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Satelite/DJ Satelite feat. Fredy Massamba - 3 Abantu (Djeff Afrozila Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Satelite/DJ Satelite, Cee Elassad, Inami - 2 If Only (Caiiro's Ndebele Mix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Sdunkero/DJ Sdunkero - 3 Nothing Sweeter (DJ Click Reworks).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Shimza/DJ Shimza - 3 Faith.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Shimza/DJ Shimza feat. Prom Knights & Enoo Napa - 2 Uprising (Original).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Shimza/DJ Shimza, Andyboi, Cuebur feat. Poeticluvchild - 3 Zvinoita Chete.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Shimza/Dj Shimza - 2 All the Way (feat. Zano) (1).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Shimza/Dj Shimza - 2 Bayethe (feat. BK) (1).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Shimza/Dj Shimza - 3 Akulalwa (feat. Dr Malinga) (1).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Shimza/Dj Shimza - 3 No Lie (feat. King Jay) (1).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Shimza/Dj Shimza, Busiswa, Dj Thakzin - 3 Party Ka Shimza (1).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Shimza/Dj Shimza, Caiiro - 2 Meu Pedido (Original).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Shimza/Dj Shimza, DrumeticBoyz - 2 The One Man Show (1).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Vetkuk/Dj Vetkuk, Mahoota feat. Nokwazi, Black Motion & Drumatic Boys - 3 Thando Lok'dlala (Original).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJMreja/DJMreja, Neuvikal Soule - 3 Our Afrika.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Da Africa Deep/Da Africa Deep - 2 Kerubo.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Da Capo/Da Capo - 2 Found You (feat. Berita).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Da Capo/Da Capo - 2 Mufasa (PDJ Remake).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Da Capo/Da Capo feat. Tshepo King - 2 Afrika.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Da Capo/Da Capo, K. Zela, Lwa - 2 Take Me There (Da Capo's Deeper Touch).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Da Capo/Da Capo, Tshepo King - 2 Afrika (Louie Vega Remix Vocal).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Da Great Damage/Da Great Damage - Venom Sound (Shungi Music) 120.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Da Lee Ls/Da Lee Ls - Voodoo Dance (Sounds Of Afro & Electronic) 120.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Da Mike/Da Mike, Lazarusman - 3 The Thing.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Da Mike/Da Mike, Oluhle - 2 Lendoda (Vocal Mix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Da Q-Bic/Da Q-Bic - 2 Ethnic Setllers (Original Ethnic Mix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Da Q-Bic/Da Q-Bic - 2 The African Sons Coronation (Original Adumu Rite).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Da Q-Bic/Da Q-Bic - 3 Adumu Dance (Adumu Ritual).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dady Mussagy/Dady Mussagy, Dj Habias feat. Baixinho Requentado - 3 Quadradinho.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Damon Sharpe/Disco Fries/Damon SharpeDisco Fries - 15 Minutes.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dance/Dance With The Wolves - Lohrasp Kansara, Adam Wilson (Extended) 122.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Daniel Rateuke/Daniel Rateuke, AWEN - 2 Gold (Enoo Napa Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Daniel Rateuke/Daniel Rateuke, D4nyo - Mwana (Original Mix) (Switch Records) 123.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Daniel Williams/Daniel Williams - Shambala (Original Mix) (Be Adult Roots) 120.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Danny Buddah Morales/Danny Buddah Morales - Drumlife (Feat Stingray) (Original Mix) (Groovebom Records) 124.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dantiez Saunderson/Dantiez Saunderson, Kpd - Place Called Home (Feat. Larae Starr) (Cristoph Remix).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dany Cohiba/Dany Cohiba - 2 Where You Are.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Darque/Darque feat. Black Coffee & Ka - 2 Ready For the World.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Darque/Darque feat. Rhey Osborne - 3 Shakara (Limpopo Rhythm Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dave Anthony/Dave Anthony feat. Aleysha Lei (Of HanLei) - 1 I Feel For You (NDinga Gaba Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dave Anthony/Dave Anthony, DJ Spen - 1 Emotive (JazzCool remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dave Anthony/Dave Anthony, Newman (UK) feat. Ann Nesby - 3 All Love (Michele Chiavarini Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Anthony/David Anthony, Beverlei Brown - 2 I Don't Know (Manoo Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Caetano/David Caetano - No Down (Afro Pulse Remix) (Sound-Exhibitions-Records) 120.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Fesser/David Fesser vs. Havoc, Lawn - 4 El Mohan.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Harness/David Harness, Chris Lum, Lady Alma, The Rainmakers, Cecil, Relevant Sound - 3 Let It Fall (DJ Spen's Century Falls Mix - 2018 Remaster).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Herrero/David Herrero - 3 Franklin Preacher.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Marques/David Marques - Umuntu (Movimento Casa) 120.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Mayer/David Mayer, Floyd Lavine - 3 Sondela feat. Xolisa.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Morales/David Morales - 3 Drumster (Unreleased Version).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Penn/David Penn - 3 Eighty-Five.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Penn/David Penn feat. Ramona Renea - 3 Stand Up (Clean Extended).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Penn/David Penn, Hosse - 3 Con Son Ft. Africa G. (Vocal Mix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Penn/David Penn, KPD - 3 Disc-Jockey (Dennis Quin Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Penn/David Penn, Rober Gaez - 4 El Chamaco (T. Tommy Victor Perez Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Penn/David Penn, Rober Gaez - 4 My Day.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dazzle Drums/Dazzle Drums - 3 Ijoigbo.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dbn Nyts/Dbn Nyts - 3 Drunk & Texting Me (feat. Busi N & Mega Drums).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/De Cave Man/De Cave Man - 2 Black Queen (Enoo Napa Afro Mix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dead Space/Dead Space, John Summit - 4 Impactor (Extended Mix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dean Baker/Dean Baker - Child In My Heart (Micfreak & Dj Spen Remix) (Qu3) 124.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Decent Friends/Decent Friends, Afrikan Roots - Muntu Wami (Feat. Miss Twaggy).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Decent Friends/Decent Friends, Afrikan RootsMiss Twaggy - Muntu Wami (Feat. Miss Twaggy).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Deco (Be)/Deco (Be) - Breathing (Original Mix) 120.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dee Jay Alicia/Dee Jay Alicia, Black Widow, Mike Dunn - 3 Gruv Me (Mike Dunn Black Ball 5.1).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dee Montero/Dee Montero - Afrodesia (Original Mix) (Futurescope) 122.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Deep Da Souljar/Deep Da Souljar, Dvine Lopez - Come To Me (Toxic Musiq Remix) (D.E56 Recordings) 112.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DeepQuestic/DeepQuestic - 2 Ziphathe.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DeepQuestic/DeepQuestic feat. Lizwi - 2 Wash'umuzi (DJMreja & Neuvikal Soule Odyssey Dub).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Del Horno/Del Horno - 4 Yeah (Groovebox Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dele Sosimi/Dele Sosimi - 2 Turbulent Times (Armonica Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Demor/Demor - 2 Cliche.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Demor/Demor - 2 Ephathini.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Demor/Demor - 2 Friday Night Feeling.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Demor/Demor - 2 Isoka.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Demor/Demor - 2 Ongena Dosi.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Demor/Demor - 2 Thando.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Demor/Demor - 2 Toast To Our Anniversary.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Demor/Demor - 3 I'm Still Breathing.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Demor/Demor - 3 Thanana.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Deniz Kabu/Deniz Kabu, Wolfson - 3 Let It Go.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dennis Cruz/Dennis Cruz - 2 Orisha.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dennis Cruz/Dennis Cruz - 2 Pimiento Verde.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dennis Cruz/Dennis Cruz - 2 Sensual (Andres Blows Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dennis Cruz/Dennis Cruz - 3 Los Corazones.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dennis Cruz/Dennis Cruz - 4 Everybody.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dennis Cruz/Dennis Cruz - 4 Fake Party.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dennis Cruz/Dennis Cruz - 4 Fake.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dennis Cruz/Dennis Cruz, Spencer K - 3 Impacto.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dennis Ferrer/Dennis Ferrer - 2 Funu.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dennis Ferrer/Dennis Ferrer, Andre Hommen - 3 No Difference.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  }
+]

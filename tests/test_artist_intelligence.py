@@ -8,6 +8,7 @@ Covers:
   - ArtistAliasStore (lookup_with_method, conservative alias, unknown artist)
   - _propose_artist (direct == comparison, feat normalization surfaced)
   - _compute_change_reasons (all reason tokens)
+  - _collect_files file-count regression (no accidental 50-file cap)
 """
 import sys
 from pathlib import Path
@@ -785,3 +786,73 @@ class TestCasingNormalization:
         result = _make_result("Black Coffee")
         reasons = _compute_change_reasons("Black Coffee", "Black Coffee", result)
         assert REASON_CASING_NORMALIZED not in reasons
+
+
+# ===========================================================================
+# _collect_files — regression: no accidental 50-file cap
+# ===========================================================================
+
+class TestCollectFilesNoDefaultCap:
+    """
+    Regression guard for the bug where artist-intelligence defaulted --limit
+    to 50, silently capping all runs regardless of library size.
+    """
+
+    def test_collects_more_than_50_files(self, tmp_path):
+        from ai.normalizer import _collect_files
+
+        # Create 120 stub .mp3 files across subdirectories
+        for i in range(120):
+            subdir = tmp_path / f"artist_{i % 10}"
+            subdir.mkdir(exist_ok=True)
+            (subdir / f"track_{i:03d}.mp3").touch()
+
+        files = _collect_files(tmp_path, limit=None)
+        assert len(files) == 120, (
+            f"Expected 120 files but got {len(files)} — "
+            "check for an accidental default cap in --limit"
+        )
+
+    def test_limit_none_returns_all_files(self, tmp_path):
+        from ai.normalizer import _collect_files
+
+        for i in range(75):
+            (tmp_path / f"track_{i:03d}.mp3").touch()
+
+        assert len(_collect_files(tmp_path, limit=None)) == 75
+
+    def test_explicit_limit_still_respected(self, tmp_path):
+        from ai.normalizer import _collect_files
+
+        for i in range(80):
+            (tmp_path / f"track_{i:03d}.mp3").touch()
+
+        assert len(_collect_files(tmp_path, limit=20)) == 20
+
+    def test_mixed_extensions_all_collected(self, tmp_path):
+        from ai.normalizer import _collect_files
+
+        # Mix of supported extensions — all should be found
+        for i in range(30):
+            (tmp_path / f"track_{i:03d}.mp3").touch()
+        for i in range(30):
+            (tmp_path / f"track_{i:03d}.flac").touch()
+        for i in range(30):
+            (tmp_path / f"track_{i:03d}.aiff").touch()
+
+        files = _collect_files(tmp_path, limit=None)
+        assert len(files) == 90
+
+    def test_unsupported_extensions_excluded(self, tmp_path):
+        from ai.normalizer import _collect_files
+
+        for i in range(60):
+            (tmp_path / f"track_{i:03d}.mp3").touch()
+        # These should not be collected
+        for i in range(10):
+            (tmp_path / f"image_{i}.jpg").touch()
+        for i in range(5):
+            (tmp_path / f"doc_{i}.txt").touch()
+
+        files = _collect_files(tmp_path, limit=None)
+        assert len(files) == 60

@@ -2,208 +2,370 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Session Housekeeping (REQUIRED)
+---
+
+# 🔴 PRIMARY EXECUTION RULE (CRITICAL)
+
+Claude MUST operate in **controlled, scoped mode**.
+
+### NEVER:
+
+* Explore the full codebase unless explicitly instructed
+* Traverse directories automatically
+* Read files not explicitly listed by the user
+* Load unnecessary context “for understanding”
+* Re-read the same file multiple times
+
+### ALWAYS:
+
+* Work only on explicitly specified files
+* Ask before expanding scope
+* Minimize token usage
+* Prefer precision over coverage
+
+If a task requires broader context:
+→ STOP and ask for permission
+
+---
+
+# 🧠 WORKING MODES
+
+Claude operates in ONE mode per task:
+
+## 1. READ MODE (default)
+
+* Read ONLY files explicitly listed
+* Do NOT discover additional files
+* Do NOT infer architecture beyond given files
+
+## 2. MODIFY MODE
+
+* Only modify specified files
+* Preserve structure and conventions
+* Do NOT refactor unrelated logic
+
+## 3. EXPLORE MODE (RARE — must be explicitly requested)
+
+Allowed ONLY if user explicitly says: **“explore codebase”**
+
+When enabled:
+
+* Limit to specified directories
+* Stop after minimal understanding
+* Summarize before proceeding
+
+If mode is unclear → default to READ MODE
+
+---
+
+# ⚠️ TOKEN DISCIPLINE RULES
+
+* Target <10k tokens per operation
+* Avoid multi-file reads unless required
+* Never load entire modules unless necessary
+* Do not expand context speculatively
+
+If token usage may exceed ~20k:
+→ STOP and ask for confirmation
+
+---
+
+# 🧩 FILE SCOPE RULE
+
+Claude MUST follow strict scope:
+
+* Only read files explicitly provided
+* Only analyze logic relevant to the task
+* If additional files are needed:
+  → ASK instead of searching
+
+---
+
+# 🔁 SESSION HOUSEKEEPING (REQUIRED)
 
 At the end of every session where you changed code, fixed a bug, added a feature, or completed a task, you MUST update these three files before finishing:
 
-**`CHANGELOG.txt`** — Add an entry at the top of the log (under the header) using the format:
-```
+### CHANGELOG.txt
+
+Add an entry at the top:
 [YYYY-MM-DD] — Short title describing what changed
-- What changed and why (not just the diff — the reason)
-- Files affected
-- Any migration notes (DB schema changes, config renames, etc.)
-```
 
-**`NEXT_TASKS.txt`** — Mark any completed tasks `[x]`, add any new tasks or follow-ups discovered during the session, update `[~]` for anything now in progress.
+* What changed and why
+* Files affected
+* Migration notes (if any)
 
-**`DJToolkit_CONTEXT.txt`** — Update any section where architecture, CLI behaviour, DB schema, config keys, or known issues changed. Keep it accurate as a reference for future sessions.
+### NEXT_TASKS.txt
 
-Do NOT update these files if the session was read-only (questions, explanations, no code changed).
+* Mark completed tasks [x]
+* Add new follow-ups
+* Update [~] for in-progress tasks
 
-## Project Overview
+### DJToolkit_CONTEXT.txt
 
-**TrackIQ** — a local-first, pipeline-based DJ library automation toolkit. Takes raw audio downloads (inbox folder) and produces a clean, fully-tagged, BPM/key-analysed music library with Rekordbox-compatible XML exports. Runs on Ubuntu Studio 24 (Linux) and outputs files ready for transfer to a Windows DJ drive for Rekordbox.
+Update any sections where:
 
-## Mixed In Key — Authoritative Source (HARD RULE)
+* architecture changed
+* CLI behavior changed
+* DB schema changed
+* config keys changed
+* known issues changed
 
-**Mixed In Key (MIK) is the authoritative source of BPM, key, and cue data.**
-This is a non-negotiable design constraint, not a suggestion.
+Do NOT update these files if session was read-only.
 
-Rules that must never be violated:
-- **BPM**: Do NOT run analysis if BPM already exists in the DB or audio file tags
-- **Key**: Do NOT run analysis if Camelot key already exists in DB or file tags (TKEY/INITIALKEY)
-- **Cue points**: Cue suggest is DISABLED by default; never overwrite existing cues
-- **Rekordbox XML**: XML export is DISABLED by default; use `--force-xml` only when MIK is not in use
-- **M3U playlists**: Always safe to generate — they do not affect MIK/Rekordbox state
+---
 
-When writing code that touches BPM, key, or cue data:
-1. Always check if the value already exists before computing/writing it
-2. If it exists, preserve it — even if you think you have a better value
-3. The analyzer's `_read_existing_analysis()` helper reads from file tags for this purpose
+# 🧱 PROJECT OVERVIEW
 
-Any future XML writes must preserve existing cue data and MIK-added structures.
+TrackIQ — a local-first, pipeline-based DJ library automation toolkit.
 
-## Commands
+Transforms raw downloads into:
 
-```bash
-# Run the full pipeline (MIK-first: analysis only fills missing values)
+* clean metadata
+* BPM/key (MIK-compliant)
+* organized library
+* Rekordbox-compatible exports
+
+Runs on Linux → outputs to Windows-compatible DJ drive.
+
+---
+
+# 🎧 MIXED IN KEY — HARD RULE (NON-NEGOTIABLE)
+
+Mixed In Key (MIK) is the authoritative source for:
+
+* BPM
+* Key
+* Cue points
+
+### NEVER:
+
+* Overwrite existing BPM
+* Overwrite existing key
+* Overwrite cue points
+* Re-analyze if data already exists
+
+### ALWAYS:
+
+1. Check DB and file tags first
+2. Preserve existing values
+3. Only fill missing data
+
+Use:
+
+* `_read_existing_analysis()` helper
+
+### XML:
+
+* Disabled by default
+* Only use `--force-xml` if MIK is not used
+
+### M3U:
+
+* Always safe
+
+---
+
+# ⚙️ COMMANDS
+
+## Pipeline
+
 python3 pipeline.py
-
-# Dry run (no writes)
 python3 pipeline.py --dry-run
-
-# Skip Beets metadata lookup (use Python fallback parser only)
 python3 pipeline.py --skip-beets
-
-# [legacy] Force-skip all analysis (normally not needed — pipeline is MIK-first)
 python3 pipeline.py --skip-analysis
-
-# Enable cue point suggestion (disabled by default — MIK owns cues)
 python3 pipeline.py --force-cue-suggest
-
-# Run against a custom library root (overrides all config paths)
 python3 pipeline.py --path /mnt/music_ssd/KKDJ
-
-# Re-analyze all library tracks missing BPM or key
 python3 pipeline.py --reanalyze
 
-# Run tests
+## Tests
+
 python3 -m pytest tests/ -v
 python3 -m pytest tests/test_sanitizer.py -v
-
-# Run a single test class
 python3 -m pytest tests/test_sanitizer.py::TestSanitizeText -v
-
-# Run without pytest
 python3 -m unittest tests.test_sanitizer -v
 
-# Install dependencies
+## Install
+
 pip install -r requirements.txt
-# For dev/test:
 pip install -r requirements.txt pytest
-```
 
-### Subcommands
+---
 
-```bash
-# Generate playlists only (without re-running the full pipeline)
-python3 pipeline.py playlists
+# 🔧 SUBCOMMANDS
 
-# Detect and quarantine duplicates in the existing library
-python3 pipeline.py dedupe
+playlists
+dedupe
+cue-suggest
+set-builder
+harmonic-suggest
+artist-folder-clean
+artist-merge
+metadata-clean
+label-intel
+rekordbox-export
+rekordbox-export --force-xml
+analyze-missing
+convert-audio
+audit-quality
 
-# Suggest cue points — DISABLED by default (MIK owns cues); explicit subcommand still works
-python3 pipeline.py cue-suggest [PATH ...]
+---
 
-# Build an energy-curve-aware set
-python3 pipeline.py set-builder
+# 🧬 ARCHITECTURE
 
-# Harmonic mixing suggestions for next-track
-python3 pipeline.py harmonic-suggest
+## Entry Point
 
-# Artist folder cleanup (fix bad folder names)
-python3 pipeline.py artist-folder-clean
+pipeline.py is the single entry point.
 
-# Merge artist spelling variants
-python3 pipeline.py artist-merge
+Pipeline steps (fixed order):
+QC → dedupe → organize → sanitize → analyze → tag → cue → playlists → report
 
-# Retroactive global junk removal across all tags in library
-python3 pipeline.py metadata-clean
+---
 
-# Scrape Beatport/Traxsource label metadata
-python3 pipeline.py label-intel
+## Configuration
 
-# Export M3U playlists for the SSD (XML is disabled by default — MIK owns XML)
-python3 pipeline.py rekordbox-export
+* config.py defines all paths
+* NEVER hardcode paths
+* Use config_local.py for overrides
+* Support env variables
 
-# Export with XML (NOT recommended when using MIK)
-python3 pipeline.py rekordbox-export --force-xml
+---
 
-# Analyze library tracks that are missing BPM/key tags (MIK-first: only fills gaps)
-python3 pipeline.py analyze-missing
+## Database
 
-# Convert .m4a files to .aiff (parallel, preserves metadata, archives originals)
-python3 pipeline.py convert-audio \
-    --src /downloads/m4a \
-    --dst /mnt/music_ssd/KKDJ/inbox \
-    --archive /mnt/music_ssd/originals_m4a
+SQLite via db.py
 
-# Audit library for codec/bitrate quality (non-destructive by default)
-python3 pipeline.py audit-quality
-python3 pipeline.py audit-quality --path /mnt/music_ssd/KKDJ/
-python3 pipeline.py audit-quality --dry-run --verbose
-python3 pipeline.py audit-quality --move-low-quality /music/_low_quality
-python3 pipeline.py audit-quality --write-tags
-python3 pipeline.py audit-quality --report-format csv,json
+Tables:
 
-# Roll back tag changes for a track
-python3 scripts/rollback.py
-```
+* tracks
+* track_history
+* pipeline_runs
 
-## Architecture
+All writes via:
 
-### Entry Point
+* db.upsert_track()
+* db.mark_status()
 
-`pipeline.py` is the single entry point for all functionality. It parses subcommands/flags and delegates to modules. The pipeline runs 9 ordered steps: QC → dedupe → organize → sanitize → BPM+key analysis → tag write → cue suggest → playlist generation → report.
+Idempotency:
 
-### Configuration
+* db.is_processed()
+* TXXX:PROCESSED=1
 
-`config.py` defines all paths and tunables. **Never hardcode paths** — always reference `config.*`. Local overrides go in `config_local.py` (git-ignored), which is imported with `from config_local import *` at the end of `config.py`. All paths are also overridable via environment variables (e.g. `DJ_MUSIC_ROOT`, `RB_LINUX_ROOT`, `RB_WIN_DRIVE`).
+---
 
-The `--path` CLI flag calls `_override_music_root()` in `pipeline.py`, which rewrites all derived `config.*` paths at runtime — use this when working with the SSD mount instead of the default `/music` tree.
+## Modules
 
-### Database
+Each module:
+run(files, run_id, dry_run) → files
 
-`db.py` is the SQLite persistence layer. Tables:
-- `tracks` — one row per known file, carries status (`pending`, `ok`, `rejected`, `duplicate`, `needs_review`, `error`) plus BPM, key, bitrate
-- `track_history` — immutable audit log: snapshots original + cleaned metadata as JSON before any tag write; used by `scripts/rollback.py`
-- `pipeline_runs` — one row per pipeline invocation with counters
+Stateless and isolated.
 
-All writes go through `db.upsert_track()` and `db.mark_status()`. The idempotency guard is `db.is_processed()` — tracks with `status='ok'` and `TXXX:PROCESSED=1` in their ID3 tags are skipped.
+Core modules:
+qc.py
+dedupe.py
+organizer.py
+sanitizer.py
+analyzer.py
+tagger.py
+playlists.py
+parser.py
+cue_suggest.py
+set_builder.py
+harmonic.py
+library_dedupe.py
+rekordbox_export.py
+analyze_missing.py
+convert_audio.py
+audit_quality.py
+metadata_clean.py
+artist_merge.py
+artist_folder_clean.py
 
-### Modules
+---
 
-Each module in `modules/` exposes a `run()` function with signature `run(files, run_id, dry_run) → files`. Modules are stateless between calls and do not import each other.
+# 🚫 FORBIDDEN BEHAVIOR
 
-| Module | Responsibility |
-|---|---|
-| `qc.py` | ffprobe validation — bitrate, duration, codec |
-| `dedupe.py` | rmlint duplicate detection against existing library |
-| `organizer.py` | Beets (MusicBrainz) file organization with Python fallback |
-| `sanitizer.py` | Strip URL watermarks, promo phrases, DJ-pool junk from all tag fields |
-| `analyzer.py` | BPM (aubio → librosa fallback) + musical key (keyfinder-cli → Camelot) |
-| `tagger.py` | Write final tags: ID3v2.3 for MP3, FLAC, M4A via mutagen |
-| `playlists.py` | Generate M3U and Rekordbox XML playlists |
-| `parser.py` | Parse filenames/tags; detect label names, Camelot prefixes, junk |
-| `sanitizer.py` | `sanitize_text()` + `sanitize_metadata()` are the core junk-removal functions |
-| `cue_suggest.py` | Multi-feature audio analysis for cue point suggestions |
-| `set_builder.py` | Energy-curve-aware automatic set generation |
-| `harmonic.py` | Camelot-wheel + BPM + energy + genre scoring |
-| `library_dedupe.py` | Post-pipeline exact/quality duplicate quarantine |
-| `rekordbox_export.py` | Export library to Rekordbox XML, mapping Linux paths to Windows drive letter |
-| `analyze_missing.py` | Find and re-analyze tracks missing BPM/key |
-| `convert_audio.py` | Convert .m4a → .aiff with parallel ffmpeg, metadata preservation, archive |
-| `audit_quality.py` | Codec/bitrate quality audit; classify files into LOSSLESS/HIGH/MEDIUM/LOW/UNKNOWN; CSV/JSON reports; optional move + tag write |
-| `metadata_clean.py` | Retroactive tag sanitization across entire library |
-| `artist_merge.py` | Consolidate artist spelling variants |
-| `artist_folder_clean.py` | Remove bad artist folder names |
+Claude must NOT:
 
-### Label Intelligence (`label_intel/`)
+* Auto-explore repository
+* Load unrelated files
+* Rewrite large sections without instruction
+* Introduce new dependencies without approval
+* Break CLI compatibility
+* Override MIK data
+* Change architecture without approval
 
-A separate sub-package (also mirrored in `djtoolkit_label_intelligence_feature/` — treat `label_intel/` as the active copy). Scrapes Beatport and Traxsource for label metadata, caches results, and exports to JSON/CSV/TXT/SQLite. The `labels.txt` output feeds back into `known_labels.txt` which `modules/parser.py` uses as a blocklist for label-name detection in artist/title fields.
+---
 
-### Windows/Rekordbox Path Mapping
+# ✅ SAFE BEHAVIOR
 
-All playlist and XML generation translates Linux paths to Windows-compatible paths using `config.WINDOWS_DRIVE_LETTER` (default `E`) and `config.RB_WINDOWS_DRIVE` (default `M`). The `rekordbox-export` subcommand maps `RB_LINUX_ROOT` → `RB_WINDOWS_DRIVE:\` for direct SSD use.
+Claude SHOULD:
 
-### Utils
+* Make minimal, surgical edits
+* Preserve existing patterns
+* Maintain backward compatibility
+* Use deterministic logic
+* Follow module boundaries
 
-`utils/llm_client.py` wraps Claude API calls (optional, requires `anthropic` package). `utils/prompt_logger.py` auto-logs all prompts to `./last-prompts/`.
+---
 
-## Key Conventions
+# 🧪 TESTING RULES
 
-- **Idempotent by design**: re-running is always safe. The `TXXX:PROCESSED=1` ID3 tag + `status='ok'` DB row is the idempotency gate.
-- **Conservative tag writes**: junk removal is explicit pattern-matching in `modules/junk_patterns.py` and `modules/sanitizer.py`. Safe pass-through is the default — never overwrite with a lower-confidence guess.
-- **Windows-safe output**: all generated folder names and XML paths must use only Windows-safe characters.
-- **ID3v2.3 only**: Rekordbox compatibility requires ID3v2.3, never ID3v2.4. `config.ID3_VERSION = 3`.
-- **External binaries**: ffprobe, rmlint, aubio/aubiobpm, keyfinder-cli, beet. All configurable via env vars or `config_local.py`.
+* Provide minimal test instructions
+* Prefer targeted tests
+* Avoid full test suite unless required
+
+---
+
+# 📦 OUTPUT FORMAT
+
+When making changes, ALWAYS return:
+
+1. Files changed
+2. Code changes (diff or full function)
+3. Short explanation
+4. How to test safely
+
+---
+
+# 🧠 STRATEGIC GUIDELINE
+
+User controls:
+
+* architecture
+* scope
+* design
+
+Claude provides:
+
+* implementation
+* debugging
+* refinement
+
+Claude is NOT autonomous.
+
+---
+
+# 🔧 OPTIONAL LLM USAGE
+
+* Use utils/llm_client.py only if needed
+* Do not introduce new APIs without approval
+* Prefer local-first
+
+---
+
+# 🪵 PROMPT LOGGING
+
+* Log prompts via utils/prompt_logger.py
+* Maintain traceability
+
+---
+
+# 🧩 FINAL RULE
+
+If unsure:
+
+→ Ask instead of exploring
+→ Ask instead of assuming
+→ Ask instead of expanding scope
+
+---

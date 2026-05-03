@@ -1,0 +1,37 @@
+[
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/African Rhythm/Afrikan Roots/African RhythmAfrikan Roots - Let's Dance (Feat. Afrikan Roots).mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/African Roots/Lebo/African RootsLebo - I Hear You Calling (Feat. Lebo).mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/NewTone MajorSteve Univers Koki - Time to Go (Feat. Steve Univers & Koki).mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Thami/Afrikan RootsThami - Break Me Down (Feat. Thami).mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Xoli M/Afrikan RootsXoli M - Your Angel (Feat. Xoli M).mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Alexis Cartier/Alexis Cartier - GLADIATOR (ADDSOMELUV EDIT).mp3",
+    "reason": "parsed_conflict",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Ante Perry/Dayne S/Ante PerryDayne S - Bam Bam (Original Short Edit).mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  }
+]

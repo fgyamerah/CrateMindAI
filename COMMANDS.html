@@ -55,6 +55,8 @@
       <li class="nav-item"><a class="nav-link py-1 px-3 small" href="#artist-intelligence">artist-intelligence</a></li>
       <li class="nav-item"><a class="nav-link py-1 px-3 small" href="#metadata-enrich-online">metadata-enrich-online</a></li>
       <li class="nav-item"><a class="nav-link py-1 px-3 small" href="#review-queue">review-queue</a></li>
+      <li class="nav-item"><a class="nav-link py-1 px-3 small" href="#filename-normalize">filename-normalize</a></li>
+      <li class="nav-item"><a class="nav-link py-1 px-3 small" href="#library-organize">library-organize</a></li>
       </ul>
     </nav>
 
@@ -69,7 +71,7 @@
       <!-- Core Pipeline -->
       <section id="core-pipeline" class="mb-5 pb-3 border-bottom">
         <h2 class="h5 mb-3">Core Pipeline</h2>
-        <p class="mb-2"><code class="bg-light border rounded px-2 py-1">metadata-sanitize</code> <span class='text-muted'>→</span> <code class="bg-light border rounded px-2 py-1">ai-normalize</code> <span class='text-muted'>→</span> <code class="bg-light border rounded px-2 py-1">artist-intelligence</code> <span class='text-muted'>→</span> <code class="bg-light border rounded px-2 py-1">metadata-enrich-online</code></p>
+        <p class="mb-2"><code class="bg-light border rounded px-2 py-1">filename-normalize</code> <span class='text-muted'>→</span> <code class="bg-light border rounded px-2 py-1">metadata-sanitize</code> <span class='text-muted'>→</span> <code class="bg-light border rounded px-2 py-1">ai-normalize</code> <span class='text-muted'>→</span> <code class="bg-light border rounded px-2 py-1">artist-intelligence</code> <span class='text-muted'>→</span> <code class="bg-light border rounded px-2 py-1">metadata-enrich-online</code> <span class='text-muted'>→</span> <code class="bg-light border rounded px-2 py-1">library-organize</code></p>
         <p class="text-muted small mb-0">
           Each stage is standalone — run one, or compose the full pipeline.<br>
           Preview by default. Nothing writes without <code>--apply</code>.
@@ -199,6 +201,70 @@ Actions: a=apply  s=skip  d=delete  n=next  q=quit</pre></div>
   <h6 class="text-uppercase text-muted small fw-bold mt-3 mb-1">Flags</h6><table class="table table-sm table-bordered small mb-3"><thead class="table-light"><tr><th>Flag</th><th>Description</th></tr></thead><tbody><tr><td class="text-nowrap"><code>--list-only</code></td><td class="small text-muted">Print all pending entries without entering interactive mode.</td></tr></tbody></table>
   <h6 class="text-uppercase text-muted small fw-bold mt-3 mb-1">Examples</h6><pre class="bg-light border rounded p-3 small"><code>python3 pipeline.py review-queue
 python3 pipeline.py review-queue --list-only</code></pre>
+</section>
+
+<section id="filename-normalize" class="mb-5 pb-3 border-bottom">
+  <h2 class="h4 mb-1"><code>filename-normalize</code></h2>
+  <p class="text-muted">Rename audio files to <code>{artist} - {title} ({version}).ext</code> using embedded tags. Preview by default; <code>--apply</code> to commit.</p>
+  <div class="alert alert-info py-2 px-3 mt-3" role="alert"><pre class="mb-0 small">Version deduplication: if version is already in the title, it is not appended again.
+No overwrite: collisions get a safe suffix ' (1)', ' (2)', ...
+Tags are never modified. BPM, key, and cues are untouched.</pre></div>
+  <h6 class="text-uppercase text-muted small fw-bold mt-3 mb-1">Purpose</h6><ul class="small mb-3"><li>Renames files whose filename encodes genre/BPM/key rather than artist/title</li>
+<li>Reads artist, title, and version from embedded tags (ID3, Vorbis, MP4)</li>
+<li>Skips files missing artist or title tags — never guesses</li>
+<li>Preserves directory structure — only renames, never moves folders</li></ul>
+  <h6 class="text-uppercase text-muted small fw-bold mt-3 mb-1">Common usage</h6><pre class="bg-light border rounded p-3 small"><code>python3 pipeline.py filename-normalize --input ~/Music/inbox --apply</code></pre>
+  <h6 class="text-uppercase text-muted small fw-bold mt-3 mb-1">Flags</h6><table class="table table-sm table-bordered small mb-3"><thead class="table-light"><tr><th>Flag</th><th>Description</th></tr></thead><tbody><tr><td class="text-nowrap"><code>--input DIR</code></td><td class="small text-muted">Directory of audio files to process. Required.</td></tr><tr><td class="text-nowrap"><code>--apply</code></td><td class="small text-muted">Commit renames. Without this flag, preview only.</td></tr><tr><td class="text-nowrap"><code>--verbose</code></td><td class="small text-muted">Show skipped and no-change files; enable debug logging.</td></tr></tbody></table>
+  <h6 class="text-uppercase text-muted small fw-bold mt-3 mb-1">Examples</h6><pre class="bg-light border rounded p-3 small"><code>python3 pipeline.py filename-normalize --input ~/Music/inbox
+python3 pipeline.py filename-normalize --input ~/Music/inbox --apply
+python3 pipeline.py filename-normalize --input /mnt/music_ssd/KKDJ/sorted --apply</code></pre>
+</section>
+
+<section id="library-organize" class="mb-5 pb-3 border-bottom">
+  <h2 class="h4 mb-1"><code>library-organize</code></h2>
+  <p class="text-muted">Deterministic folder reorganization using embedded artist tags. Moves each audio file into <code>&lt;sorted_root&gt;/&lt;first-letter&gt;/&lt;primary-artist&gt;/&lt;filename&gt;</code>. Preview by default; <code>--apply</code> to commit.</p>
+  <div class="alert alert-info py-2 px-3 mt-3" role="alert"><pre class="mb-0 small">Primary artist = part of the artist tag before the first collaboration separator
+  (feat. / ft. / &amp; / , / ; / x / vs. / with / pres.).
+Tags are never modified. BPM, key, and cues are untouched.
+No overwrite: collisions get a safe suffix ' (1)', ' (2)', …</pre></div>
+  <h6 class="text-uppercase text-muted small fw-bold mt-3 mb-1">Purpose</h6><ul class="small mb-3">
+    <li>Merges fragmented artist folders (<code>Papik</code>, <code>Papik &amp; Bengi</code>, <code>Papik feat. X</code>) under a single <code>Papik/</code> directory</li>
+    <li>Determines the sorted root automatically — point <code>--input</code> at <code>sorted/</code> or any sub-folder</li>
+    <li>Skips files missing an artist tag or whose artist looks like concatenated names without a separator</li>
+  </ul>
+  <h6 class="text-uppercase text-muted small fw-bold mt-3 mb-1">Common usage</h6><pre class="bg-light border rounded p-3 small"><code>python3 pipeline.py library-organize --input /mnt/music_ssd/KKDJ/sorted --apply</code></pre>
+  <h6 class="text-uppercase text-muted small fw-bold mt-3 mb-1">Primary artist extraction</h6>
+  <table class="table table-sm table-bordered small mb-3">
+    <thead class="table-light"><tr><th>Artist tag</th><th>Primary artist</th><th>Target folder</th></tr></thead>
+    <tbody>
+      <tr><td><code>Papik feat. Michele Ranieri</code></td><td><code>Papik</code></td><td><code>sorted/P/Papik/</code></td></tr>
+      <tr><td><code>Papik &amp; Bengi</code></td><td><code>Papik</code></td><td><code>sorted/P/Papik/</code></td></tr>
+      <tr><td><code>Black Coffee, Bucie</code></td><td><code>Black Coffee</code></td><td><code>sorted/B/Black Coffee/</code></td></tr>
+      <tr><td><code>Black Motion</code></td><td><code>Black Motion</code></td><td><code>sorted/B/Black Motion/</code></td></tr>
+      <tr><td><code>&amp;ME</code></td><td><code>&amp;ME</code></td><td><code>sorted/#/&amp;ME/</code></td></tr>
+      <tr><td><code>2Point1</code></td><td><code>2Point1</code></td><td><code>sorted/#/2Point1/</code></td></tr>
+    </tbody>
+  </table>
+  <h6 class="text-uppercase text-muted small fw-bold mt-3 mb-1">Flags</h6><table class="table table-sm table-bordered small mb-3"><thead class="table-light"><tr><th>Flag</th><th>Description</th></tr></thead><tbody>
+    <tr><td class="text-nowrap"><code>--input DIR</code></td><td class="small text-muted">Directory of audio files to organize. Required.</td></tr>
+    <tr><td class="text-nowrap"><code>--apply</code></td><td class="small text-muted">Commit moves. Without this flag, preview only.</td></tr>
+    <tr><td class="text-nowrap"><code>--verbose</code></td><td class="small text-muted">Show already-correct files; enable debug logging.</td></tr>
+    <tr><td class="text-nowrap"><code>--limit N</code></td><td class="small text-muted">Process at most N files (useful for spot-checking).</td></tr>
+    <tr><td class="text-nowrap"><code>--force</code></td><td class="small text-muted">Reprocess all files, ignoring processed-state tracking.</td></tr>
+    <tr><td class="text-nowrap"><code>--reset-stage</code></td><td class="small text-muted">Clear processed-state tracking for this stage before running.</td></tr>
+    <tr><td class="text-nowrap"><code>--move-unsafe-artists</code></td><td class="small text-muted">Move files with unsafe concatenated artist names to <code>.BIN/CHKARTISTNAMES/</code> for manual review. Requires <code>--apply</code> to execute; preview shows <code>WOULD MOVE TO CHKARTISTNAMES</code>.</td></tr>
+    <tr><td class="text-nowrap"><code>--flatten-collab-folders</code></td><td class="small text-muted">Repair mode: collapse nested collaborator sub-folders back to the primary artist level. Does not read tags.</td></tr>
+  </tbody></table>
+  <h6 class="text-uppercase text-muted small fw-bold mt-3 mb-1">Unsafe artist review</h6>
+  <p class="small mb-2">If the artist tag has no recognized separator <strong>and</strong> contains 2+ CamelCase transitions (e.g. <code>Prince KaybeeLaSoulMatesTNS</code>), the organizer cannot safely determine the primary artist. Without <code>--move-unsafe-artists</code> the file is left in place. With <code>--move-unsafe-artists --apply</code> it moves to <code>.BIN/CHKARTISTNAMES/</code>, preserving relative directory structure.</p>
+  <pre class="bg-light border rounded p-3 small"><code>FROM: /mnt/music_ssd/KKDJ/sorted/_compilations/Zakes BantwiniKasango - Osama.mp3
+TO  : /mnt/music_ssd/KKDJ/.BIN/CHKARTISTNAMES/_compilations/Zakes BantwiniKasango - Osama.mp3</code></pre>
+  <p class="small text-muted mb-3"><strong>Quarantine dir:</strong> <code>.BIN/CHKARTISTNAMES/</code> — auto-excluded from all future scans. Fix the artist tag, then rerun with <code>--force</code>.</p>
+  <h6 class="text-uppercase text-muted small fw-bold mt-3 mb-1">Examples</h6><pre class="bg-light border rounded p-3 small"><code>python3 pipeline.py library-organize --input /mnt/music_ssd/KKDJ/sorted
+python3 pipeline.py library-organize --input /mnt/music_ssd/KKDJ/sorted --apply
+python3 pipeline.py library-organize --input /mnt/music_ssd/KKDJ/sorted --apply --move-unsafe-artists
+python3 pipeline.py library-organize --input /mnt/music_ssd/KKDJ/sorted --flatten-collab-folders
+python3 pipeline.py library-organize --input /mnt/music_ssd/KKDJ/sorted --flatten-collab-folders --apply</code></pre>
 </section>
 
     </main>
