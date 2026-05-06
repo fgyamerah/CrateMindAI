@@ -1,7 +1,21 @@
 # CrateMindAI Project Context
 
-**Updated:** 2026-05-05  
+**Updated:** 2026-05-06  
 **Purpose:** Canonical low-token engineering memory for future AI sessions.
+
+## Latest Milestone
+
+- README updated for the Phase 1-8 CrateMindAI platform milestone.
+- Current stable commit hash: `b4c6ffb4048c4c98d225f6c65e40a7cce7f1a8e3`.
+- Next recommended phase: Phase 7 Full Reconciliation.
+- Warning: back up `<root>/logs/processed.db` before any reconciliation apply work.
+
+## Phase 7 Planning
+
+- Phase 7 started as planning only.
+- Full reconciliation apply spec created at `docs/architecture/FULL_RECONCILIATION_APPLY_SPEC.md`.
+- No runtime behavior changed.
+- No reconciliation apply behavior has been added.
 
 ## Overview
 
