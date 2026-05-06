@@ -17,6 +17,11 @@ export type TrackIssue =
   | 'low_quality'
   | 'error'
   | 'needs_review'
+  | 'weak_filename_parse'
+  | 'suspicious_artist'
+  | 'suspicious_title'
+
+export type ParseConfidence = 'HIGH' | 'MEDIUM' | 'LOW' | 'UNKNOWN'
 
 // Shape returned by GET /api/tracks (list view)
 export interface TrackSummary {
@@ -33,15 +38,18 @@ export interface TrackSummary {
   bitrate_kbps: number | null
   status:       TrackStatus
   quality_tier: QualityTier | null
+  parse_confidence: ParseConfidence | null
   issues:       TrackIssue[]
 }
 
 // Shape returned by GET /api/tracks/{id} (full detail)
 export interface TrackDetail extends TrackSummary {
   filesize_bytes: number | null
+  filesystem_path: string
   error_msg:      string | null
   processed_at:   string | null
   pipeline_ver:   string | null
+  enrichment_queue_item?: Record<string, unknown> | null
 }
 
 export interface TrackStats {
@@ -54,19 +62,25 @@ export interface TrackStats {
   missing_title:  number
 }
 
-export interface TrackIssueItem {
-  id:       number
-  filepath: string
-  filename: string
-  artist:   string | null
-  title:    string | null
-  status:   TrackStatus
-  issues:   TrackIssue[]
+export interface TrackPage {
+  items:  TrackSummary[]
+  limit:  number
+  offset: number
+  total:  number
+}
+
+export interface TrackIssueCounts {
+  missing_artist:       number
+  missing_title:        number
+  weak_filename_parse:  number
+  suspicious_artist:    number
+  suspicious_title:     number
 }
 
 export interface TrackListParams {
   path?:         string
   q?:            string
+  search?:       string
   status?:       string
   artist?:       string
   genre?:        string
@@ -74,6 +88,9 @@ export interface TrackListParams {
   quality_tier?: string
   bpm_min?:      number
   bpm_max?:      number
+  has_key?:      boolean
+  issue?:        TrackIssue | string
+  parse_confidence?: ParseConfidence | string
   sort?:         'artist' | 'title' | 'bpm' | 'processed_at' | 'filename'
   order?:        'asc' | 'desc'
   limit?:        number
@@ -88,6 +105,9 @@ export const ISSUE_LABELS: Record<TrackIssue, string> = {
   low_quality:    'Low Quality',
   error:          'Error',
   needs_review:   'Needs Review',
+  weak_filename_parse: 'Weak Filename Parse',
+  suspicious_artist:   'Suspicious Artist',
+  suspicious_title:    'Suspicious Title',
 }
 
 export const QUALITY_ORDER: QualityTier[] = ['LOSSLESS', 'HIGH', 'MEDIUM', 'LOW', 'UNKNOWN']

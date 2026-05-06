@@ -1,8 +1,9 @@
 import { apiFetch } from './client'
 import type {
   TrackDetail,
-  TrackIssueItem,
+  TrackIssueCounts,
   TrackListParams,
+  TrackPage,
   TrackStats,
   TrackSummary,
 } from '../types/track'
@@ -11,14 +12,20 @@ function buildQS(params: TrackListParams): string {
   const parts: string[] = []
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null && v !== '') {
-      parts.push(`${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+      const key = k === 'q' ? 'search' : k
+      parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(v))}`)
     }
   }
   return parts.length ? `?${parts.join('&')}` : ''
 }
 
-export function fetchTracks(params: TrackListParams = {}): Promise<TrackSummary[]> {
-  return apiFetch.get<TrackSummary[]>(`/tracks${buildQS(params)}`)
+export function fetchTrackPage(params: TrackListParams = {}): Promise<TrackPage> {
+  return apiFetch.get<TrackPage>(`/tracks${buildQS(params)}`)
+}
+
+export async function fetchTracks(params: TrackListParams = {}): Promise<TrackSummary[]> {
+  const page = await fetchTrackPage(params)
+  return page.items
 }
 
 export function fetchTrack(id: number): Promise<TrackDetail> {
@@ -29,6 +36,6 @@ export function fetchTrackStats(): Promise<TrackStats> {
   return apiFetch.get<TrackStats>('/tracks/stats')
 }
 
-export function fetchTrackIssues(limit = 200): Promise<TrackIssueItem[]> {
-  return apiFetch.get<TrackIssueItem[]>(`/tracks/issues?limit=${limit}`)
+export function fetchTrackIssues(): Promise<TrackIssueCounts> {
+  return apiFetch.get<TrackIssueCounts>('/tracks/issues')
 }

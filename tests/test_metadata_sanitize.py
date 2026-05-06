@@ -9,16 +9,281 @@ Covers:
   - (Feat. → (feat. casing normalisation
   - protected mix/version parens must NOT be stripped
 """
+import json
 import sys
+from types import SimpleNamespace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+import modules.metadata_sanitize as ms
 
 from modules.metadata_sanitize import (
     _sanitize_title,
     _strip_label_suffix,
     _is_suspicious_recovery,
 )
+
+
+def _dummy(path: Path) -> Path:
+    path.write_bytes(b"not real audio; tag IO is mocked")
+    return path
+
+
+def _args(input_path: Path, *, apply: bool = False, output_json: Path | None = None):
+    return SimpleNamespace(
+        input=str(input_path),
+        apply=apply,
+        limit=None,
+        output_json=str(output_json) if output_json else None,
+        verbose=False,
+        force=True,
+        reset_stage=False,
+    )
+
+
+class _ProcSpy:
+    def __init__(self):
+        self.records = []
+        self.cleared = []
+
+    def should_skip(self, stage, path, reason_prefix=None):
+        return False
+
+    def record(self, stage, path, status, reason=""):
+        self.records.append((stage, Path(path), status, reason))
+
+    def clear_stage(self, stage):
+        self.cleared.append(stage)
+
+
+def _patch_run_io(monkeypatch, tags_by_path: dict[Path, dict[str, str]]):
+    proc = _ProcSpy()
+    writes = []
+    textlog = []
+
+    def fake_read_tags(path: Path):
+        tags = tags_by_path.get(Path(path))
+        if tags is None:
+            return None
+        return tags.copy(), set()
+
+    def fake_apply(path: Path, changes):
+        writes.append((Path(path), list(changes)))
+        tags = tags_by_path[Path(path)]
+        for change in changes:
+            tags[change.field] = change.new_value
+        return True, set()
+
+    monkeypatch.setattr(ms, "_read_tags", fake_read_tags)
+    monkeypatch.setattr(ms, "_apply_sanitized", fake_apply)
+    monkeypatch.setattr(ms, "_proc", proc)
+    monkeypatch.setattr(ms, "log_action", lambda message: textlog.append(message))
+
+    import utils.prompt_logger as prompt_logger
+
+    monkeypatch.setattr(prompt_logger, "get_run_logger", lambda: None)
+    return proc, writes, textlog
+
+
+def _base_tags(**overrides):
+    tags = {
+        "title": "Clean Title",
+        "artist": "Valid Artist",
+        "album": "Valid Album",
+        "organization": "Valid Label",
+        "isrc": "USABC2300001",
+        "bpm": "123",
+        "key": "8A",
+        "cue_points": "intro=0;drop=64",
+        "hot_cues": "A=0;B=64",
+    }
+    tags.update(overrides)
+    return tags
+
+
+class TestRunSafetyBehavior:
+    def test_preview_does_not_write_tags_and_reports_intended_changes(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        track = _dummy(tmp_path / "dirty.mp3")
+        tags_by_path = {
+            track: _base_tags(
+                title="Dance with Me (Extended Mix) (fordjonly.com)",
+                artist="Valid Artist",
+            )
+        }
+        proc, writes, textlog = _patch_run_io(monkeypatch, tags_by_path)
+
+        rc = ms.run_metadata_sanitize(_args(tmp_path, apply=False))
+
+        out = capsys.readouterr().out
+        assert rc == 0
+        assert writes == []
+        assert textlog == []
+        assert tags_by_path[track]["title"] == "Dance with Me (Extended Mix) (fordjonly.com)"
+        assert "metadata-sanitize [PREVIEW]" in out
+        assert "title_domain_token_stripped" in out
+        assert "Dance with Me (Extended Mix)" in out
+        assert "Dry-run mode" in out
+        assert proc.records == []
+
+    def test_apply_writes_only_in_apply_mode_and_skips_unchanged_files(
+        self, tmp_path, monkeypatch
+    ):
+        dirty = _dummy(tmp_path / "dirty.mp3")
+        clean = _dummy(tmp_path / "clean.mp3")
+        tags_by_path = {
+            dirty: _base_tags(title="Sunrise (Club Edit) 120"),
+            clean: _base_tags(title="Track (Original Mix)"),
+        }
+        proc, writes, textlog = _patch_run_io(monkeypatch, tags_by_path)
+
+        rc = ms.run_metadata_sanitize(_args(tmp_path, apply=True))
+
+        assert rc == 0
+        assert [(path, [c.field for c in changes]) for path, changes in writes] == [
+            (dirty, ["title"])
+        ]
+        assert tags_by_path[dirty]["title"] == "Sunrise (Club Edit)"
+        assert tags_by_path[clean]["title"] == "Track (Original Mix)"
+        assert any("SANITIZE: dirty.mp3 | title" in entry for entry in textlog)
+        assert ("metadata-sanitize", dirty, "success", "") in proc.records
+        assert any(
+            stage == "metadata-sanitize"
+            and path == clean
+            and status == "no_change"
+            and reason.startswith("rules:")
+            for stage, path, status, reason in proc.records
+        )
+
+    def test_artist_title_safety_does_not_create_empty_fields(
+        self, tmp_path, monkeypatch
+    ):
+        track = _dummy(tmp_path / "safe.mp3")
+        tags_by_path = {
+            track: _base_tags(
+                title="Track (Original Mix)",
+                artist="Black Coffee feat. Bucie",
+                album="Home Brewed",
+                organization="Soulistic Music",
+            )
+        }
+        proc, writes, _ = _patch_run_io(monkeypatch, tags_by_path)
+
+        rc = ms.run_metadata_sanitize(_args(tmp_path, apply=True))
+
+        assert rc == 0
+        assert writes == []
+        assert tags_by_path[track]["title"] == "Track (Original Mix)"
+        assert tags_by_path[track]["artist"] == "Black Coffee feat. Bucie"
+        assert tags_by_path[track]["album"] == "Home Brewed"
+        assert tags_by_path[track]["organization"] == "Soulistic Music"
+        assert all(tags_by_path[track][field] for field in ("title", "artist"))
+        assert any(status == "no_change" for _, _, status, _ in proc.records)
+
+    def test_multi_value_artist_transform_is_skipped_and_reported(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        track = _dummy(tmp_path / "multi-artist.mp3")
+        tags_by_path = {
+            track: _base_tags(
+                title="Clean Title",
+                artist="Artist One / / Artist Two",
+            )
+        }
+        proc = _ProcSpy()
+        writes = []
+
+        def fake_read_tags(path: Path):
+            return tags_by_path[Path(path)].copy(), {"artist"}
+
+        monkeypatch.setattr(ms, "_read_tags", fake_read_tags)
+        monkeypatch.setattr(ms, "_apply_sanitized", lambda path, changes: writes.append((path, changes)))
+        monkeypatch.setattr(ms, "_proc", proc)
+        monkeypatch.setattr(ms, "log_action", lambda message: None)
+
+        import utils.prompt_logger as prompt_logger
+
+        monkeypatch.setattr(prompt_logger, "get_run_logger", lambda: None)
+
+        rc = ms.run_metadata_sanitize(_args(tmp_path, apply=True))
+
+        out = capsys.readouterr().out
+        assert rc == 0
+        assert writes == []
+        assert tags_by_path[track]["artist"] == "Artist One / / Artist Two"
+        assert "skipped_multi_value_artist" in out
+        assert ("metadata-sanitize", track, "skipped", "artist: skipped_multi_value_artist") in proc.records
+
+    def test_dj_metadata_fields_are_not_in_write_changes(self, tmp_path, monkeypatch):
+        track = _dummy(tmp_path / "dj-tags.mp3")
+        tags_by_path = {
+            track: _base_tags(
+                title="Kanana (Shungi Music) 124",
+                bpm="124",
+                key="9A",
+                cue_points="intro=0;break=32;drop=64",
+                hot_cues="A=0;B=32;C=64",
+            )
+        }
+        _, writes, _ = _patch_run_io(monkeypatch, tags_by_path)
+
+        rc = ms.run_metadata_sanitize(_args(tmp_path, apply=True))
+
+        assert rc == 0
+        assert tags_by_path[track]["title"] == "Kanana"
+        assert tags_by_path[track]["bpm"] == "124"
+        assert tags_by_path[track]["key"] == "9A"
+        assert tags_by_path[track]["cue_points"] == "intro=0;break=32;drop=64"
+        assert tags_by_path[track]["hot_cues"] == "A=0;B=32;C=64"
+        written_fields = {change.field for _, changes in writes for change in changes}
+        assert written_fields == {"title"}
+        assert not {"bpm", "key", "cue_points", "hot_cues"} & written_fields
+
+    def test_apply_is_idempotent_second_run_has_no_additional_changes(
+        self, tmp_path, monkeypatch
+    ):
+        track = _dummy(tmp_path / "dirty.mp3")
+        tags_by_path = {
+            track: _base_tags(title="2 Sada (N'Dinga Gaba Diplomacy Soul Remix)")
+        }
+        proc, writes, _ = _patch_run_io(monkeypatch, tags_by_path)
+
+        first = ms.run_metadata_sanitize(_args(tmp_path, apply=True))
+        second = ms.run_metadata_sanitize(_args(tmp_path, apply=True))
+
+        assert first == 0
+        assert second == 0
+        assert tags_by_path[track]["title"] == "Sada (N'Dinga Gaba Diplomacy Soul Remix)"
+        assert len(writes) == 1
+        assert writes[0][1][0].old_value == "2 Sada (N'Dinga Gaba Diplomacy Soul Remix)"
+        assert writes[0][1][0].new_value == "Sada (N'Dinga Gaba Diplomacy Soul Remix)"
+        assert any(status == "success" for _, _, status, _ in proc.records)
+        assert any(status == "no_change" for _, _, status, _ in proc.records)
+
+    def test_preview_json_log_reports_changes_without_apply(
+        self, tmp_path, monkeypatch
+    ):
+        track = _dummy(tmp_path / "dirty.mp3")
+        output_json = tmp_path / "metadata-sanitize.json"
+        tags_by_path = {
+            track: _base_tags(title="Song (Extended Mix) (Kontor Records) 120")
+        }
+        _, writes, _ = _patch_run_io(monkeypatch, tags_by_path)
+
+        rc = ms.run_metadata_sanitize(
+            _args(tmp_path, apply=False, output_json=output_json)
+        )
+
+        assert rc == 0
+        assert writes == []
+        data = json.loads(output_json.read_text(encoding="utf-8"))
+        assert data["results"]["changed"] == 1
+        assert data["results"]["unchanged"] == 0
+        assert data["tracks"][0]["file"] == str(track)
+        assert data["tracks"][0]["changes"][0]["field"] == "title"
+        assert data["tracks"][0]["changes"][0]["new"] == "Song (Extended Mix)"
 
 
 # ---------------------------------------------------------------------------

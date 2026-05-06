@@ -1,8 +1,10 @@
 import { apiFetch } from './client'
 
 export interface HealthResponse {
-  status: string
-  pipeline_py_found: boolean
+  ok: boolean
+  library_root: string
+  db_path: string
+  db_exists: boolean
 }
 
 export interface VersionResponse {

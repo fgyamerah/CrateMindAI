@@ -8,7 +8,7 @@ TrackIssueItem — single item in the issues list response
 """
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -31,6 +31,7 @@ class TrackSummary(BaseModel):
     bitrate_kbps: Optional[int] = None
     status:       str
     quality_tier: Optional[str] = None
+    parse_confidence: Optional[str] = None
     issues:       List[str] = []
 
     @classmethod
@@ -49,6 +50,7 @@ class TrackSummary(BaseModel):
             bitrate_kbps=t.bitrate_kbps,
             status=t.status,
             quality_tier=t.quality_tier,
+            parse_confidence=t.parse_confidence,
             issues=t.issues,
         )
 
@@ -68,15 +70,23 @@ class TrackDetail(BaseModel):
     duration_sec:   Optional[float] = None
     bitrate_kbps:   Optional[int] = None
     filesize_bytes: Optional[int] = None
+    filesystem_path: str
     status:         str
     error_msg:      Optional[str] = None
     processed_at:   Optional[str] = None
     pipeline_ver:   Optional[str] = None
     quality_tier:   Optional[str] = None
+    parse_confidence: Optional[str] = None
+    enrichment_queue_item: Optional[Dict[str, Any]] = None
     issues:         List[str] = []
 
     @classmethod
-    def from_track(cls, t: Track) -> "TrackDetail":
+    def from_track(
+        cls,
+        t: Track,
+        *,
+        enrichment_queue_item: Optional[Dict[str, Any]] = None,
+    ) -> "TrackDetail":
         return cls(
             id=t.id,
             filepath=t.filepath,
@@ -90,11 +100,14 @@ class TrackDetail(BaseModel):
             duration_sec=t.duration_sec,
             bitrate_kbps=t.bitrate_kbps,
             filesize_bytes=t.filesize_bytes,
+            filesystem_path=t.filepath,
             status=t.status,
             error_msg=t.error_msg,
             processed_at=t.processed_at,
             pipeline_ver=t.pipeline_ver,
             quality_tier=t.quality_tier,
+            parse_confidence=t.parse_confidence,
+            enrichment_queue_item=enrichment_queue_item,
             issues=t.issues,
         )
 

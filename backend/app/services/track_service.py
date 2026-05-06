@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 from typing import Dict, List, Optional, Tuple
 
+from ..core.library_root import selected_library_root
 from ..core.pipeline_db import get_pipeline_conn, pipeline_db_exists
 from ..models.track import Track
 from ..schemas.track import TrackStats, TrackIssueItem
@@ -27,6 +28,20 @@ _SORT_COLUMNS = {
     "filename":     "LOWER(filename)",
 }
 _DEFAULT_SORT = "artist"
+_KNOWN_ISSUES = {
+    "missing_bpm",
+    "missing_key",
+    "missing_artist",
+    "missing_title",
+    "low_quality",
+    "error",
+    "needs_review",
+    "weak_filename_parse",
+    "suspicious_artist",
+    "suspicious_title",
+}
+_MAX_TRACK_LIMIT = 500
+_POST_FILTER_ISSUES = {"suspicious_artist", "suspicious_title"}
 
 
 # ---------------------------------------------------------------------------
@@ -40,7 +55,6 @@ def _path_prefix_clauses(path_str: str) -> tuple[str, list]:
     regardless of whether the pipeline stored paths with or without symlink resolution.
     """
     from pathlib import Path as _Path
-    from ..core.config import MUSIC_ROOT as _MUSIC_ROOT
 
     p = path_str.rstrip("/")
     prefixes: set[str] = {p + "/"}
@@ -49,7 +63,7 @@ def _path_prefix_clauses(path_str: str) -> tuple[str, list]:
         prefixes.add(resolved + "/")
     except Exception:
         pass
-    canon = str(_MUSIC_ROOT).rstrip("/")
+    canon = str(selected_library_root()).rstrip("/")
     symlink = "/music"
     for pf in list(prefixes):
         base = pf.rstrip("/")
@@ -60,6 +74,40 @@ def _path_prefix_clauses(path_str: str) -> tuple[str, list]:
     pf_list = list(prefixes)
     clause = "(" + " OR ".join(["filepath LIKE ?" for _ in pf_list]) + ")"
     return clause, [pf + "%" for pf in pf_list]
+
+
+def _track_has_issue(track: Track, issue: Optional[str]) -> bool:
+    if not issue:
+        return True
+    issue = issue.strip().lower()
+    if issue not in _KNOWN_ISSUES:
+        return False
+    return issue in {item.lower() for item in track.issues}
+
+
+def _apply_post_filters(rows: list[Track], issue: Optional[str]) -> list[Track]:
+    if not issue:
+        return rows
+    return [row for row in rows if _track_has_issue(row, issue)]
+
+
+def _issue_sql_clause(issue: Optional[str]) -> str | None:
+    if not issue:
+        return None
+    issue = issue.strip().lower()
+    if issue not in _KNOWN_ISSUES or issue in _POST_FILTER_ISSUES:
+        return None
+    clauses = {
+        "missing_bpm": "bpm IS NULL",
+        "missing_key": "(TRIM(COALESCE(key_camelot,'')) = '' AND TRIM(COALESCE(key_musical,'')) = '')",
+        "missing_artist": "TRIM(COALESCE(artist,'')) = ''",
+        "missing_title": "TRIM(COALESCE(title,'')) = ''",
+        "low_quality": "quality_tier = 'LOW'",
+        "error": "status = 'error'",
+        "needs_review": "status = 'needs_review'",
+        "weak_filename_parse": "UPPER(TRIM(COALESCE(parse_confidence,''))) IN ('MEDIUM', 'LOW')",
+    }
+    return clauses.get(issue)
 
 
 def list_tracks(
@@ -73,6 +121,9 @@ def list_tracks(
     quality_tier: Optional[str] = None,
     bpm_min: Optional[float] = None,
     bpm_max: Optional[float] = None,
+    has_key: Optional[bool] = None,
+    issue: Optional[str] = None,
+    parse_confidence: Optional[str] = None,
     sort: str = _DEFAULT_SORT,
     order: str = "asc",
     limit: int = 100,
@@ -86,6 +137,8 @@ def list_tracks(
     """
     if not pipeline_db_exists():
         return [], 0
+    limit = max(1, min(int(limit or 100), _MAX_TRACK_LIMIT))
+    offset = max(0, int(offset or 0))
 
     where_clauses: List[str] = []
     params: List[object] = []
@@ -93,9 +146,9 @@ def list_tracks(
     if path:
         try:
             from pathlib import Path as _Path
-            from ..core.config import MUSIC_ROOT as _MUSIC_ROOT
+            root = selected_library_root()
             p = _Path(path).resolve()
-            if p == _MUSIC_ROOT or _MUSIC_ROOT in p.parents:
+            if p == root or root in p.parents:
                 clause, pf_params = _path_prefix_clauses(path)
                 where_clauses.append(clause)
                 params.extend(pf_params)
@@ -131,6 +184,10 @@ def list_tracks(
         where_clauses.append("quality_tier = ?")
         params.append(quality_tier.upper())
 
+    if parse_confidence:
+        where_clauses.append("UPPER(COALESCE(parse_confidence,'')) = ?")
+        params.append(parse_confidence.upper())
+
     if bpm_min is not None:
         where_clauses.append("bpm >= ?")
         params.append(bpm_min)
@@ -139,6 +196,22 @@ def list_tracks(
         where_clauses.append("bpm <= ?")
         params.append(bpm_max)
 
+    if has_key is True:
+        where_clauses.append(
+            "(TRIM(COALESCE(key_camelot,'')) != '' OR TRIM(COALESCE(key_musical,'')) != '')"
+        )
+    elif has_key is False:
+        where_clauses.append(
+            "(TRIM(COALESCE(key_camelot,'')) = '' AND TRIM(COALESCE(key_musical,'')) = '')"
+        )
+
+    issue_clause = _issue_sql_clause(issue)
+    post_filter_issue = issue if issue and issue.strip().lower() in _POST_FILTER_ISSUES else None
+    if issue and issue.strip().lower() not in _KNOWN_ISSUES:
+        return [], 0
+    if issue_clause:
+        where_clauses.append(issue_clause)
+
     where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
 
     sort_col = _SORT_COLUMNS.get(sort, _SORT_COLUMNS[_DEFAULT_SORT])
@@ -146,10 +219,19 @@ def list_tracks(
 
     try:
         with get_pipeline_conn() as conn:
-            total = conn.execute(
-                f"SELECT COUNT(*) FROM tracks {where_sql}", params
-            ).fetchone()[0]
+            if post_filter_issue:
+                base_rows = conn.execute(
+                    f"""SELECT * FROM tracks {where_sql}
+                        ORDER BY {sort_col} {order_dir}""",
+                    params,
+                ).fetchall()
+                tracks = _apply_post_filters([Track.from_row(r) for r in base_rows], post_filter_issue)
+                return tracks[offset: offset + limit], len(tracks)
 
+            total_row = conn.execute(
+                f"SELECT COUNT(*) AS cnt FROM tracks {where_sql}",
+                params,
+            ).fetchone()
             rows = conn.execute(
                 f"""SELECT * FROM tracks {where_sql}
                     ORDER BY {sort_col} {order_dir}
@@ -157,7 +239,7 @@ def list_tracks(
                 params + [limit, offset],
             ).fetchall()
 
-        return [Track.from_row(r) for r in rows], total
+        return [Track.from_row(r) for r in rows], int(total_row["cnt"] or 0)
 
     except FileNotFoundError:
         return [], 0
@@ -245,6 +327,35 @@ def get_stats() -> TrackStats:
         return empty
 
 
+def get_issue_counts() -> dict[str, int]:
+    counts = {
+        "missing_artist": 0,
+        "missing_title": 0,
+        "weak_filename_parse": 0,
+        "suspicious_artist": 0,
+        "suspicious_title": 0,
+    }
+    if not pipeline_db_exists():
+        return counts
+    try:
+        with get_pipeline_conn() as conn:
+            rows = conn.execute("SELECT * FROM tracks").fetchall()
+        for row in rows:
+            track = Track.from_row(row)
+            issue_set = set(track.issues)
+            for key in counts:
+                if key in issue_set:
+                    counts[key] += 1
+        return counts
+    except Exception as exc:
+        log.exception("get_issue_counts failed: %s", exc)
+        return counts
+
+
+def get_track_by_id(track_id: int) -> Optional[Track]:
+    return get_track(track_id)
+
+
 # ---------------------------------------------------------------------------
 # get_orphan_stats
 # ---------------------------------------------------------------------------
@@ -288,6 +399,7 @@ def get_issues(limit: int = 200) -> List[TrackIssueItem]:
                       OR TRIM(COALESCE(artist,'')) = ''
                       OR TRIM(COALESCE(title,''))  = ''
                       OR quality_tier = 'LOW'
+                      OR TRIM(COALESCE(parse_confidence,'')) IN ('MEDIUM', 'LOW')
                       OR status IN ('error', 'needs_review')
                    ORDER BY
                        CASE status

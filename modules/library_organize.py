@@ -24,6 +24,7 @@ import shutil
 from pathlib import Path
 
 import config
+import db
 import modules.run_logger as _proc
 
 # ---------------------------------------------------------------------------
@@ -392,7 +393,11 @@ def _run_flatten(
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 shutil.move(str(src), str(dst))
                 stats["moved"] += 1
-                _proc.rename_path(src, dst)
+                db.update_track_path_references(
+                    src,
+                    dst,
+                    context="library_organize",
+                )
             except Exception as exc:
                 print(f"    ERROR: {exc}")
                 stats["skipped_errors"] += 1
@@ -538,7 +543,11 @@ def run(
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 shutil.move(str(src), str(dst))
                 stats["moved_to_chkartistnames"] += 1
-                _proc.rename_path(src, dst)
+                db.update_track_path_references(
+                    src,
+                    dst,
+                    context="library_organize",
+                )
                 _proc.record(_stage, dst, "ignored", "unsafe_primary_artist")
             except Exception as exc:
                 print(f"    ERROR: {exc}")
@@ -561,7 +570,11 @@ def run(
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 shutil.move(str(src), str(dst))
                 stats["moved"] += 1
-                _proc.rename_path(src, dst)
+                db.update_track_path_references(
+                    src,
+                    dst,
+                    context="library_organize",
+                )
                 _proc.record(_stage, dst, "success")
             except Exception as exc:
                 print(f"    ERROR: {exc}")

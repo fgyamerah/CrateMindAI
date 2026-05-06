@@ -647,25 +647,13 @@ def _apply_clean(result: CleanResult, dry_run: bool) -> Dict[str, int]:
 # ---------------------------------------------------------------------------
 
 def _update_db(old_str: str, new_str: str, artist: Optional[str]) -> None:
-    """Re-register a moved file in the database under its new path."""
+    """Update database path references for a moved file."""
     try:
-        row = db.get_track(old_str)
-        if row:
-            db.upsert_track(
-                new_str,
-                artist=artist or row["artist"],
-                title=row["title"],
-                genre=row["genre"],
-                bpm=row["bpm"],
-                key_musical=row["key_musical"],
-                key_camelot=row["key_camelot"],
-                duration_sec=row["duration_sec"],
-                bitrate_kbps=row["bitrate_kbps"],
-                filesize_bytes=row["filesize_bytes"],
-                status=row["status"],
-            )
-            with db.get_conn() as conn:
-                conn.execute("DELETE FROM tracks WHERE filepath=?", (old_str,))
+        db.update_track_path_references(
+            old_str,
+            new_str,
+            context="artist_folder_clean",
+        )
     except Exception as exc:
         log.warning("FOLDER-CLEAN: DB update failed for %s → %s: %s",
                     old_str, new_str, exc)

@@ -1,14 +1,10 @@
 import { NavLink } from 'react-router-dom'
 import {
-  LayoutDashboard,
-  ListTodo,
-  Music,
   Library,
-  AudioWaveform,
-  ListMusic,
-  Upload,
-  HardDrive,
-  Settings,
+  AlertTriangle,
+  Sparkles,
+  ClipboardList,
+  FolderTree,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
@@ -22,15 +18,11 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { to: '/',            label: 'Collection',  Icon: Library,         end: true },
-  { to: '/dashboard',   label: 'Dashboard',   Icon: LayoutDashboard },
-  { to: '/jobs',        label: 'Jobs',        Icon: ListTodo },
-  { to: '/tracks',      label: 'Tracks',      Icon: Music },
-  { to: '/bpm-review',  label: 'BPM Review',  Icon: AudioWaveform },
-  { to: '/set-builder', label: 'Set Builder', Icon: ListMusic },
-  { to: '/export',      label: 'Export',      Icon: Upload },
-  { to: '/ssd-sync',    label: 'SSD Sync',    Icon: HardDrive },
-  { to: '/settings',    label: 'Settings',    Icon: Settings },
+  { to: '/',             label: 'Library',          Icon: Library,       end: true },
+  { to: '/issues',       label: 'Issues',           Icon: AlertTriangle },
+  { to: '/enrichment',   label: 'Enrichment Queue', Icon: Sparkles },
+  { to: '/audit',        label: 'Audit',            Icon: ClipboardList },
+  { to: '/folders',      label: 'Folders',          Icon: FolderTree },
 ]
 
 interface Props {

@@ -1,6 +1,6 @@
 # CrateMindAI Project Context
 
-**Updated:** 2026-05-03  
+**Updated:** 2026-05-05  
 **Purpose:** Canonical low-token engineering memory for future AI sessions.
 
 ## Overview
@@ -52,9 +52,9 @@ Prefer no change over unsafe change.
 
 ## Major Operational Risks
 
-- Default-writing commands: `metadata-clean`, `tag-normalize`, `analyze-missing`, `convert-audio`, `cue-suggest`, `db-prune-stale`.
-- Interactive `review-queue` can write tags without a command-level `--apply`.
-- `artist-merge`, `artist-folder-clean`, and legacy `organizer.py` move files and delete old `tracks` rows.
+- Some older write-capable commands still do not require `--yes` or `--force` confirmation.
+- Legacy `organizer.py` still moves files and deletes old `tracks` rows through a pre-Phase-3 path mutation pattern.
+- `artist-merge`, `artist-folder-clean`, and `library-organize` move files, but their Phase 3 paths now call `update_track_path_references()`.
 - Most tag writes and file moves lack universal rollback.
 - Review queues and DB tables are path-based and can go stale after renames/moves.
 
@@ -66,3 +66,59 @@ Use `docs/architecture/STABILITY_MATRIX.md` as the current authoritative subsyst
 
 Any new command, destructive behavior, metadata mutation, queue change, schema change, or rollback change must update `docs/MAINTENANCE_POLICY.md` requirements and the relevant audit docs.
 
+## Current System State (Post Phase 3)
+
+Phase 3 is stable enough to proceed to Phase 4 planning and implementation. Phase 4 has started as a documentation and ownership-hardening phase; runtime behavior should remain conservative until the remaining legacy path and metadata mutation risks are explicitly migrated.
+
+### Architecture summary
+
+CrateMindAI is now organized around a safer current-state model:
+
+- `pipeline.py` remains the main CLI and command router.
+- `processed_state` records stage/file processing history.
+- `tracks` is being promoted to the canonical current-state track table.
+- Path-audit and path-reconcile operate against an explicitly selected library root.
+- Centralized DB path updates live in `db.update_track_path_references()`.
+- `modules/organizer.py` is legacy/deprecated. Prefer `modules/library_organize.py` for Phase 3-safe organization paths.
+
+### Canonical data flow
+
+The intended current-state flow is:
+
+1. Files exist under a selected library root.
+2. Pipeline stages record processing outcomes in `processed_state`.
+3. `build-tracks --root <root>` derives one canonical `tracks` row per valid, existing, non-stale processed-state path.
+4. `path-audit --root <root>` uses `tracks.filepath` as canonical when `tracks` is populated, falling back to active non-stale `processed_state` when tracks is empty.
+5. `path-reconcile --root <root>` plans repairs from audit findings. Full `--apply` remains intentionally unimplemented.
+
+### Safety model
+
+Current verified safety guarantees:
+
+- `metadata-clean`, `tag-normalize`, `analyze-missing`, `convert-audio`, `cue-suggest`, `db-prune-stale`, and `review-queue` default to dry-run.
+- Those commands require `--apply` plus `--yes` or `--force` before write behavior.
+- `path-audit` is read-only except report/log files.
+- `path-reconcile` planning is read-only except plan/log files.
+- `path-reconcile --apply-auto-safe-only` updates only `processed_state.filepath` for auto-safe candidates.
+- `path-reconcile --mark-stale-pstate` marks only eligible processed-state rows stale and does not change file paths.
+- `update_track_path_references()` updates `tracks` and non-stale `processed_state` in one transaction and never modifies stale processed-state rows.
+- Root-scoped Phase 3 commands use `<root>/logs/processed.db` and `<root>/logs/`.
+
+### Command behavior
+
+Command mode policy:
+
+- Default is preview/dry-run for hardened write-capable commands.
+- Apply mode must be explicit.
+- Destructive or write-capable Phase 3-hardened commands require confirmation.
+- `review-queue` defaults to list-only dry-run behavior; interactive queue mutation requires `--apply --yes`.
+- `path-reconcile --apply` is not implemented; only narrowly scoped apply helpers exist.
+
+### Known limitations
+
+- `modules/organizer.py` still contains a legacy `tracks` upsert plus `DELETE FROM tracks` path-mutation pattern.
+- Not every older write-capable command requires `--yes` or `--force` yet.
+- Root isolation is stable for `path-audit`, `path-reconcile`, and `build-tracks`, but older commands still use global config-derived paths in places.
+- Queue, cue, set, and historical log references remain path-based and can become stale after external moves.
+- Reconciliation does not move files, update queues, update cue references, or implement full apply mode.
+- Frontend and backend write behavior were not fully re-audited in Phase 3.

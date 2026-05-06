@@ -23,8 +23,9 @@ except (ImportError, AttributeError):
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from ...core.config import MUSIC_ROOT
+from ...core.library_root import selected_library_root
 from ...core.pipeline_db import get_pipeline_conn, pipeline_db_exists
+from ...services import read_only as read_only_service
 
 router = APIRouter(tags=["library"])
 
@@ -84,9 +85,10 @@ def _build_tree(max_depth: int) -> LibraryNode:
     The 'sorted' directory is shown but its letter-based children are only
     included if max_depth allows.
     """
-    root = LibraryNode(label="KKDJ", path=str(MUSIC_ROOT))
+    library_root = selected_library_root()
+    root = LibraryNode(label="KKDJ", path=str(library_root))
 
-    for entry in _safe_iterdir(MUSIC_ROOT):
+    for entry in _safe_iterdir(library_root):
         if entry.name in _SKIP_ROOT_NAMES:
             continue
         child = _build_node(entry, 1, max_depth)
@@ -104,11 +106,27 @@ class LibraryStatsResponse(BaseModel):
     folder_count: int
 
 
+class FolderStatItem(BaseModel):
+    folder: str
+    track_count: int
+    issue_count: int
+
+
+class LibraryOverviewResponse(BaseModel):
+    total_tracks: int
+    tracks_with_bpm: int
+    tracks_with_camelot_key: int
+    tracks_missing_artist: int
+    tracks_missing_title: int
+    parse_confidence_breakdown: Dict[str, int]
+    genre_top_counts: List[Dict[str, Any]]
+
+
 def _filepath_prefixes(path_str: str) -> list[str]:
     """
     Return all filepath prefix variants to match against.
 
-    The pipeline DB may store filepaths with MUSIC_ROOT as either:
+    The pipeline DB may store filepaths with the selected library root as either:
     - the resolved canonical path  (/home/user/Music/music/...)
     - the /music symlink            (/music/...)
     We try both so the LIKE query works regardless of how the pipeline was run.
@@ -121,7 +139,7 @@ def _filepath_prefixes(path_str: str) -> list[str]:
     except Exception:
         pass
     # Substitute between canonical root and /music symlink
-    canon = str(MUSIC_ROOT).rstrip("/")
+    canon = str(selected_library_root()).rstrip("/")
     symlink = "/music"
     for pf in list(prefixes):
         base = pf.rstrip("/")
@@ -133,10 +151,10 @@ def _filepath_prefixes(path_str: str) -> list[str]:
 
 
 def _is_safe_path(path_str: str) -> bool:
-    """Accept only paths that resolve inside MUSIC_ROOT."""
+    """Accept only paths that resolve inside the selected library root."""
     try:
         p = Path(path_str).resolve()
-        root = MUSIC_ROOT
+        root = selected_library_root()
         return p == root or root in p.parents
     except Exception:
         return False
@@ -171,6 +189,24 @@ async def get_library_stats(
         return LibraryStatsResponse(global_count=global_count, folder_count=folder_count)
     except Exception:
         return empty
+
+
+# ---------------------------------------------------------------------------
+# GET /api/library/folders
+# ---------------------------------------------------------------------------
+
+@router.get("/library/folders", response_model=List[FolderStatItem])
+async def get_library_folders() -> List[FolderStatItem]:
+    return [FolderStatItem(**item) for item in read_only_service.list_folder_stats()]
+
+
+# ---------------------------------------------------------------------------
+# GET /api/library/overview
+# ---------------------------------------------------------------------------
+
+@router.get("/library/overview", response_model=LibraryOverviewResponse)
+async def get_library_overview() -> LibraryOverviewResponse:
+    return LibraryOverviewResponse(**read_only_service.build_overview_payload())
 
 
 # ---------------------------------------------------------------------------
@@ -388,13 +424,13 @@ async def get_library_tree(
         ge=1,
         le=4,
         description=(
-            "How many directory levels to expand below MUSIC_ROOT. "
+            "How many directory levels to expand below the library root. "
             "depth=1 shows only top-level folders; depth=2 expands inbox/* and library/*."
         ),
     ),
 ) -> LibraryTreeResponse:
     """
-    Return the audio library folder tree rooted at MUSIC_ROOT.
+    Return the audio library folder tree rooted at the selected library root.
 
     Every returned node is a real filesystem directory.  Its `path` field can
     be passed directly as --input to metadata-sanitize and other pipeline jobs.

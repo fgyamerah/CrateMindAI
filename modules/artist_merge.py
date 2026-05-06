@@ -615,28 +615,11 @@ def _apply_merge(group: MergeGroup, dry_run: bool) -> Dict[str, int]:
                     shutil.move(str(src), str(dest))
                     stats["moved"] += 1
 
-                    # Update DB: re-register under new path
-                    old_str = str(src)
-                    new_str = str(dest)
-                    row = db.get_track(old_str)
-                    if row:
-                        db.upsert_track(
-                            new_str,
-                            artist=row["artist"],
-                            title=row["title"],
-                            genre=row["genre"],
-                            bpm=row["bpm"],
-                            key_musical=row["key_musical"],
-                            key_camelot=row["key_camelot"],
-                            duration_sec=row["duration_sec"],
-                            bitrate_kbps=row["bitrate_kbps"],
-                            filesize_bytes=row["filesize_bytes"],
-                            status=row["status"],
-                        )
-                        with db.get_conn() as conn:
-                            conn.execute(
-                                "DELETE FROM tracks WHERE filepath=?", (old_str,)
-                            )
+                    db.update_track_path_references(
+                        src,
+                        dest,
+                        context="artist_merge",
+                    )
                 except Exception as exc:
                     log.error("ARTIST-MERGE: failed to move %s → %s: %s", src, dest, exc)
                     log_action(f"ARTIST-MERGE: ERROR moving {src.name!r}: {exc}")

@@ -4,18 +4,19 @@
 
 | Metadata Field | Source of Truth | Mutable? | Controlled By | Notes |
 |---|---|---|---|---|
-| BPM | Mixed In Key | Fill missing only | MIK; `analyze-missing` fallback | Never overwrite valid existing BPM. |
-| musical key | Mixed In Key | Fill missing only | MIK; `analyze-missing` fallback | Never overwrite valid existing key. |
-| cue points | Mixed In Key/Rekordbox | Advisory only in pipeline | MIK/Rekordbox; `cue-suggest` stores suggestions | Pipeline must not overwrite Rekordbox/MIK cues. |
-| artist | Deterministic artist tools and operator | Yes, high-risk | `artist-intelligence`, `artist-repair`, operator | `ai-normalize` artist output is ignored. |
-| title | Existing tag plus deterministic cleanup/enrichment | Yes, high-risk | `metadata-sanitize`, `ai-normalize`, enrichment | Preserve version/remix identity. |
+| filepath | Filesystem/current `tracks` table | Yes, critical | Filesystem moves plus `update_track_path_references()` | Current path identity must come from disk and canonical `tracks`; stale `processed_state` rows are historical only. |
+| filename | Filesystem-derived | Yes, high-risk | `filename-normalize`, `library_organize.py` | Filename follows filesystem state; avoid deriving canonical metadata solely from filename when trusted tags exist. |
+| artist | Controlled pipeline normalization | Yes, high-risk | `artist-intelligence`, `artist-repair`, operator | Deterministic validation required; `ai-normalize` artist output is ignored. |
+| title | Controlled pipeline normalization | Yes, high-risk | `metadata-sanitize`, deterministic cleanup, enrichment with validation | Preserve numeric titles, version/remix identity, and valid DJ metadata. |
 | version | Filename/title tokens | Yes, guarded | AI as hint; deterministic reconstruction | Do not invent `Original Mix` or missing versions. |
-| album | Online enrichment/existing tags | Yes | `metadata-enrich-online` | Prefer fill-missing or ISRC-anchored changes. |
-| label | Embedded label/enrichment | Yes | `label-clean`, enrichment | Organization/TPUB is the primary write target. |
-| ISRC | Existing tag/trusted enrichment | Fill missing only | `metadata-enrich-online`, sanitizer validation | Do not overwrite existing valid ISRC. |
-| genre | Existing/operator | UNVERIFIED | Legacy pipeline/tagger | Ownership not fully verified in this pass. |
-| filename | Embedded trusted artist/title/version | Yes, high-risk | `filename-normalize` | Preview first; no overwrite collisions. |
-| folder structure | Operator/library tools | Yes, critical | `library-organize`, `artist-merge`, `artist-folder-clean`, organizer | Requires path reconciliation after moves. |
+| album | Enrichment, cautious | Yes, guarded | `metadata-enrich-online` | Prefer fill-missing, ISRC-anchored, or high-confidence changes; log provenance. |
+| label | Enrichment, cautious | Yes, guarded | `label-clean`, enrichment | Organization/TPUB is the primary write target; preserve manual corrections. |
+| genre | Enrichment/manual, cautious | Yes, guarded | Operator, enrichment, future taxonomy tools | Genre ownership remains cautious because local DJ taxonomy may override online sources. |
+| ISRC | Enrichment, only if missing | Fill missing only | `metadata-enrich-online`, sanitizer validation | Do not overwrite existing valid ISRC. |
+| BPM | Mixed In Key/Rekordbox | Never overwrite | MIK/Rekordbox; analysis fallback only for missing values | Valid existing BPM is owned by MIK/Rekordbox. |
+| key | Mixed In Key | Never overwrite | MIK; analysis fallback only for missing values | Valid existing musical/Camelot key is owned by MIK. |
+| cues | Mixed In Key/Rekordbox | Never overwrite | MIK/Rekordbox; `cue-suggest` advisory only | Pipeline cue suggestions are not authoritative cue writes. |
+| folder structure | Operator/library tools | Yes, critical | `library_organize.py`, `artist-merge`, `artist-folder-clean` | Prefer Phase 3-safe modules; `modules/organizer.py` is legacy/deprecated. |
 
 ## Mixed In Key Boundaries
 
@@ -36,3 +37,12 @@
 - AI title/version/label suggestions require confidence gates and deterministic validation.
 - Online enrichment ISRC matches are strong but should still log provenance and source conflicts.
 
+## Metadata Mutation Rules
+
+- Metadata mutation commands should default to dry-run/preview.
+- Apply mode must be explicit and should require confirmation (`--yes` or `--force`) for destructive or broad writes.
+- Destructive writes must be logged with enough detail to review intended/applied changes.
+- AI output cannot directly mutate files without deterministic validation and ownership checks.
+- BPM, key, and cue fields must not be overwritten when valid values already exist.
+- Filepath changes must update canonical DB references through `update_track_path_references()` where Phase 3 path safety applies.
+- Stale `processed_state` rows are historical records and must not be rewritten by path updates.
