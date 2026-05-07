@@ -24,6 +24,7 @@ from .api.routes import insights as insights_router
 from .api.routes import jobs as jobs_router
 from .api.routes import library as library_router
 from .api.routes import playlists as playlists_router
+from .api.routes import reconciliation as reconciliation_router
 from .api.routes import sync as sync_router
 from .api.routes import tracks as tracks_router
 from .core.config import BACKEND_VERSION, PIPELINE_PY, TOOLKIT_ROOT
@@ -116,5 +117,6 @@ app.include_router(tracks_router.router,     prefix=API_PREFIX)
 app.include_router(insights_router.router,    prefix=API_PREFIX)
 app.include_router(analysis_router.router,   prefix=API_PREFIX)
 app.include_router(playlists_router.router,  prefix=API_PREFIX)
+app.include_router(reconciliation_router.router, prefix=API_PREFIX)
 app.include_router(exports_router.router,    prefix=API_PREFIX)
 app.include_router(sync_router.router,       prefix=API_PREFIX)

@@ -105,11 +105,33 @@ body {
 .sidebar-nav {
   list-style: none;
   padding: 10px 0;
-  flex: 1;
 }
 
 .sidebar-nav li {
   padding: 0 8px;
+}
+
+.sidebar-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+}
+
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-section-title {
+  padding: 8px 16px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 .sidebar-link {
@@ -211,6 +233,10 @@ body {
 
 .sidebar--collapsed .sidebar-nav li {
   padding: 0 4px;
+}
+
+.sidebar--collapsed .sidebar-section-title {
+  display: none;
 }
 
 .sidebar--collapsed .sidebar-link {
@@ -864,6 +890,106 @@ code {
   color: var(--text-muted);
   font-size: 13px;
   padding: 8px 0;
+}
+
+.recon-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.9fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.recon-detail-card {
+  position: sticky;
+  top: 24px;
+}
+
+.recon-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.recon-detail-fields {
+  grid-template-columns: auto 1fr;
+}
+
+.recon-detail-fields dd {
+  word-break: break-word;
+}
+
+.recon-json-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.recon-json-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+
+.recon-json {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #111521;
+  color: var(--text-code);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.recon-path,
+.recon-tables {
+  word-break: break-word;
+}
+
+.recon-validation {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.recon-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.recon-stat {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  background: var(--bg-surface);
+}
+
+.recon-stat-label {
+  display: block;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 4px;
+}
+
+.recon-validation-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  font-size: 12px;
+}
+
+.recon-validation-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 14px;
 }
 
 /* -------------------------------------------------------------------------

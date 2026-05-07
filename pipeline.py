@@ -3264,9 +3264,486 @@ def _path_reconcile_print_mark_stale_pstate_summary(result: dict, log_path: Path
     print(f"\n  Apply log             : {log_path}")
 
 
+def _path_reconcile_print_ledger_summary(rows: list[dict]) -> None:
+    print("\n=== path-reconcile LEDGER ===\n")
+    if not rows:
+        print("  No reconciliation ledger entries found.")
+        return
+
+    headers = ["ledger_id", "created_at", "operation_type", "status", "root", "affected_tables"]
+    widths = {name: len(name) for name in headers}
+    normalized_rows: list[dict[str, str]] = []
+    for row in rows:
+        normalized = {key: str(row.get(key) or "") for key in headers}
+        normalized_rows.append(normalized)
+        for key, value in normalized.items():
+            widths[key] = max(widths[key], len(value))
+
+    for header in headers:
+        print(f"  {header:<{widths[header]}}", end="  ")
+    print()
+    for header in headers:
+        print(f"  {'-' * widths[header]}", end="  ")
+    print()
+    for row in normalized_rows:
+        for header in headers:
+            print(f"  {row[header]:<{widths[header]}}", end="  ")
+        print()
+
+
+def _path_reconcile_verify_ledger_entry(row: dict) -> dict:
+    import json
+
+    issues: list[str] = []
+    normalized: dict[str, object] = dict(row)
+
+    for field in ("ledger_id", "created_at", "operation_type", "status"):
+        if not str(row.get(field) or "").strip():
+            issues.append(f"missing_required_field:{field}")
+
+    root = str(row.get("root") or "").strip()
+    if root and not Path(root).expanduser().exists():
+        issues.append(f"missing_root_path:{root}")
+
+    for field in ("old_path", "new_path"):
+        value = str(row.get(field) or "").strip()
+        if value and not Path(value).expanduser().exists():
+            issues.append(f"missing_referenced_path:{field}:{value}")
+
+    affected_raw = str(row.get("affected_tables") or "").strip()
+    affected_tables: list[str] = []
+    if affected_raw:
+        try:
+            parsed = json.loads(affected_raw)
+            if isinstance(parsed, list):
+                affected_tables = [str(item) for item in parsed if str(item).strip()]
+            elif isinstance(parsed, str):
+                affected_tables = [parsed]
+            else:
+                issues.append("affected_tables_not_list")
+        except Exception:
+            affected_tables = [item.strip() for item in affected_raw.split(",") if item.strip()]
+    else:
+        issues.append("missing_affected_tables")
+
+    before_raw = str(row.get("before_values_json") or "").strip()
+    after_raw = str(row.get("after_values_json") or "").strip()
+    for field, raw in (("before_values_json", before_raw), ("after_values_json", after_raw)):
+        if not raw:
+            issues.append(f"missing_{field}")
+            continue
+        try:
+            normalized[field] = json.loads(raw)
+        except Exception:
+            issues.append(f"invalid_json:{field}")
+
+    if not affected_tables:
+        issues.append("empty_affected_tables")
+
+    normalized["affected_tables"] = affected_tables
+    normalized["issues"] = issues
+    normalized["ok"] = not issues
+    return normalized
+
+
+def _path_reconcile_print_verify_ledger(result: dict) -> None:
+    print("\n=== path-reconcile VERIFY LEDGER ===\n")
+    print(f"  Ledger ID             : {result.get('ledger_id')}")
+    print(f"  Status                : {'OK' if result.get('ok') else 'ISSUES'}")
+    print(f"  Root                  : {result.get('root')}")
+    print(f"  Operation type        : {result.get('operation_type')}")
+    print(f"  Affected tables       : {', '.join(result.get('affected_tables', [])) or '—'}")
+    print(f"  Old path              : {result.get('old_path')}")
+    print(f"  New path              : {result.get('new_path')}")
+    if result.get("issues"):
+        print("  Issues:")
+        for issue in result["issues"]:
+            print(f"    - {issue}")
+    else:
+        print("  Issues                : none")
+
+
+def _path_reconcile_plan_review_state_candidates(plan_path: Path) -> list[Path]:
+    candidates = [
+        plan_path.with_name(f"{plan_path.stem}_review_state.json"),
+    ]
+    try:
+        root = plan_path.parent.parent.parent
+        candidates.append(root / "data" / "intelligence" / "path_reconcile_review_state.json")
+    except Exception:
+        pass
+    return candidates
+
+
+def _path_reconcile_load_review_state(plan_path: Path) -> dict:
+    import json
+
+    for candidate in _path_reconcile_plan_review_state_candidates(plan_path):
+        if not candidate.exists():
+            continue
+        try:
+            payload = json.loads(candidate.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if isinstance(payload, dict):
+            return payload
+    return {}
+
+
+def _path_reconcile_action_is_approved(action: dict, plan_path: Path) -> bool:
+    review_state = _path_reconcile_load_review_state(plan_path)
+
+    for field in ("approved", "is_approved"):
+        if action.get(field) is True:
+            return True
+    if str(action.get("review_status") or "").lower() == "approved":
+        return True
+    if str(action.get("approval_status") or "").lower() == "approved":
+        return True
+
+    approvals = review_state.get("approved_actions")
+    if isinstance(approvals, list):
+        for entry in approvals:
+            if isinstance(entry, str):
+                if entry == action.get("action_id") or entry == action.get("ledger_id"):
+                    return True
+            elif isinstance(entry, dict):
+                keys = (
+                    ("action_id", "action_id"),
+                    ("ledger_id", "ledger_id"),
+                    ("action", "action"),
+                    ("old_path", "old_path"),
+                    ("new_path", "new_path"),
+                )
+                if all(
+                    entry.get(entry_key) == action.get(action_key)
+                    for action_key, entry_key in keys
+                    if action.get(action_key) not in (None, "")
+                ):
+                    return True
+
+    items = review_state.get("items")
+    if isinstance(items, dict):
+        for key, value in items.items():
+            if not isinstance(value, dict):
+                continue
+            if str(value.get("review_status") or "").lower() != "approved":
+                continue
+            signature = _path_reconcile_action_signature(action)
+            if key == signature:
+                return True
+            if str(value.get("action_id") or "") == str(action.get("action_id") or ""):
+                return True
+            if value.get("old_path") == action.get("old_path") and value.get("new_path") == action.get("new_path"):
+                return True
+    return False
+
+
+def _path_reconcile_action_signature(action: dict) -> str:
+    return "|".join(
+        [
+            str(action.get("action") or ""),
+            str(action.get("old_path") or ""),
+            str(action.get("new_path") or ""),
+            str(action.get("queue_file") or ""),
+        ]
+    )
+
+
+def _path_reconcile_canonical_paths(root: Path) -> set[str]:
+    db_path = _path_audit_db_path(root)
+    if not db_path.exists():
+        return set()
+    try:
+        import sqlite3
+
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        try:
+            paths: set[str] = set()
+            for table in ("tracks", "processed_state"):
+                exists = conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+                    (table,),
+                ).fetchone()
+                if exists is None:
+                    continue
+                for row in conn.execute(f"SELECT filepath FROM {table} WHERE filepath IS NOT NULL"):
+                    raw = str(row["filepath"] or "")
+                    if raw:
+                        paths.add(str(Path(raw).expanduser().resolve(strict=False)))
+                        paths.add(raw)
+            return paths
+        finally:
+            conn.close()
+    except Exception:
+        return set()
+
+
+def _path_reconcile_validate_action(
+    action: dict,
+    *,
+    plan_path: Path,
+    root: Path,
+    canonical_paths: set[str],
+) -> dict:
+    import json
+
+    issues: list[str] = []
+    warnings: list[str] = []
+    action_type = str(action.get("action") or "").strip()
+    old_path = str(action.get("old_path") or "").strip()
+    new_path = str(action.get("new_path") or "").strip()
+    review_tier = str(action.get("review_tier") or "").strip()
+    risk = str(action.get("risk") or "").strip()
+    confidence = action.get("confidence")
+
+    allowed_actions = {
+        "update_path_reference",
+        "update_queue_reference",
+        "mark_orphan_candidate",
+        "investigate_duplicate_path",
+        "mark_stale_processed_state_path",
+    }
+    report_only_actions = {
+        "mark_orphan_candidate",
+        "investigate_duplicate_path",
+        "mark_stale_processed_state_path",
+    }
+
+    if not action_type:
+        issues.append("missing_action_type")
+    elif action_type not in allowed_actions:
+        issues.append(f"unsupported_action_type:{action_type}")
+
+    if action_type in report_only_actions or action.get("report_only") is True:
+        return {
+            "action": action,
+            "action_type": action_type,
+            "status": "skipped",
+            "reason": "report_only",
+            "issues": [],
+            "warnings": warnings,
+        }
+
+    if review_tier == "WEAK_MATCH":
+        issues.append("weak_match_rejected")
+
+    if review_tier == "REVIEW_CAREFULLY" and risk not in {"REVIEW_REQUIRED", "LOW"}:
+        issues.append(f"invalid_risk_for_review_tier:{risk or 'missing'}")
+
+    if risk == "REVIEW_REQUIRED" and not _path_reconcile_action_is_approved(action, plan_path):
+        issues.append("review_required_not_approved")
+
+    if action_type == "update_path_reference":
+        if not old_path:
+            issues.append("missing_old_path")
+        if not new_path:
+            issues.append("missing_new_path")
+        if old_path and not Path(old_path).expanduser().exists():
+            issues.append("old_path_missing_on_disk")
+        if new_path and not Path(new_path).expanduser().exists():
+            issues.append("new_path_missing_on_disk")
+    elif action_type == "update_queue_reference":
+        if not old_path:
+            issues.append("missing_old_path")
+        if action.get("unresolved") is True or not new_path:
+            warnings.append("queue_reference_unresolved")
+        elif not Path(new_path).expanduser().exists():
+            issues.append("new_path_missing_on_disk")
+    elif action_type == "mark_stale_processed_state_path":
+        if not old_path:
+            issues.append("missing_old_path")
+    elif action_type in {"mark_orphan_candidate", "investigate_duplicate_path"}:
+        if not old_path and not str(action.get("filepath") or "").strip():
+            issues.append("missing_reference_path")
+
+    if old_path:
+        resolved_old = str(Path(old_path).expanduser().resolve(strict=False))
+        if resolved_old not in canonical_paths and old_path not in canonical_paths:
+            issues.append("old_path_not_in_canonical_db")
+        try:
+            resolved_root = Path(old_path).expanduser().resolve(strict=False)
+            resolved_root.relative_to(root)
+        except Exception:
+            issues.append("old_path_outside_root")
+
+    if new_path:
+        try:
+            resolved_new = Path(new_path).expanduser().resolve(strict=False)
+            resolved_new.relative_to(root)
+        except Exception:
+            issues.append("new_path_outside_root")
+
+    if confidence is not None:
+        try:
+            conf = float(confidence)
+            if not 0.0 <= conf <= 1.0:
+                issues.append("confidence_out_of_range")
+        except Exception:
+            issues.append("confidence_not_numeric")
+
+    if review_tier and review_tier not in {"AUTO_SAFE_CANDIDATE", "REVIEW_CAREFULLY", "WEAK_MATCH"}:
+        warnings.append(f"unexpected_review_tier:{review_tier}")
+    if risk and risk not in {"LOW", "REVIEW_REQUIRED"}:
+        warnings.append(f"unexpected_risk:{risk}")
+
+    status = "valid" if not issues else "invalid"
+    return {
+        "action": action,
+        "action_type": action_type,
+        "status": status,
+        "reason": None if status == "valid" else issues[0],
+        "issues": issues,
+        "warnings": warnings,
+    }
+
+
+def _path_reconcile_validate_plan(plan_path: Path) -> dict:
+    import json
+    from datetime import datetime, timezone
+
+    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    if not isinstance(plan, dict):
+        raise ValueError("plan json must be an object")
+
+    plan_root_raw = str(plan.get("root") or "").strip()
+    if plan_root_raw:
+        root = Path(plan_root_raw).expanduser().resolve()
+    else:
+        root = plan_path.parent.parent.parent.resolve()
+    if not root.exists():
+        raise ValueError(f"plan root does not exist: {root}")
+
+    planned_actions = plan.get("planned_actions")
+    if not isinstance(planned_actions, list):
+        raise ValueError("plan json missing planned_actions list")
+
+    canonical_paths = _path_reconcile_canonical_paths(root)
+    validation_records: list[dict] = []
+    reasons: dict[str, int] = {}
+    totals = {"valid": 0, "invalid": 0, "skipped": 0}
+
+    for action in planned_actions:
+        if not isinstance(action, dict):
+            record = {
+                "action": action,
+                "status": "invalid",
+                "reason": "action_not_object",
+                "issues": ["action_not_object"],
+                "warnings": [],
+            }
+        else:
+            record = _path_reconcile_validate_action(
+                action,
+                plan_path=plan_path,
+                root=root,
+                canonical_paths=canonical_paths,
+            )
+        status = record["status"]
+        totals[status] = totals.get(status, 0) + 1
+        if status != "valid":
+            for issue in record.get("issues", []):
+                reasons[issue] = reasons.get(issue, 0) + 1
+        validation_records.append(record)
+
+    result = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "plan_path": str(plan_path),
+        "root": str(root),
+        "total_actions": len(planned_actions),
+        "valid_actions": totals.get("valid", 0),
+        "invalid_actions": totals.get("invalid", 0),
+        "skipped_actions": totals.get("skipped", 0),
+        "reasons": dict(sorted(reasons.items(), key=lambda item: (-item[1], item[0]))),
+        "validation_records": validation_records,
+    }
+    return result
+
+
+def _path_reconcile_write_validation_result(root: Path, result: dict) -> Path:
+    from datetime import datetime
+
+    log_dir = root / "logs" / "path_reconcile"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    day = datetime.now().strftime("%Y%m%d")
+    path = log_dir / f"{day}_validate_plan.json"
+    path.write_text(
+        json.dumps(result, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def _path_reconcile_latest_plan_path(root: Path) -> Path | None:
+    log_dir = root / "logs" / "path_reconcile"
+    if not log_dir.exists():
+        return None
+    candidates = sorted(log_dir.glob("*_path_reconcile_plan.json"))
+    return candidates[-1] if candidates else None
+
+
+def _path_reconcile_print_validate_summary(result: dict, output_path: Path) -> None:
+    print("\n=== path-reconcile VALIDATE PLAN ===\n")
+    print(f"  Plan path             : {result.get('plan_path')}")
+    print(f"  Root                  : {result.get('root')}")
+    print(f"  Total actions         : {result.get('total_actions', 0)}")
+    print(f"  Valid actions         : {result.get('valid_actions', 0)}")
+    print(f"  Invalid actions       : {result.get('invalid_actions', 0)}")
+    print(f"  Skipped actions       : {result.get('skipped_actions', 0)}")
+    print(f"  Validation JSON       : {output_path}")
+    if result.get("reasons"):
+        print("  Reasons:")
+        for reason, count in result["reasons"].items():
+            print(f"    - {reason}: {count}")
+
+
 def run_path_reconcile(args) -> int:
     import json
     from datetime import datetime
+
+    ledger_mode = getattr(args, "ledger", False)
+    verify_ledger = getattr(args, "verify_ledger", None)
+    validate_plan = getattr(args, "validate_plan", None)
+    if ledger_mode and verify_ledger:
+        print("path-reconcile --ledger cannot be combined with --verify-ledger", file=sys.stderr)
+        return 2
+    if validate_plan and (ledger_mode or verify_ledger):
+        print("path-reconcile --validate-plan cannot be combined with ledger modes", file=sys.stderr)
+        return 2
+    if ledger_mode or verify_ledger:
+        if getattr(args, "apply", False) or getattr(args, "apply_auto_safe_only", False) or getattr(args, "mark_stale_pstate", False) or getattr(args, "dry_run", False):
+            print("path-reconcile ledger modes are read-only and cannot be combined with apply or dry-run flags", file=sys.stderr)
+            return 2
+        if ledger_mode:
+            rows = [dict(row) for row in db.list_reconciliation_ledger()]
+            _path_reconcile_print_ledger_summary(rows)
+            return 0
+        row = db.get_reconciliation_ledger(str(verify_ledger))
+        if row is None:
+            print(f"ERROR: reconciliation ledger entry not found: {verify_ledger}", file=sys.stderr)
+            return 1
+        result = _path_reconcile_verify_ledger_entry(dict(row))
+        _path_reconcile_print_verify_ledger(result)
+        return 0 if result.get("ok") else 1
+
+    if validate_plan:
+        try:
+            plan_path = Path(validate_plan).expanduser().resolve()
+        except Exception as exc:
+            print(f"ERROR: invalid plan path: {exc}", file=sys.stderr)
+            return 2
+        if not plan_path.exists():
+            print(f"ERROR: plan json does not exist: {plan_path}", file=sys.stderr)
+            return 2
+        try:
+            result = _path_reconcile_validate_plan(plan_path)
+        except Exception as exc:
+            print(f"ERROR: failed to validate plan: {exc}", file=sys.stderr)
+            return 1
+        output_path = _path_reconcile_write_validation_result(Path(result["root"]), result)
+        _path_reconcile_print_validate_summary(result, output_path)
+        return 0 if result.get("invalid_actions", 0) == 0 else 1
 
     if getattr(args, "apply", False):
         print("path-reconcile --apply is not implemented yet", file=sys.stderr)
@@ -5711,7 +6188,9 @@ def main() -> None:
             "Generate a reconciliation plan for DB/filesystem path inconsistencies.\n"
             "Default mode is planning-only. --apply-auto-safe-only may update\n"
             "processed_state.filepath for AUTO_SAFE_CANDIDATE rows only; it never\n"
-            "moves files, edits queues, or writes tags.\n\n"
+            "moves files, edits queues, or writes tags.\n"
+            "Read-only ledger inspection is also available via --ledger and\n"
+            "--verify-ledger.\n\n"
             "Output:\n"
             "  <root>/logs/path_reconcile/YYYYMMDD_path_reconcile_plan.json\n"
             "  <root>/logs/path_reconcile/YYYYMMDD_path_reconcile_plan.txt\n\n"
@@ -5719,11 +6198,28 @@ def main() -> None:
             "  python3 pipeline.py path-reconcile --root /mnt/music_ssd/KKDJ --dry-run\n"
             "  python3 pipeline.py path-reconcile --root /mnt/music_ssd/KKDJ --apply-auto-safe-only\n"
             "  python3 pipeline.py path-reconcile --root /mnt/music_ssd/KKDJ --mark-stale-pstate\n"
+            "  python3 pipeline.py path-reconcile --ledger\n"
+            "  python3 pipeline.py path-reconcile --verify-ledger <ledger-id>\n"
+            "  python3 pipeline.py path-reconcile --validate-plan <plan-json>\n"
         ),
     )
     p_pr.add_argument(
-        "--root", metavar="DIR", required=True,
+        "--root", metavar="DIR",
         help="Library root to reconcile. DB defaults to <root>/logs/processed.db when present.",
+    )
+    p_pr.add_argument(
+        "--ledger", action="store_true",
+        help="List recent reconciliation ledger entries (read-only).",
+    )
+    p_pr.add_argument(
+        "--verify-ledger", metavar="LEDGER_ID",
+        dest="verify_ledger",
+        help="Verify a reconciliation ledger entry for structure and path consistency (read-only).",
+    )
+    p_pr.add_argument(
+        "--validate-plan", metavar="PLAN_JSON",
+        dest="validate_plan",
+        help="Validate a reconciliation plan JSON before any future apply mode.",
     )
     p_pr.add_argument(
         "--dry-run", action="store_true",

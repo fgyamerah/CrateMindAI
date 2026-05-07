@@ -5,6 +5,7 @@ import {
   Sparkles,
   ClipboardList,
   FolderTree,
+  Database,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
@@ -17,12 +18,28 @@ interface NavItem {
   end?:  boolean
 }
 
-const NAV: NavItem[] = [
-  { to: '/',             label: 'Library',          Icon: Library,       end: true },
-  { to: '/issues',       label: 'Issues',           Icon: AlertTriangle },
-  { to: '/enrichment',   label: 'Enrichment Queue', Icon: Sparkles },
-  { to: '/audit',        label: 'Audit',            Icon: ClipboardList },
-  { to: '/folders',      label: 'Folders',          Icon: FolderTree },
+interface NavSection {
+  title: string
+  items: NavItem[]
+}
+
+const NAV: NavSection[] = [
+  {
+    title: 'Browse',
+    items: [
+      { to: '/',             label: 'Library',          Icon: Library,       end: true },
+      { to: '/issues',       label: 'Issues',           Icon: AlertTriangle },
+      { to: '/enrichment',   label: 'Enrichment Queue', Icon: Sparkles },
+      { to: '/audit',        label: 'Audit',            Icon: ClipboardList },
+      { to: '/folders',      label: 'Folders',          Icon: FolderTree },
+    ],
+  },
+  {
+    title: 'Reconciliation',
+    items: [
+      { to: '/reconciliation', label: 'Ledger', Icon: Database },
+    ],
+  },
 ]
 
 interface Props {
@@ -49,23 +66,30 @@ export default function Sidebar({ collapsed, onToggle }: Props) {
         </button>
       </div>
 
-      <ul className="sidebar-nav">
-        {NAV.map(({ to, label, Icon, end }) => (
-          <li key={to}>
-            <NavLink
-              to={to}
-              end={end}
-              className={({ isActive }) =>
-                ['sidebar-link', isActive ? 'sidebar-link--active' : ''].join(' ').trim()
-              }
-              title={collapsed ? label : undefined}
-            >
-              <Icon size={15} className="sidebar-icon" strokeWidth={1.75} />
-              {!collapsed && <span className="sidebar-link-label">{label}</span>}
-            </NavLink>
-          </li>
+      <div className="sidebar-sections">
+        {NAV.map(({ title, items }) => (
+          <section className="sidebar-section" key={title}>
+            {!collapsed && <div className="sidebar-section-title">{title}</div>}
+            <ul className="sidebar-nav">
+              {items.map(({ to, label, Icon, end }) => (
+                <li key={to}>
+                  <NavLink
+                    to={to}
+                    end={end}
+                    className={({ isActive }) =>
+                      ['sidebar-link', isActive ? 'sidebar-link--active' : ''].join(' ').trim()
+                    }
+                    title={collapsed ? label : undefined}
+                  >
+                    <Icon size={15} className="sidebar-icon" strokeWidth={1.75} />
+                    {!collapsed && <span className="sidebar-link-label">{label}</span>}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </section>
         ))}
-      </ul>
+      </div>
 
       {!collapsed && <div className="sidebar-footer">v0.1.0</div>}
     </nav>

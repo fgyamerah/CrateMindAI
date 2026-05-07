@@ -128,6 +128,25 @@ CREATE TABLE IF NOT EXISTS processed_state (
 );
 
 CREATE INDEX IF NOT EXISTS idx_pstate_stage_path ON processed_state(stage, filepath);
+
+CREATE TABLE IF NOT EXISTS reconciliation_ledger (
+    ledger_id           TEXT PRIMARY KEY,
+    created_at          TEXT,
+    root                TEXT,
+    operation_type      TEXT,
+    old_path            TEXT,
+    new_path            TEXT,
+    affected_tables     TEXT,
+    before_values_json  TEXT,
+    after_values_json   TEXT,
+    status              TEXT,
+    error               TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_reconciliation_ledger_ledger_id     ON reconciliation_ledger(ledger_id);
+CREATE INDEX IF NOT EXISTS idx_reconciliation_ledger_created_at     ON reconciliation_ledger(created_at);
+CREATE INDEX IF NOT EXISTS idx_reconciliation_ledger_operation_type ON reconciliation_ledger(operation_type);
+CREATE INDEX IF NOT EXISTS idx_reconciliation_ledger_status         ON reconciliation_ledger(status);
 """
 
 
@@ -181,6 +200,55 @@ def init_db() -> None:
                 conn.execute(index_sql)
             except Exception:
                 pass
+
+
+@contextlib.contextmanager
+def _get_reconciliation_ro_conn() -> Iterator[sqlite3.Connection]:
+    db_path = config.DB_PATH
+    if not db_path.exists():
+        raise FileNotFoundError(f"Pipeline database not found at {db_path}")
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+def list_reconciliation_ledger(limit: int = 20, offset: int = 0) -> list[sqlite3.Row]:
+    """Return recent reconciliation ledger rows, newest first."""
+    try:
+        with _get_reconciliation_ro_conn() as conn:
+            try:
+                return conn.execute(
+                    "SELECT * FROM reconciliation_ledger "
+                    "ORDER BY created_at DESC, ledger_id DESC "
+                    "LIMIT ? OFFSET ?",
+                    (limit, offset),
+                ).fetchall()
+            except sqlite3.OperationalError as exc:
+                if "no such table" in str(exc).lower():
+                    return []
+                raise
+    except FileNotFoundError:
+        return []
+
+
+def get_reconciliation_ledger(ledger_id: str) -> Optional[sqlite3.Row]:
+    """Return a single reconciliation ledger row by ledger_id."""
+    try:
+        with _get_reconciliation_ro_conn() as conn:
+            try:
+                return conn.execute(
+                    "SELECT * FROM reconciliation_ledger WHERE ledger_id=?",
+                    (ledger_id,),
+                ).fetchone()
+            except sqlite3.OperationalError as exc:
+                if "no such table" in str(exc).lower():
+                    return None
+                raise
+    except FileNotFoundError:
+        return None
 
 
 # ---------------------------------------------------------------------------

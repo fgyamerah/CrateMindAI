@@ -544,6 +544,58 @@ def list_folder_stats() -> list[dict[str, Any]]:
         return []
 
 
+def _row_to_ledger_dict(row) -> dict[str, Any]:
+    return {
+        "ledger_id": row["ledger_id"],
+        "created_at": row["created_at"],
+        "root": row["root"],
+        "operation_type": row["operation_type"],
+        "old_path": row["old_path"],
+        "new_path": row["new_path"],
+        "affected_tables": row["affected_tables"],
+        "before_values_json": row["before_values_json"],
+        "after_values_json": row["after_values_json"],
+        "status": row["status"],
+        "error": row["error"],
+    }
+
+
+def list_reconciliation_ledger(limit: int = 20, offset: int = 0) -> list[dict[str, Any]]:
+    if not db_exists():
+        return []
+    try:
+        with get_pipeline_conn() as conn:
+            rows = conn.execute(
+                "SELECT ledger_id, created_at, root, operation_type, old_path, new_path, "
+                "affected_tables, before_values_json, after_values_json, status, error "
+                "FROM reconciliation_ledger "
+                "ORDER BY created_at DESC, ledger_id DESC "
+                "LIMIT ? OFFSET ?",
+                (limit, offset),
+            ).fetchall()
+        return [_row_to_ledger_dict(row) for row in rows]
+    except Exception as exc:
+        log.exception("list_reconciliation_ledger failed: %s", exc)
+        return []
+
+
+def get_reconciliation_ledger(ledger_id: str) -> dict[str, Any] | None:
+    if not db_exists():
+        return None
+    try:
+        with get_pipeline_conn() as conn:
+            row = conn.execute(
+                "SELECT ledger_id, created_at, root, operation_type, old_path, new_path, "
+                "affected_tables, before_values_json, after_values_json, status, error "
+                "FROM reconciliation_ledger WHERE ledger_id = ?",
+                (ledger_id,),
+            ).fetchone()
+        return _row_to_ledger_dict(row) if row is not None else None
+    except Exception as exc:
+        log.exception("get_reconciliation_ledger failed for %s: %s", ledger_id, exc)
+        return None
+
+
 def build_overview_payload() -> dict[str, Any]:
     if not db_exists():
         return {
