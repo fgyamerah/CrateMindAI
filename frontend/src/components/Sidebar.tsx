@@ -1,14 +1,14 @@
 import { NavLink } from 'react-router-dom'
 import {
-  LayoutDashboard,
-  ListTodo,
-  Music,
   Library,
-  AudioWaveform,
-  ListMusic,
-  Upload,
-  HardDrive,
-  Settings,
+  AlertTriangle,
+  Sparkles,
+  ClipboardList,
+  FolderTree,
+  Database,
+  Eraser,
+  BarChart3,
+  Wrench,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
@@ -21,16 +21,31 @@ interface NavItem {
   end?:  boolean
 }
 
-const NAV: NavItem[] = [
-  { to: '/',            label: 'Collection',  Icon: Library,         end: true },
-  { to: '/dashboard',   label: 'Dashboard',   Icon: LayoutDashboard },
-  { to: '/jobs',        label: 'Jobs',        Icon: ListTodo },
-  { to: '/tracks',      label: 'Tracks',      Icon: Music },
-  { to: '/bpm-review',  label: 'BPM Review',  Icon: AudioWaveform },
-  { to: '/set-builder', label: 'Set Builder', Icon: ListMusic },
-  { to: '/export',      label: 'Export',      Icon: Upload },
-  { to: '/ssd-sync',    label: 'SSD Sync',    Icon: HardDrive },
-  { to: '/settings',    label: 'Settings',    Icon: Settings },
+interface NavSection {
+  title: string
+  items: NavItem[]
+}
+
+const NAV: NavSection[] = [
+  {
+    title: 'Browse',
+    items: [
+      { to: '/',             label: 'Library',          Icon: Library,       end: true },
+      { to: '/quality',      label: 'Quality',          Icon: BarChart3 },
+      { to: '/issues',       label: 'Issues',           Icon: AlertTriangle },
+      { to: '/enrichment',   label: 'Enrichment Queue', Icon: Sparkles },
+      { to: '/metadata-repair', label: 'Metadata Repair', Icon: Wrench },
+      { to: '/metadata-sanitation', label: 'Metadata Sanitation', Icon: Eraser },
+      { to: '/audit',        label: 'Audit',            Icon: ClipboardList },
+      { to: '/folders',      label: 'Folders',          Icon: FolderTree },
+    ],
+  },
+  {
+    title: 'Reconciliation',
+    items: [
+      { to: '/reconciliation', label: 'Ledger', Icon: Database },
+    ],
+  },
 ]
 
 interface Props {
@@ -57,23 +72,30 @@ export default function Sidebar({ collapsed, onToggle }: Props) {
         </button>
       </div>
 
-      <ul className="sidebar-nav">
-        {NAV.map(({ to, label, Icon, end }) => (
-          <li key={to}>
-            <NavLink
-              to={to}
-              end={end}
-              className={({ isActive }) =>
-                ['sidebar-link', isActive ? 'sidebar-link--active' : ''].join(' ').trim()
-              }
-              title={collapsed ? label : undefined}
-            >
-              <Icon size={15} className="sidebar-icon" strokeWidth={1.75} />
-              {!collapsed && <span className="sidebar-link-label">{label}</span>}
-            </NavLink>
-          </li>
+      <div className="sidebar-sections">
+        {NAV.map(({ title, items }) => (
+          <section className="sidebar-section" key={title}>
+            {!collapsed && <div className="sidebar-section-title">{title}</div>}
+            <ul className="sidebar-nav">
+              {items.map(({ to, label, Icon, end }) => (
+                <li key={to}>
+                  <NavLink
+                    to={to}
+                    end={end}
+                    className={({ isActive }) =>
+                      ['sidebar-link', isActive ? 'sidebar-link--active' : ''].join(' ').trim()
+                    }
+                    title={collapsed ? label : undefined}
+                  >
+                    <Icon size={15} className="sidebar-icon" strokeWidth={1.75} />
+                    {!collapsed && <span className="sidebar-link-label">{label}</span>}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </section>
         ))}
-      </ul>
+      </div>
 
       {!collapsed && <div className="sidebar-footer">v0.1.0</div>}
     </nav>

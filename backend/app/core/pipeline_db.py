@@ -11,9 +11,10 @@ from __future__ import annotations
 import contextlib
 import logging
 import sqlite3
+from pathlib import Path
 from typing import Iterator
 
-from .config import PIPELINE_DB_PATH
+from .library_root import library_db_path
 
 log = logging.getLogger(__name__)
 
@@ -26,14 +27,15 @@ def get_pipeline_conn() -> Iterator[sqlite3.Connection]:
     Raises FileNotFoundError if the database does not exist — callers
     should catch this and return an appropriate empty response.
     """
-    if not PIPELINE_DB_PATH.exists():
+    db_path = library_db_path()
+    if not db_path.exists():
         raise FileNotFoundError(
-            f"Pipeline database not found at {PIPELINE_DB_PATH}. "
+            f"Pipeline database not found at {db_path}. "
             "Run the pipeline at least once to create it."
         )
     # uri=True + ?mode=ro prevents any accidental write
     conn = sqlite3.connect(
-        f"file:{PIPELINE_DB_PATH}?mode=ro",
+        f"file:{db_path}?mode=ro",
         uri=True,
         check_same_thread=False,
     )
@@ -45,4 +47,8 @@ def get_pipeline_conn() -> Iterator[sqlite3.Connection]:
 
 
 def pipeline_db_exists() -> bool:
-    return PIPELINE_DB_PATH.exists()
+    return library_db_path().exists()
+
+
+def pipeline_db_path() -> Path:
+    return library_db_path()

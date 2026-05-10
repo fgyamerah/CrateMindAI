@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS tracks (
     filename        TEXT    NOT NULL,
     artist          TEXT,
     title           TEXT,
+    album           TEXT,
     genre           TEXT,
     bpm             REAL,
     key_musical     TEXT,
@@ -44,7 +45,8 @@ CREATE TABLE IF NOT EXISTS tracks (
     status          TEXT    NOT NULL DEFAULT 'pending',
     error_msg       TEXT,
     processed_at    TEXT,
-    pipeline_ver    TEXT
+    pipeline_ver    TEXT,
+    parse_confidence TEXT
 );
 
 CREATE TABLE IF NOT EXISTS pipeline_runs (
@@ -72,6 +74,11 @@ CREATE TABLE IF NOT EXISTS duplicate_groups (
 
 CREATE INDEX IF NOT EXISTS idx_tracks_status   ON tracks(status);
 CREATE INDEX IF NOT EXISTS idx_tracks_filepath ON tracks(filepath);
+CREATE INDEX IF NOT EXISTS idx_tracks_artist_lc ON tracks(LOWER(COALESCE(artist,'')));
+CREATE INDEX IF NOT EXISTS idx_tracks_title_lc  ON tracks(LOWER(COALESCE(title,'')));
+CREATE INDEX IF NOT EXISTS idx_tracks_genre_lc  ON tracks(LOWER(COALESCE(genre,'')));
+CREATE INDEX IF NOT EXISTS idx_tracks_bpm       ON tracks(bpm);
+CREATE INDEX IF NOT EXISTS idx_tracks_parse_confidence_lc ON tracks(UPPER(COALESCE(parse_confidence,'')));
 CREATE INDEX IF NOT EXISTS idx_dupes_run       ON duplicate_groups(run_id);
 
 CREATE TABLE IF NOT EXISTS cue_points (
@@ -121,6 +128,25 @@ CREATE TABLE IF NOT EXISTS processed_state (
 );
 
 CREATE INDEX IF NOT EXISTS idx_pstate_stage_path ON processed_state(stage, filepath);
+
+CREATE TABLE IF NOT EXISTS reconciliation_ledger (
+    ledger_id           TEXT PRIMARY KEY,
+    created_at          TEXT,
+    root                TEXT,
+    operation_type      TEXT,
+    old_path            TEXT,
+    new_path            TEXT,
+    affected_tables     TEXT,
+    before_values_json  TEXT,
+    after_values_json   TEXT,
+    status              TEXT,
+    error               TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_reconciliation_ledger_ledger_id     ON reconciliation_ledger(ledger_id);
+CREATE INDEX IF NOT EXISTS idx_reconciliation_ledger_created_at     ON reconciliation_ledger(created_at);
+CREATE INDEX IF NOT EXISTS idx_reconciliation_ledger_operation_type ON reconciliation_ledger(operation_type);
+CREATE INDEX IF NOT EXISTS idx_reconciliation_ledger_status         ON reconciliation_ledger(status);
 """
 
 
@@ -153,12 +179,76 @@ def init_db() -> None:
         # Schema migrations — ADD COLUMN is safe on existing DBs (SQLite ignores
         # OperationalError "duplicate column name" so we suppress it).
         for migration in [
+            "ALTER TABLE tracks ADD COLUMN album TEXT",
             "ALTER TABLE tracks ADD COLUMN quality_tier TEXT",
+            "ALTER TABLE tracks ADD COLUMN parse_confidence TEXT",
         ]:
             try:
                 conn.execute(migration)
             except Exception:
                 pass  # column already exists — safe to ignore
+        for index_sql in [
+            "CREATE INDEX IF NOT EXISTS idx_tracks_status ON tracks(status)",
+            "CREATE INDEX IF NOT EXISTS idx_tracks_filepath ON tracks(filepath)",
+            "CREATE INDEX IF NOT EXISTS idx_tracks_artist_lc ON tracks(LOWER(COALESCE(artist,'')))",
+            "CREATE INDEX IF NOT EXISTS idx_tracks_title_lc ON tracks(LOWER(COALESCE(title,'')))",
+            "CREATE INDEX IF NOT EXISTS idx_tracks_genre_lc ON tracks(LOWER(COALESCE(genre,'')))",
+            "CREATE INDEX IF NOT EXISTS idx_tracks_bpm ON tracks(bpm)",
+            "CREATE INDEX IF NOT EXISTS idx_tracks_parse_confidence_lc ON tracks(UPPER(COALESCE(parse_confidence,'')))",
+        ]:
+            try:
+                conn.execute(index_sql)
+            except Exception:
+                pass
+
+
+@contextlib.contextmanager
+def _get_reconciliation_ro_conn() -> Iterator[sqlite3.Connection]:
+    db_path = config.DB_PATH
+    if not db_path.exists():
+        raise FileNotFoundError(f"Pipeline database not found at {db_path}")
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+def list_reconciliation_ledger(limit: int = 20, offset: int = 0) -> list[sqlite3.Row]:
+    """Return recent reconciliation ledger rows, newest first."""
+    try:
+        with _get_reconciliation_ro_conn() as conn:
+            try:
+                return conn.execute(
+                    "SELECT * FROM reconciliation_ledger "
+                    "ORDER BY created_at DESC, ledger_id DESC "
+                    "LIMIT ? OFFSET ?",
+                    (limit, offset),
+                ).fetchall()
+            except sqlite3.OperationalError as exc:
+                if "no such table" in str(exc).lower():
+                    return []
+                raise
+    except FileNotFoundError:
+        return []
+
+
+def get_reconciliation_ledger(ledger_id: str) -> Optional[sqlite3.Row]:
+    """Return a single reconciliation ledger row by ledger_id."""
+    try:
+        with _get_reconciliation_ro_conn() as conn:
+            try:
+                return conn.execute(
+                    "SELECT * FROM reconciliation_ledger WHERE ledger_id=?",
+                    (ledger_id,),
+                ).fetchone()
+            except sqlite3.OperationalError as exc:
+                if "no such table" in str(exc).lower():
+                    return None
+                raise
+    except FileNotFoundError:
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -206,6 +296,125 @@ def mark_status(filepath: str, status: str, error_msg: str = "") -> None:
             "UPDATE tracks SET status=?, error_msg=?, processed_at=? WHERE filepath=?",
             (status, error_msg, _now(), filepath),
         )
+
+
+def _path_update_root() -> Path:
+    return Path(config.MUSIC_ROOT).expanduser().resolve(strict=False)
+
+
+def _assert_under_active_root(path: str | Path) -> Path:
+    root = _path_update_root()
+    candidate = Path(path).expanduser()
+    if not candidate.is_absolute():
+        candidate = root / candidate
+    resolved = candidate.resolve(strict=False)
+    try:
+        resolved.relative_to(root)
+    except ValueError as exc:
+        raise ValueError(f"path outside active root: {resolved} not under {root}") from exc
+    return resolved
+
+
+def _log_path_update(message: str) -> None:
+    try:
+        from modules.textlog import log_action
+
+        log_action(message)
+    except Exception:
+        pass
+
+
+def update_track_path_references(old_path, new_path, context: str):
+    """
+    Transactionally update DB path references after a successful filesystem move.
+
+    Updates tracks.filepath and non-stale processed_state.filepath. Stale
+    processed_state rows are intentionally left untouched as historical records.
+    Returns a small result dict with status/skip reason for callers and tests.
+    """
+    try:
+        old_resolved = _assert_under_active_root(old_path)
+        new_resolved = _assert_under_active_root(new_path)
+    except ValueError as exc:
+        result = {
+            "status": "skipped",
+            "reason": "path_outside_active_root",
+            "context": context,
+            "old_path": str(old_path),
+            "new_path": str(new_path),
+            "error": str(exc),
+        }
+        _log_path_update(
+            f"PATH-UPDATE {context}: SKIP {old_path} -> {new_path}: {result['reason']}"
+        )
+        return result
+
+    old_str = str(old_resolved)
+    new_str = str(new_resolved)
+    with get_conn() as conn:
+        _ensure_pstate(conn)
+        old_track = conn.execute(
+            "SELECT 1 FROM tracks WHERE filepath=?",
+            (old_str,),
+        ).fetchone()
+        old_pstate = conn.execute(
+            "SELECT 1 FROM processed_state WHERE filepath=? AND lower(status) != 'stale' LIMIT 1",
+            (old_str,),
+        ).fetchone()
+        if old_track is None and old_pstate is None:
+            result = {
+                "status": "skipped",
+                "reason": "old_path_not_found",
+                "context": context,
+                "old_path": old_str,
+                "new_path": new_str,
+            }
+            _log_path_update(
+                f"PATH-UPDATE {context}: SKIP {old_str} -> {new_str}: old_path_not_found"
+            )
+            return result
+
+        collision = conn.execute(
+            "SELECT 1 FROM tracks WHERE filepath=? AND filepath!=?",
+            (new_str, old_str),
+        ).fetchone()
+        if collision is not None:
+            result = {
+                "status": "skipped",
+                "reason": "new_path_tracks_collision",
+                "context": context,
+                "old_path": old_str,
+                "new_path": new_str,
+            }
+            _log_path_update(
+                f"PATH-UPDATE {context}: SKIP {old_str} -> {new_str}: new_path_tracks_collision"
+            )
+            return result
+
+        track_cursor = conn.execute(
+            "UPDATE tracks SET filepath=?, filename=? WHERE filepath=?",
+            (new_str, Path(new_str).name, old_str),
+        )
+        pstate_cursor = conn.execute(
+            "UPDATE processed_state SET filepath=? "
+            "WHERE filepath=? AND lower(status) != 'stale'",
+            (new_str, old_str),
+        )
+
+    result = {
+        "status": "updated",
+        "reason": "",
+        "context": context,
+        "old_path": old_str,
+        "new_path": new_str,
+        "tracks_updated": track_cursor.rowcount,
+        "processed_state_updated": pstate_cursor.rowcount,
+    }
+    _log_path_update(
+        f"PATH-UPDATE {context}: {old_str} -> {new_str} "
+        f"tracks={track_cursor.rowcount} processed_state={pstate_cursor.rowcount}"
+    )
+    return result
 
 
 def get_tracks_by_status(status: str):

@@ -17,6 +17,22 @@ export interface LibraryStats {
   folder_count: number
 }
 
+export interface LibraryFolderStat {
+  folder: string
+  track_count: number
+  issue_count: number
+}
+
+export interface LibraryOverview {
+  total_tracks: number
+  tracks_with_bpm: number
+  tracks_with_camelot_key: number
+  tracks_missing_artist: number
+  tracks_missing_title: number
+  parse_confidence_breakdown: Record<string, number>
+  genre_top_counts: Array<{ genre: string; count: number }>
+}
+
 export function fetchLibraryTree(depth = 3): Promise<LibraryTreeResponse> {
   return apiFetch.get<LibraryTreeResponse>(`/library/tree?depth=${depth}`)
 }
@@ -24,6 +40,14 @@ export function fetchLibraryTree(depth = 3): Promise<LibraryTreeResponse> {
 export function fetchLibraryStats(path?: string | null): Promise<LibraryStats> {
   const qs = path ? `?path=${encodeURIComponent(path)}` : ''
   return apiFetch.get<LibraryStats>(`/library/stats${qs}`)
+}
+
+export function fetchLibraryFolders(): Promise<LibraryFolderStat[]> {
+  return apiFetch.get<LibraryFolderStat[]>('/library/folders')
+}
+
+export function fetchLibraryOverview(): Promise<LibraryOverview> {
+  return apiFetch.get<LibraryOverview>('/library/overview')
 }
 
 export function fetchRunList(command?: string, limit = 20): Promise<RunListItem[]> {

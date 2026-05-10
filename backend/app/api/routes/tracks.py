@@ -3,7 +3,7 @@ Track routes — read-only views into the pipeline's processed.db.
 
   GET /api/tracks          — list tracks with filtering, search, sort, pagination
   GET /api/tracks/stats    — aggregate counts (status, quality, missing fields)
-  GET /api/tracks/issues   — tracks with at least one issue flag
+  GET /api/tracks/issues   — grouped issue counts
   GET /api/tracks/{id}     — single track detail
 
 IMPORTANT: /stats and /issues must be registered before /{id} so FastAPI
@@ -15,12 +15,30 @@ import logging
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
 
-from ...schemas.track import TrackDetail, TrackIssueItem, TrackStats, TrackSummary
+from ...schemas.track import TrackDetail, TrackStats, TrackSummary
+from ...services import read_only as read_only_service
 from ...services import track_service
 
 log = logging.getLogger(__name__)
 router = APIRouter(tags=["tracks"])
+MAX_TRACK_LIMIT = 500
+
+
+class TrackPageResponse(BaseModel):
+    items: List[TrackSummary]
+    limit: int
+    offset: int
+    total: int
+
+
+class TrackIssueCountsResponse(BaseModel):
+    missing_artist: int
+    missing_title: int
+    weak_filename_parse: int
+    suspicious_artist: int
+    suspicious_title: int
 
 
 # ---------------------------------------------------------------------------
@@ -42,63 +60,54 @@ async def get_track_stats() -> TrackStats:
 # GET /api/tracks/issues
 # ---------------------------------------------------------------------------
 
-@router.get("/tracks/issues", response_model=List[TrackIssueItem])
-async def get_track_issues(
-    limit: int = Query(default=200, ge=1, le=1000),
-) -> List[TrackIssueItem]:
-    """
-    Return tracks with at least one issue:
-    missing BPM, missing key, missing artist/title, low quality, error, needs_review.
-
-    Results are ordered: errors first, then needs_review, then by artist.
-    """
-    return track_service.get_issues(limit=limit)
+@router.get("/tracks/issues", response_model=TrackIssueCountsResponse)
+async def get_track_issues() -> TrackIssueCountsResponse:
+    """Return grouped issue counts across the selected library root."""
+    return TrackIssueCountsResponse(**track_service.get_issue_counts())
 
 
 # ---------------------------------------------------------------------------
 # GET /api/tracks
 # ---------------------------------------------------------------------------
 
-@router.get("/tracks", response_model=List[TrackSummary])
+@router.get("/tracks", response_model=TrackPageResponse)
 async def list_tracks(
-    path:         Optional[str]   = Query(default=None, description="Filter by filesystem directory prefix (e.g. /music/inbox)"),
-    q:            Optional[str]   = Query(default=None, description="Search artist, title, filename"),
-    status:       Optional[str]   = Query(default=None, description="Filter by status (ok, error, …)"),
-    artist:       Optional[str]   = Query(default=None, description="Exact artist match (case-insensitive)"),
-    genre:        Optional[str]   = Query(default=None, description="Exact genre match (case-insensitive)"),
-    key:          Optional[str]   = Query(default=None, description="Camelot or musical key (e.g. 8A, Am)"),
-    quality_tier: Optional[str]   = Query(default=None, description="LOSSLESS | HIGH | MEDIUM | LOW | UNKNOWN"),
-    bpm_min:      Optional[float] = Query(default=None, ge=0,   le=300),
-    bpm_max:      Optional[float] = Query(default=None, ge=0,   le=300),
-    sort:         str             = Query(default="artist",      description="artist | title | bpm | processed_at | filename"),
-    order:        str             = Query(default="asc",         description="asc | desc"),
-    limit:        int             = Query(default=100, ge=1, le=500),
-    offset:       int             = Query(default=0,  ge=0),
-) -> List[TrackSummary]:
-    """
-    List library tracks with optional filtering, full-text search, sorting,
-    and pagination.
-
-    Pass ?path=/music/inbox to scope results to a specific directory.
-    The response does not include total_count in the body; use
-    GET /api/tracks/stats for aggregate numbers.
-    """
+    search: Optional[str] = Query(default=None, description="Search artist, title, filename"),
+    artist: Optional[str] = Query(default=None, description="Exact artist match (case-insensitive)"),
+    status: Optional[str] = Query(default=None, description="Filter by status"),
+    issue: Optional[str] = Query(default=None, description="Filter by issue flag"),
+    bpm_min: Optional[float] = Query(default=None, ge=0),
+    bpm_max: Optional[float] = Query(default=None, ge=0),
+    has_key: Optional[bool] = Query(default=None, description="Filter tracks with or without a key"),
+    genre: Optional[str] = Query(default=None, description="Case-insensitive genre filter"),
+    parse_confidence: Optional[str] = Query(default=None, description="Filter by filename parse confidence"),
+    sort: str = Query(default="artist", description="Sort key"),
+    order: str = Query(default="asc", pattern="^(asc|desc)$"),
+    limit: int = Query(default=100, ge=1, le=MAX_TRACK_LIMIT),
+    offset: int = Query(default=0, ge=0),
+) -> TrackPageResponse:
+    """List library tracks with read-only filtering and pagination."""
     tracks, _total = track_service.list_tracks(
-        path=path,
-        q=q,
+        q=search,
         status=status,
         artist=artist,
-        genre=genre,
-        key=key,
-        quality_tier=quality_tier,
+        issue=issue,
         bpm_min=bpm_min,
         bpm_max=bpm_max,
+        has_key=has_key,
+        genre=genre,
+        parse_confidence=parse_confidence,
         sort=sort,
         order=order,
         limit=limit,
         offset=offset,
     )
-    return [TrackSummary.from_track(t) for t in tracks]
+    return TrackPageResponse(
+        items=[TrackSummary.from_track(t) for t in tracks],
+        limit=limit,
+        offset=offset,
+        total=_total,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -108,7 +117,8 @@ async def list_tracks(
 @router.get("/tracks/{track_id}", response_model=TrackDetail)
 async def get_track(track_id: int) -> TrackDetail:
     """Return the full detail record for a single track."""
-    track = track_service.get_track(track_id)
+    track = track_service.get_track_by_id(track_id)
     if not track:
         raise HTTPException(status_code=404, detail=f"Track {track_id} not found.")
-    return TrackDetail.from_track(track)
+    queue_item = read_only_service.lookup_enrichment_queue_item(track.filepath)
+    return TrackDetail.from_track(track, enrichment_queue_item=queue_item)

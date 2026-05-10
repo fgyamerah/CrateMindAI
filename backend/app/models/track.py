@@ -12,6 +12,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List, Optional
 
+from modules.filename_parse import issue_flags_for_metadata
+
 
 @dataclass
 class Track:
@@ -32,6 +34,7 @@ class Track:
     processed_at:   Optional[str]
     pipeline_ver:   Optional[str]
     quality_tier:   Optional[str]
+    parse_confidence: Optional[str]
     issues:         List[str] = field(default_factory=list)
 
     @classmethod
@@ -59,6 +62,7 @@ class Track:
             processed_at=_get("processed_at"),
             pipeline_ver=_get("pipeline_ver"),
             quality_tier=_get("quality_tier"),
+            parse_confidence=_get("parse_confidence"),
         )
         t.issues = _compute_issues(t)
         return t
@@ -81,4 +85,11 @@ def _compute_issues(t: Track) -> List[str]:
         issues.append("error")
     elif t.status == "needs_review":
         issues.append("needs_review")
+    issues.extend(
+        issue_flags_for_metadata(
+            artist=t.artist,
+            title=t.title,
+            parse_confidence=t.parse_confidence,
+        )
+    )
     return issues

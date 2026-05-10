@@ -31,7 +31,9 @@ Label Intelligence subcommand:
         Cache default:  $DJ_MUSIC_ROOT/.cache/label_intel/
 """
 import argparse
+import json
 import logging
+import re
 import sys
 import time
 from pathlib import Path
@@ -47,6 +49,8 @@ from modules import (
     qc, dedupe, organizer, sanitizer, analyzer, tagger, playlists, reporter,
     artist_merge, artist_folder_clean, metadata_clean, tag_normalize,
 )
+from modules.filename_parse import parse_filename_metadata
+from modules.parser import is_valid_artist, is_valid_title
 from modules.textlog import log_action, log_run_separator
 
 
@@ -95,6 +99,47 @@ log = logging.getLogger("pipeline")
 
 
 # ---------------------------------------------------------------------------
+# Apply/dry-run command safety
+# ---------------------------------------------------------------------------
+def assert_apply_mode(args) -> bool:
+    """
+    Normalize write-capable subcommands to dry-run by default.
+
+    Returns True only when writes are explicitly allowed. Raises ValueError
+    when the requested mode is ambiguous or lacks confirmation.
+    """
+    command = getattr(args, "command", "command")
+    do_apply = bool(getattr(args, "apply", False))
+    explicit_dry_run = bool(getattr(args, "dry_run", False))
+
+    if do_apply and explicit_dry_run:
+        raise ValueError(f"{command}: --apply cannot be combined with --dry-run")
+
+    if not do_apply:
+        setattr(args, "dry_run", True)
+        print("MODE: DRY-RUN")
+        log_action(f"{command}: MODE DRY-RUN")
+        return False
+
+    confirmed = bool(getattr(args, "yes", False)) or bool(getattr(args, "force", False))
+    if not confirmed:
+        raise ValueError(f"{command}: --apply requires --yes or --force")
+
+    setattr(args, "dry_run", False)
+    print("MODE: APPLY")
+    log_action(f"{command}: MODE APPLY")
+    return True
+
+
+def _apply_mode_or_error(args) -> bool | None:
+    try:
+        return assert_apply_mode(args)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return None
+
+
+# ---------------------------------------------------------------------------
 # Custom library path support
 # ---------------------------------------------------------------------------
 
@@ -131,6 +176,39 @@ def _resolve_library_root(scan_path: Path) -> Path:
     if scan_path.name.lower() == "sorted":
         return scan_path.parent
     return scan_path
+
+
+def resolve_library_root(args=None) -> Path:
+    """Resolve the active library root for root-scoped commands."""
+    root_arg = getattr(args, "root", None) if args is not None else None
+    root = Path(root_arg).expanduser() if root_arg else Path(config.MUSIC_ROOT).expanduser()
+    root = root.resolve()
+    if not root.exists():
+        raise ValueError(f"library root does not exist: {root}")
+    if not root.is_dir():
+        raise ValueError(f"library root is not a directory: {root}")
+    if not root.is_absolute():
+        raise ValueError(f"library root must be absolute: {root}")
+    return root
+
+
+def assert_path_under_root(path: Path | str, root: Path | str) -> Path:
+    """
+    Resolve path and verify it stays under root.
+
+    Relative paths are interpreted relative to root so benign relative DB paths
+    can be audited, while '../' traversal resolves outside root and is rejected.
+    """
+    root_path = Path(root).expanduser().resolve()
+    candidate = Path(path).expanduser()
+    if not candidate.is_absolute():
+        candidate = root_path / candidate
+    resolved = candidate.resolve(strict=False)
+    try:
+        resolved.relative_to(root_path)
+    except ValueError as exc:
+        raise ValueError(f"path outside selected root: {resolved} not under {root_path}") from exc
+    return resolved
 
 
 def _collect_audio_from_dir(root: Path) -> list:
@@ -944,6 +1022,2901 @@ def run_orphan_scan(args) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Read-only path audit
+# ---------------------------------------------------------------------------
+def _path_audit_audio_files(root: Path) -> list[Path]:
+    skip = config.MAINTENANCE_SKIP_DIRS
+    files: list[Path] = []
+    seen: set[str] = set()
+    for ext in config.AUDIO_EXTENSIONS:
+        for pattern in (f"*{ext}", f"*{ext.upper()}"):
+            for path in root.rglob(pattern):
+                if any(part in skip for part in path.parts):
+                    continue
+                if any(part.startswith(".") for part in path.parts):
+                    continue
+                key = str(path.resolve())
+                if key in seen:
+                    continue
+                seen.add(key)
+                files.append(path.resolve())
+    return sorted(files)
+
+
+def _path_audit_db_path(root: Path) -> Path:
+    return assert_path_under_root(root / "logs" / "processed.db", root)
+
+
+def _path_audit_table_columns(conn, table: str) -> list[str]:
+    return [row["name"] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()]
+
+
+_PATH_AUDIT_STAGE_PRIORITY = {
+    "metadata-sanitize": 0,
+    "artist-intelligence": 1,
+    "metadata-enrich-online": 2,
+    "filename-normalize": 3,
+    "library-organize": 4,
+}
+
+
+_BUILD_TRACKS_SCHEMA = """
+CREATE TABLE IF NOT EXISTS tracks (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    filepath        TEXT    NOT NULL UNIQUE,
+    filename        TEXT    NOT NULL,
+    artist          TEXT,
+    title           TEXT,
+    album           TEXT,
+    genre           TEXT,
+    bpm             REAL,
+    key_musical     TEXT,
+    key_camelot     TEXT,
+    duration_sec    REAL,
+    bitrate_kbps    INTEGER,
+    filesize_bytes  INTEGER,
+    status          TEXT    NOT NULL DEFAULT 'pending',
+    error_msg       TEXT,
+    processed_at    TEXT,
+    pipeline_ver    TEXT,
+    parse_confidence TEXT
+);
+"""
+
+
+def _build_tracks_ensure_schema(conn) -> None:
+    conn.execute(_BUILD_TRACKS_SCHEMA)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_status ON tracks(status)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_filepath ON tracks(filepath)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_artist_lc ON tracks(LOWER(COALESCE(artist,'')))")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_title_lc ON tracks(LOWER(COALESCE(title,'')))")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_genre_lc ON tracks(LOWER(COALESCE(genre,'')))")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_bpm ON tracks(bpm)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_parse_confidence_lc ON tracks(UPPER(COALESCE(parse_confidence,'')))")
+
+
+def _build_tracks_source_rows(conn) -> list[dict]:
+    table = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='processed_state'"
+    ).fetchone()
+    if table is None:
+        return []
+    columns = _path_audit_table_columns(conn, "processed_state")
+    path_col = "filepath" if "filepath" in columns else "path" if "path" in columns else None
+    if path_col is None:
+        return []
+    select_cols = [
+        "id",
+        "stage",
+        f"{path_col} AS filepath",
+        "file_size" if "file_size" in columns else "NULL AS file_size",
+        "status" if "status" in columns else "NULL AS status",
+        "processed_at" if "processed_at" in columns else "NULL AS processed_at",
+        "pipeline_ver" if "pipeline_ver" in columns else "NULL AS pipeline_ver",
+    ]
+    return [
+        dict(row)
+        for row in conn.execute(
+            f"SELECT {', '.join(select_cols)} FROM processed_state"
+        ).fetchall()
+    ]
+
+
+def _build_tracks_row_rank(row: dict) -> tuple[int, str, int]:
+    stage = str(row.get("stage") or "")
+    return (
+        _PATH_AUDIT_STAGE_PRIORITY.get(stage, -1),
+        str(row.get("processed_at") or ""),
+        int(row.get("id") or 0),
+    )
+
+
+def _build_tracks_select_sources(root: Path, rows: list[dict]) -> tuple[dict[str, dict], dict]:
+    stats = {
+        "source_rows": len(rows),
+        "skipped_stale": 0,
+        "skipped_missing_file": 0,
+        "skipped_outside_root": 0,
+        "duplicate_filepaths_collapsed": 0,
+    }
+    selected: dict[str, dict] = {}
+    seen_valid_paths = 0
+    for row in rows:
+        if str(row.get("status") or "").lower() == "stale":
+            stats["skipped_stale"] += 1
+            continue
+        raw_path = str(row.get("filepath") or "")
+        if not raw_path:
+            stats["skipped_missing_file"] += 1
+            continue
+        try:
+            filepath = assert_path_under_root(raw_path, root)
+        except ValueError:
+            stats["skipped_outside_root"] += 1
+            continue
+        if not filepath.exists():
+            stats["skipped_missing_file"] += 1
+            continue
+        seen_valid_paths += 1
+        key = str(filepath)
+        candidate = dict(row)
+        candidate["filepath"] = key
+        current = selected.get(key)
+        if current is None or _build_tracks_row_rank(candidate) > _build_tracks_row_rank(current):
+            selected[key] = candidate
+    stats["duplicate_filepaths_collapsed"] = max(0, seen_valid_paths - len(selected))
+    return selected, stats
+
+
+def _build_tracks_upsert(conn, root: Path) -> dict:
+    _build_tracks_ensure_schema(conn)
+    rows = _build_tracks_source_rows(conn)
+    selected, stats = _build_tracks_select_sources(root, rows)
+    track_columns = set(_path_audit_table_columns(conn, "tracks"))
+    writable_columns = [
+        column for column in [
+            "filepath",
+            "filename",
+            "filesize_bytes",
+            "status",
+            "processed_at",
+            "pipeline_ver",
+        ]
+        if column in track_columns
+    ]
+    inserted = 0
+    updated = 0
+    unchanged = 0
+    for filepath, row in sorted(selected.items()):
+        path = Path(filepath)
+        values = {
+            "filepath": filepath,
+            "filename": path.name,
+            "filesize_bytes": path.stat().st_size,
+            "status": row.get("status") or "ok",
+            "processed_at": row.get("processed_at"),
+            "pipeline_ver": row.get("pipeline_ver"),
+        }
+        values = {key: values[key] for key in writable_columns}
+        existing = conn.execute(
+            "SELECT * FROM tracks WHERE filepath = ?",
+            (filepath,),
+        ).fetchone()
+        if existing is not None:
+            changed = any(existing[column] != values.get(column) for column in writable_columns)
+            if not changed:
+                unchanged += 1
+                continue
+        columns = list(values.keys())
+        placeholders = ", ".join("?" for _ in columns)
+        updates = ", ".join(
+            f"{column}=excluded.{column}" for column in columns if column != "filepath"
+        )
+        conn.execute(
+            f"INSERT INTO tracks ({', '.join(columns)}) VALUES ({placeholders}) "
+            f"ON CONFLICT(filepath) DO UPDATE SET {updates}",
+            [values[column] for column in columns],
+        )
+        if existing is None:
+            inserted += 1
+        else:
+            updated += 1
+    final_tracks_count = conn.execute("SELECT COUNT(*) AS n FROM tracks").fetchone()["n"]
+    return {
+        **stats,
+        "inserted": inserted,
+        "updated": updated,
+        "unchanged": unchanged,
+        "final_tracks_count": final_tracks_count,
+    }
+
+
+def _path_audit_current_processed_rows(rows: list[dict]) -> list[dict]:
+    known_rows = [
+        row for row in rows
+        if row.get("stage") in _PATH_AUDIT_STAGE_PRIORITY
+    ]
+    if known_rows:
+        final_priority = max(
+            _PATH_AUDIT_STAGE_PRIORITY[row["stage"]]
+            for row in known_rows
+        )
+        return [
+            row for row in known_rows
+            if _PATH_AUDIT_STAGE_PRIORITY[row["stage"]] == final_priority
+        ]
+
+    latest_by_path: dict[str, dict] = {}
+    for row in rows:
+        fp = str(row.get("filepath") or "")
+        if not fp:
+            continue
+        current = latest_by_path.get(fp)
+        if current is None or str(row.get("processed_at") or "") > str(current.get("processed_at") or ""):
+            latest_by_path[fp] = row
+    return list(latest_by_path.values())
+
+
+def _path_audit_normalized_filename(path: Path) -> str:
+    import re
+
+    stem = path.stem.lower()
+    stem = re.sub(r"\s*\(\d+\)\s*$", "", stem)
+    stem = re.sub(r"\s*-\s*[0-9]{1,2}[ab]\s*-\s*\d{2,3}\s*$", "", stem)
+    stem = re.sub(r"\s*-\s*\d{2,3}\s*-\s*[0-9]{1,2}[ab]\s*$", "", stem)
+    stem = re.sub(r"[^a-z0-9]+", " ", stem)
+    return re.sub(r"\s+", " ", stem).strip()
+
+
+def _path_audit_size_diff_pct(old_size, new_size: int) -> float | None:
+    if old_size in (None, "", 0):
+        return None
+    try:
+        old = float(old_size)
+    except (TypeError, ValueError):
+        return None
+    if old <= 0:
+        return None
+    return abs(old - float(new_size)) / old
+
+
+def _path_audit_fuzzy_similarity(old_path: Path, new_path: Path) -> float:
+    from difflib import SequenceMatcher
+
+    old_name = _path_audit_normalized_filename(old_path)
+    new_name = _path_audit_normalized_filename(new_path)
+    if not old_name or not new_name:
+        return 0.0
+    return SequenceMatcher(None, old_name, new_name).ratio()
+
+
+_PATH_AUDIT_RELOCATION_IGNORE_TOKENS = {
+    "remix", "mix", "original", "feat", "ft", "featuring", "extended",
+}
+
+
+def _path_audit_filename_tokens(path: Path) -> set[str]:
+    return {
+        token for token in _path_audit_normalized_filename(path).split()
+        if len(token) > 1 and token not in _PATH_AUDIT_RELOCATION_IGNORE_TOKENS
+    }
+
+
+def _path_audit_token_overlap(old_path: Path, new_path: Path) -> float:
+    old_tokens = _path_audit_filename_tokens(old_path)
+    if not old_tokens:
+        return 0.0
+    new_tokens = _path_audit_filename_tokens(new_path)
+    return len(old_tokens & new_tokens) / len(old_tokens)
+
+
+_PATH_AUDIT_VERSION_TOKENS = {
+    "original",
+    "remix",
+    "extended",
+    "dub",
+    "vocal",
+    "instrumental",
+    "bootleg",
+    "edit",
+    "radio",
+    "club",
+    "amapiano",
+    "re-edit",
+    "journey",
+}
+
+
+def _path_audit_version_tokens(path: Path) -> set[str]:
+    import re
+
+    raw_stem = path.stem.lower()
+    tokens = set(_path_audit_normalized_filename(path).split())
+    version_tokens = {
+        token for token in tokens
+        if token in _PATH_AUDIT_VERSION_TOKENS
+    }
+    if re.search(r"\bre[\s-]*edit\b", raw_stem):
+        version_tokens.add("re-edit")
+        version_tokens.discard("edit")
+    return version_tokens
+
+
+def _path_audit_numeric_title_risk(old_path: Path, new_path: Path) -> bool:
+    old_title = old_path.stem.split(" - ", 1)[-1]
+    new_title = new_path.stem.split(" - ", 1)[-1]
+    old_tokens = _path_audit_normalized_filename(Path(old_title)).split()
+    new_tokens = _path_audit_normalized_filename(Path(new_title)).split()
+    if not old_tokens or not new_tokens:
+        return False
+    old_has_number = old_tokens[0].isdigit()
+    new_has_number = new_tokens[0].isdigit()
+    if old_has_number == new_has_number:
+        return False
+    old_without_number = old_tokens[1:] if old_has_number else old_tokens
+    new_without_number = new_tokens[1:] if new_has_number else new_tokens
+    return old_without_number == new_without_number
+
+
+_PATH_AUDIT_ARTIST_CONNECTOR_TOKENS = {
+    "and",
+    "feat",
+    "featuring",
+    "ft",
+    "pres",
+    "presents",
+    "vs",
+    "with",
+    "x",
+}
+
+
+def _path_audit_artist_tokens(path: Path) -> set[str]:
+    artist_part = path.stem.split(" - ", 1)[0]
+    normalized = _path_audit_normalized_filename(Path(artist_part))
+    return {
+        token for token in normalized.split()
+        if len(token) > 1 and token not in _PATH_AUDIT_ARTIST_CONNECTOR_TOKENS
+    }
+
+
+def _path_audit_artist_expansion_risk(old_path: Path, new_path: Path) -> bool:
+    old_artist_tokens = _path_audit_artist_tokens(old_path)
+    if not old_artist_tokens:
+        return False
+    new_artist_tokens = _path_audit_artist_tokens(new_path)
+    return len(new_artist_tokens - old_artist_tokens) >= 2
+
+
+def _path_audit_auto_safe_downgrade_risk(old_path: Path, new_path: Path) -> bool:
+    old_version_tokens = _path_audit_version_tokens(old_path)
+    new_version_tokens = _path_audit_version_tokens(new_path)
+    if old_version_tokens != new_version_tokens:
+        return True
+    if _path_audit_numeric_title_risk(old_path, new_path):
+        return True
+    return _path_audit_artist_expansion_risk(old_path, new_path)
+
+
+def _path_audit_top_folder(path: Path, root: Path) -> str:
+    try:
+        rel = path.relative_to(root)
+    except ValueError:
+        return "(outside_root)"
+    parts = rel.parts
+    if len(parts) >= 3 and parts[0] == "library" and parts[1] == "sorted":
+        return "sorted"
+    return parts[0] if parts else "(root)"
+
+
+def _path_audit_orphan_analysis(orphan_rows: list[dict], disk_files: list[Path], root: Path) -> dict:
+    from collections import Counter
+
+    by_top_folder: Counter = Counter()
+    by_stage_status: Counter = Counter()
+    by_parent_folder: Counter = Counter()
+    exact_size = 0
+    near_size = 0
+    token_50 = 0
+    token_60 = 0
+    token_70 = 0
+
+    disk_sizes: list[int] = []
+    disk_token_rows: list[tuple[str, set[str]]] = []
+    for path in disk_files:
+        try:
+            disk_sizes.append(path.stat().st_size)
+        except OSError:
+            pass
+        tokens = _path_audit_filename_tokens(path)
+        if tokens:
+            disk_token_rows.append((path.suffix.lower(), tokens))
+
+    for orphan in orphan_rows:
+        old_path = Path(orphan["filepath"])
+        by_top_folder[_path_audit_top_folder(old_path, root)] += 1
+        source_rows = orphan.get("source_rows") or []
+        if source_rows:
+            for source in source_rows:
+                stage = source.get("stage") or source.get("table") or "unknown"
+                status = orphan.get("status") or "unknown"
+                by_stage_status[f"{stage}/{status}"] += 1
+        else:
+            status = orphan.get("status") or "unknown"
+            by_stage_status[f"unknown/{status}"] += 1
+        by_parent_folder[str(old_path.parent)] += 1
+
+        old_size = orphan.get("filesize_bytes")
+        try:
+            old_size_int = int(old_size)
+        except (TypeError, ValueError):
+            old_size_int = None
+        if old_size_int and any(size == old_size_int for size in disk_sizes):
+            exact_size += 1
+        if old_size_int and any(abs(size - old_size_int) / old_size_int < 0.10 for size in disk_sizes):
+            near_size += 1
+
+        old_tokens = _path_audit_filename_tokens(old_path)
+        best_overlap = 0.0
+        if old_tokens:
+            old_suffix = old_path.suffix.lower()
+            for candidate_suffix, candidate_tokens in disk_token_rows:
+                if candidate_suffix != old_suffix:
+                    continue
+                overlap = len(old_tokens & candidate_tokens) / len(old_tokens)
+                if overlap > best_overlap:
+                    best_overlap = overlap
+        if best_overlap >= 0.50:
+            token_50 += 1
+        if best_overlap >= 0.60:
+            token_60 += 1
+        if best_overlap >= 0.70:
+            token_70 += 1
+
+    return {
+        "orphan_by_top_folder": dict(sorted(by_top_folder.items())),
+        "orphan_by_stage_status": dict(sorted(by_stage_status.items())),
+        "orphan_by_parent_folder_sample": [
+            {"parent_folder": folder, "count": count}
+            for folder, count in by_parent_folder.most_common(30)
+        ],
+        "orphan_size_match_stats": {
+            "exact_file_size_exists_elsewhere": exact_size,
+            "near_file_size_within_10pct_exists_elsewhere": near_size,
+        },
+        "orphan_filename_token_match_stats": {
+            "token_overlap_gte_50pct": token_50,
+            "token_overlap_gte_60pct": token_60,
+            "token_overlap_gte_70pct": token_70,
+        },
+    }
+
+
+def _path_audit_orphan_candidates(orphan_rows: list[dict], disk_files: list[Path]) -> list[dict]:
+    candidates: list[dict] = []
+    for orphan in orphan_rows:
+        old_path = Path(orphan["filepath"])
+        old_size = orphan.get("filesize_bytes")
+        scored: list[dict] = []
+        for disk_path in disk_files:
+            try:
+                candidate_size = disk_path.stat().st_size
+            except OSError:
+                continue
+            token_overlap = _path_audit_token_overlap(old_path, disk_path)
+            size_diff_pct = _path_audit_size_diff_pct(old_size, candidate_size)
+            if size_diff_pct is None:
+                size_similarity = 0.0
+            else:
+                size_similarity = max(0.0, 1.0 - min(size_diff_pct, 1.0))
+            same_extension = old_path.suffix.lower() == disk_path.suffix.lower()
+            score = (token_overlap * 0.60) + (size_similarity * 0.30) + (0.10 if same_extension else 0.0)
+            if score <= 0:
+                continue
+            rounded_score = round(score, 6)
+            rounded_size_diff = round(size_diff_pct, 6) if size_diff_pct is not None else ""
+            review_tier = _path_audit_orphan_candidate_tier(
+                rounded_score,
+                token_overlap,
+                size_diff_pct,
+                same_extension,
+                old_path,
+                disk_path,
+            )
+            reason_bits = []
+            if token_overlap:
+                reason_bits.append("token_overlap")
+            if size_similarity:
+                reason_bits.append("size_similarity")
+            if same_extension:
+                reason_bits.append("same_extension")
+            scored.append({
+                "old_path": orphan["filepath"],
+                "candidate_path": str(disk_path),
+                "score": rounded_score,
+                "token_overlap": round(token_overlap, 4),
+                "size_diff_pct": rounded_size_diff,
+                "same_extension": same_extension,
+                "review_tier": review_tier,
+                "old_filename": old_path.name,
+                "candidate_filename": disk_path.name,
+                "old_size": old_size,
+                "candidate_size": candidate_size,
+                "reason": "+".join(reason_bits) if reason_bits else "weak",
+            })
+        scored.sort(key=lambda row: (-row["score"], row["candidate_path"]))
+        top_candidates = scored[:5]
+        auto_safe_candidates = [
+            row for row in top_candidates
+            if row["review_tier"] == "AUTO_SAFE_CANDIDATE"
+        ]
+        if len(auto_safe_candidates) > 1:
+            for row in auto_safe_candidates:
+                row["review_tier"] = "REVIEW_CAREFULLY"
+        candidates.extend(top_candidates)
+    candidates.sort(key=lambda row: (row["old_path"], -row["score"]))
+    return candidates
+
+
+def _path_audit_orphan_candidate_tier(
+    score: float,
+    token_overlap: float,
+    size_diff_pct,
+    same_extension: bool,
+    old_path: Path | None = None,
+    new_path: Path | None = None,
+) -> str:
+    if (
+        score >= 0.95
+        and token_overlap >= 0.90
+        and size_diff_pct is not None
+        and size_diff_pct < 0.01
+        and same_extension
+    ):
+        if old_path is not None and new_path is not None:
+            if _path_audit_auto_safe_downgrade_risk(old_path, new_path):
+                return "REVIEW_CAREFULLY"
+        return "AUTO_SAFE_CANDIDATE"
+    if score >= 0.80:
+        return "REVIEW_CAREFULLY"
+    return "WEAK_MATCH"
+
+
+def _path_audit_orphan_candidate_tier_counts(candidates: list[dict]) -> dict:
+    counts = {
+        "AUTO_SAFE_CANDIDATE": 0,
+        "REVIEW_CAREFULLY": 0,
+        "WEAK_MATCH": 0,
+    }
+    for candidate in candidates:
+        tier = candidate.get("review_tier", "WEAK_MATCH")
+        counts[tier] = counts.get(tier, 0) + 1
+    return counts
+
+
+def _path_audit_best_rename_match(matches: list[dict]) -> dict | None:
+    if not matches:
+        return None
+    rank = {
+        "same_basename": 0,
+        "fuzzy_filename": 1,
+        "same_size_and_extension": 2,
+    }
+    return sorted(
+        matches,
+        key=lambda m: (
+            rank.get(m.get("reason", ""), 99),
+            -(m.get("similarity") or 0),
+            m.get("size_diff_pct") if m.get("size_diff_pct") is not None else 999,
+        ),
+    )[0]
+
+
+def _path_audit_db_rows(db_path: Path) -> tuple[list[dict], list[dict], dict, str | None]:
+    import sqlite3
+
+    if not db_path.exists():
+        return [], [], {
+            "tracks_rows": 0,
+            "processed_state_rows": 0,
+            "combined_db_paths": 0,
+            "processed_state_path_column": None,
+            "repeated_processed_state_paths": 0,
+            "cross_source_overlap_count": 0,
+            "historical_paths_count": 0,
+            "stale_processed_state_rows_total": 0,
+            "active_processed_state_rows": 0,
+            "canonical_source": "processed_state",
+            "current_processed_state_stage": None,
+        }, f"database not found: {db_path}"
+
+    uri = f"file:{db_path.resolve()}?mode=ro"
+    try:
+        conn = sqlite3.connect(uri, uri=True)
+        conn.row_factory = sqlite3.Row
+        try:
+            tables = {
+                row["name"]
+                for row in conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            }
+            combined: dict[str, dict] = {}
+            duplicates: list[dict] = []
+            source_counts = {
+                "tracks_rows": 0,
+                "processed_state_rows": 0,
+                "combined_db_paths": 0,
+                "processed_state_path_column": None,
+                "repeated_processed_state_paths": 0,
+                "cross_source_overlap_count": 0,
+                "historical_paths_count": 0,
+                "stale_processed_state_rows_total": 0,
+                "active_processed_state_rows": 0,
+                "canonical_source": "processed_state",
+                "current_processed_state_stage": None,
+            }
+            track_rows: list[dict] = []
+
+            if "tracks" in tables:
+                track_rows = [
+                    dict(row)
+                    for row in conn.execute(
+                        "SELECT id, filepath, filename, status, filesize_bytes FROM tracks"
+                    ).fetchall()
+                ]
+                source_counts["tracks_rows"] = len(track_rows)
+                for row in track_rows:
+                    fp = str(row.get("filepath") or "")
+                    if not fp:
+                        continue
+                    item = combined.setdefault(fp, {
+                        "filepath": fp,
+                        "filename": row.get("filename") or Path(fp).name,
+                        "status": row.get("status"),
+                        "filesize_bytes": row.get("filesize_bytes"),
+                        "sources": [],
+                        "source_rows": [],
+                    })
+                    if "tracks" not in item["sources"]:
+                        item["sources"].append("tracks")
+                    if item.get("filesize_bytes") is None:
+                        item["filesize_bytes"] = row.get("filesize_bytes")
+                    item["source_rows"].append({"table": "tracks", "id": row.get("id")})
+
+                duplicates.extend([
+                    {
+                        "filepath": row["filepath"],
+                        "count": row["n"],
+                        "sources": ["tracks"],
+                        "duplicate_type": "within_table",
+                        "table": "tracks",
+                        "row_ids": [
+                            r["id"] for r in track_rows
+                            if str(r.get("filepath", "")) == str(row["filepath"])
+                        ],
+                    }
+                    for row in conn.execute(
+                        "SELECT filepath, COUNT(*) AS n FROM tracks "
+                        "GROUP BY filepath HAVING COUNT(*) > 1"
+                    ).fetchall()
+                ])
+
+            has_track_rows = len(track_rows) > 0
+            source_counts["canonical_source"] = "tracks" if has_track_rows else "processed_state"
+
+            if "processed_state" in tables:
+                columns = _path_audit_table_columns(conn, "processed_state")
+                path_col = "filepath" if "filepath" in columns else "path" if "path" in columns else None
+                source_counts["processed_state_path_column"] = path_col
+                if path_col:
+                    processed_rows = [
+                        dict(row)
+                        for row in conn.execute(
+                            f"SELECT id, stage, {path_col} AS filepath, file_size, "
+                            "file_mtime, status, processed_at, reason "
+                            "FROM processed_state"
+                        ).fetchall()
+                    ]
+                    source_counts["historical_paths_count"] = len(processed_rows)
+                    stale_processed_rows = [
+                        row for row in processed_rows
+                        if str(row.get("status") or "").lower() == "stale"
+                    ]
+                    active_processed_rows = [
+                        row for row in processed_rows
+                        if str(row.get("status") or "").lower() != "stale"
+                    ]
+                    source_counts["stale_processed_state_rows_total"] = len(stale_processed_rows)
+                    current_processed_rows = _path_audit_current_processed_rows(active_processed_rows)
+                    source_counts["processed_state_rows"] = len(current_processed_rows)
+                    source_counts["active_processed_state_rows"] = len(current_processed_rows)
+                    current_stages = sorted({
+                        str(row.get("stage") or "")
+                        for row in current_processed_rows
+                        if row.get("stage")
+                    })
+                    source_counts["current_processed_state_stage"] = (
+                        current_stages[0] if len(current_stages) == 1 else current_stages
+                    )
+                    if not has_track_rows:
+                        for row in current_processed_rows:
+                            fp = str(row.get("filepath") or "")
+                            if not fp:
+                                continue
+                            item = combined.setdefault(fp, {
+                                "filepath": fp,
+                                "filename": Path(fp).name,
+                                "status": row.get("status"),
+                                "filesize_bytes": row.get("file_size"),
+                                "sources": [],
+                                "source_rows": [],
+                            })
+                            if "processed_state" not in item["sources"]:
+                                item["sources"].append("processed_state")
+                            if item.get("filesize_bytes") is None:
+                                item["filesize_bytes"] = row.get("file_size")
+                            item["source_rows"].append({
+                                "table": "processed_state",
+                                "id": row.get("id"),
+                                "stage": row.get("stage"),
+                            })
+
+                    repeated_rows = conn.execute(
+                        f"SELECT {path_col} AS filepath, COUNT(*) AS n "
+                        "FROM processed_state "
+                        f"GROUP BY {path_col} HAVING COUNT(*) > 1"
+                    ).fetchall()
+                    source_counts["repeated_processed_state_paths"] = len(repeated_rows)
+
+                    if not has_track_rows:
+                        current_stage_path_rows: dict[tuple[str, str], list[dict]] = {}
+                        for row in current_processed_rows:
+                            key = (str(row.get("stage") or ""), str(row.get("filepath") or ""))
+                            current_stage_path_rows.setdefault(key, []).append(row)
+                        for (stage, filepath), grouped_rows in current_stage_path_rows.items():
+                            if len(grouped_rows) <= 1:
+                                continue
+                            duplicates.append({
+                                "filepath": filepath,
+                                "count": len(grouped_rows),
+                                "sources": ["processed_state"],
+                                "duplicate_type": "within_stage",
+                                "table": "processed_state",
+                                "stage": stage,
+                                "row_ids": [r["id"] for r in grouped_rows],
+                            })
+
+                    if has_track_rows:
+                        track_paths = {str(row.get("filepath") or "") for row in track_rows if row.get("filepath")}
+                        processed_paths = {
+                            str(row.get("filepath") or "")
+                            for row in current_processed_rows
+                            if row.get("filepath")
+                        }
+                        source_counts["cross_source_overlap_count"] = len(track_paths & processed_paths)
+                    else:
+                        for item in combined.values():
+                            if "tracks" in item["sources"] and "processed_state" in item["sources"]:
+                                source_counts["cross_source_overlap_count"] += 1
+
+            rows = sorted(combined.values(), key=lambda r: r["filepath"])
+            source_counts["combined_db_paths"] = len(rows)
+        finally:
+            conn.close()
+    except sqlite3.Error as exc:
+        return [], [], {
+            "tracks_rows": 0,
+            "processed_state_rows": 0,
+            "combined_db_paths": 0,
+                "processed_state_path_column": None,
+                "repeated_processed_state_paths": 0,
+                "cross_source_overlap_count": 0,
+                "historical_paths_count": 0,
+                "stale_processed_state_rows_total": 0,
+                "active_processed_state_rows": 0,
+                "canonical_source": "processed_state",
+                "current_processed_state_stage": None,
+            }, f"could not read database {db_path}: {exc}"
+
+    return rows, duplicates, source_counts, None
+
+
+def _path_audit_all_processed_state_rows(db_path: Path) -> list[dict]:
+    import sqlite3
+
+    if not db_path.exists():
+        return []
+    uri = f"file:{db_path.resolve()}?mode=ro"
+    try:
+        conn = sqlite3.connect(uri, uri=True)
+        conn.row_factory = sqlite3.Row
+        try:
+            table = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='processed_state'"
+            ).fetchone()
+            if table is None:
+                return []
+            columns = _path_audit_table_columns(conn, "processed_state")
+            path_col = "filepath" if "filepath" in columns else "path" if "path" in columns else None
+            if path_col is None:
+                return []
+            return [
+                dict(row)
+                for row in conn.execute(
+                    f"SELECT id, stage, {path_col} AS filepath, file_size, "
+                    "file_mtime, status, processed_at, reason "
+                    "FROM processed_state"
+                ).fetchall()
+            ]
+        finally:
+            conn.close()
+    except sqlite3.Error:
+        return []
+
+
+def _path_audit_stale_processed_state_rows(root: Path, db_path: Path) -> list[dict]:
+    rows = _path_audit_all_processed_state_rows(db_path)
+    candidate_paths: set[Path] = set()
+    for row in rows:
+        if str(row.get("status") or "").lower() == "stale":
+            continue
+        raw_path = str(row.get("filepath") or "")
+        if not raw_path:
+            continue
+        try:
+            path = assert_path_under_root(raw_path, root)
+        except ValueError:
+            continue
+        if path.exists():
+            candidate_paths.add(path)
+    candidate_paths_by_name: dict[str, list[Path]] = {}
+    for path in candidate_paths:
+        key = _path_audit_normalized_filename(path)
+        if key:
+            candidate_paths_by_name.setdefault(key, []).append(path)
+
+    stale_rows: list[dict] = []
+    for row in rows:
+        if str(row.get("status") or "").lower() == "stale":
+            continue
+        raw_path = str(row.get("filepath") or "")
+        if not raw_path:
+            continue
+        try:
+            old_path = assert_path_under_root(raw_path, root)
+        except ValueError:
+            continue
+        if old_path.exists():
+            continue
+        candidate_subset = candidate_paths_by_name.get(_path_audit_normalized_filename(old_path), [])
+        if not candidate_subset:
+            continue
+        orphan = {
+            "filepath": str(old_path),
+            "filesize_bytes": row.get("file_size"),
+        }
+        candidates = _path_audit_orphan_candidates([orphan], sorted(candidate_subset))
+        auto_safe = [
+            candidate for candidate in candidates
+            if candidate.get("review_tier") == "AUTO_SAFE_CANDIDATE"
+        ]
+        if not auto_safe:
+            continue
+        best = auto_safe[0]
+        stale_rows.append({
+            "old_path": str(old_path),
+            "replacement_path": best["candidate_path"],
+            "stage": row.get("stage"),
+            "reason": "superseded_by_existing_path",
+            "source_rows": [
+                {
+                    "table": "processed_state",
+                    "id": row.get("id"),
+                    "stage": row.get("stage"),
+                }
+            ],
+        })
+    stale_rows.sort(key=lambda item: (item["old_path"], item["stage"] or ""))
+    return stale_rows
+
+
+def _path_audit_queue_files(root: Path) -> list[Path]:
+    queue_files: list[Path] = []
+    base = root / "data"
+    if not base.exists():
+        return []
+    for suffix in ("*.json", "*.jsonl"):
+        for path in base.rglob(suffix):
+            if "queue" in path.name.lower():
+                queue_files.append(path.resolve())
+    return sorted(set(queue_files))
+
+
+def _path_audit_iter_paths(value, *, field: str = "", location: str = ""):
+    path_keys = {
+        "file",
+        "filepath",
+        "path",
+        "track_path",
+        "original_path",
+        "current_path",
+        "target_path",
+        "old_path",
+        "new_path",
+    }
+    if isinstance(value, dict):
+        for key, child in value.items():
+            child_location = f"{location}.{key}" if location else str(key)
+            if isinstance(child, str) and key in path_keys:
+                yield key, child, child_location
+            else:
+                yield from _path_audit_iter_paths(
+                    child, field=str(key), location=child_location
+                )
+    elif isinstance(value, list):
+        for idx, child in enumerate(value):
+            child_location = f"{location}[{idx}]"
+            yield from _path_audit_iter_paths(
+                child, field=field, location=child_location
+            )
+
+
+def _path_audit_stale_queue_entries(root: Path) -> list[dict]:
+    import json
+
+    stale: list[dict] = []
+    for queue_file in _path_audit_queue_files(root):
+        try:
+            if queue_file.suffix.lower() == ".jsonl":
+                records = []
+                for line_no, line in enumerate(
+                    queue_file.read_text(encoding="utf-8").splitlines(),
+                    start=1,
+                ):
+                    if not line.strip():
+                        continue
+                    try:
+                        records.append((f"line {line_no}", json.loads(line)))
+                    except json.JSONDecodeError:
+                        stale.append({
+                            "queue_file": str(queue_file),
+                            "location": f"line {line_no}",
+                            "field": "",
+                            "path": "",
+                            "reason": "invalid_json",
+                        })
+            else:
+                records = [("json", json.loads(queue_file.read_text(encoding="utf-8")))]
+        except (OSError, json.JSONDecodeError) as exc:
+            stale.append({
+                "queue_file": str(queue_file),
+                "location": "",
+                "field": "",
+                "path": "",
+                "reason": f"unreadable_queue: {exc}",
+            })
+            continue
+
+        for record_location, record in records:
+            for field, raw_path, location in _path_audit_iter_paths(record):
+                candidate = Path(raw_path).expanduser()
+                checked = candidate if candidate.is_absolute() else root / candidate
+                if not checked.exists():
+                    stale.append({
+                        "queue_file": str(queue_file),
+                        "location": f"{record_location}:{location}",
+                        "field": field,
+                        "path": raw_path,
+                        "reason": "path_not_found",
+                    })
+    return stale
+
+
+def _path_audit_report(
+    root: Path,
+    db_path: Path,
+    *,
+    include_orphan_candidates: bool = False,
+) -> dict:
+    from collections import defaultdict
+    from datetime import datetime, timezone
+
+    db_rows, duplicate_db_entries, source_counts, db_error = _path_audit_db_rows(db_path)
+    disk_files = _path_audit_audio_files(root)
+    mixed_root_db_paths: list[dict] = []
+    scoped_db_rows: list[dict] = []
+    for row in db_rows:
+        raw_fp = str(row.get("filepath") or "")
+        try:
+            scoped_path = assert_path_under_root(raw_fp, root)
+        except ValueError as exc:
+            mixed_root_db_paths.append({
+                "filepath": raw_fp,
+                "sources": row.get("sources", []),
+                "source_rows": row.get("source_rows", []),
+                "reason": str(exc),
+            })
+            continue
+        scoped = dict(row)
+        scoped["filepath"] = str(scoped_path)
+        scoped_db_rows.append(scoped)
+    db_rows = scoped_db_rows
+    scoped_duplicates: list[dict] = []
+    for duplicate in duplicate_db_entries:
+        try:
+            scoped_dup_path = assert_path_under_root(duplicate.get("filepath", ""), root)
+        except ValueError:
+            continue
+        scoped_duplicate = dict(duplicate)
+        scoped_duplicate["filepath"] = str(scoped_dup_path)
+        scoped_duplicates.append(scoped_duplicate)
+    duplicate_db_entries = scoped_duplicates
+
+    db_paths_exact = {str(Path(row["filepath"]).expanduser()) for row in db_rows}
+    db_paths_resolved = set()
+    for row in db_rows:
+        try:
+            db_paths_resolved.add(str(Path(row["filepath"]).expanduser().resolve()))
+        except OSError:
+            pass
+
+    untracked = [
+        path for path in disk_files
+        if str(path) not in db_paths_exact and str(path.resolve()) not in db_paths_resolved
+    ]
+
+    by_basename: dict[str, list[Path]] = defaultdict(list)
+    by_size_ext: dict[tuple[int, str], list[Path]] = defaultdict(list)
+    for path in untracked:
+        by_basename[path.name.lower()].append(path)
+        try:
+            by_size_ext[(path.stat().st_size, path.suffix.lower())].append(path)
+        except OSError:
+            pass
+
+    missing_files: list[dict] = []
+    possible_renames: list[dict] = []
+    relocation_candidates: list[dict] = []
+    orphan_db_rows: list[dict] = []
+
+    for row in db_rows:
+        fp = str(row["filepath"])
+        path = Path(fp).expanduser()
+        if path.exists():
+            continue
+
+        missing = {
+            "id": row.get("id"),
+            "filepath": fp,
+            "filename": row.get("filename") or path.name,
+            "status": row.get("status"),
+            "filesize_bytes": row.get("filesize_bytes"),
+            "sources": row.get("sources", []),
+            "source_rows": row.get("source_rows", []),
+        }
+        missing_files.append(missing)
+
+        matches: list[dict] = []
+        for candidate in by_basename.get(path.name.lower(), []):
+            candidate_size = candidate.stat().st_size
+            size_diff_pct = _path_audit_size_diff_pct(row.get("filesize_bytes"), candidate_size)
+            matches.append({
+                "path": str(candidate),
+                "reason": "same_basename",
+                "size": candidate_size,
+                "similarity": 1.0,
+                "size_diff_pct": size_diff_pct,
+            })
+
+        if matches:
+            matched_paths = {match["path"] for match in matches}
+        else:
+            matched_paths = set()
+
+        for candidate in untracked:
+            if str(candidate) in matched_paths:
+                continue
+            if candidate.suffix.lower() != path.suffix.lower():
+                continue
+            try:
+                candidate_size = candidate.stat().st_size
+            except OSError:
+                continue
+            size_diff_pct = _path_audit_size_diff_pct(row.get("filesize_bytes"), candidate_size)
+            if size_diff_pct is None or size_diff_pct >= 0.05:
+                continue
+            similarity = _path_audit_fuzzy_similarity(path, candidate)
+            if similarity <= 0.85:
+                continue
+            matches.append({
+                "path": str(candidate),
+                "reason": "fuzzy_filename",
+                "size": candidate_size,
+                "similarity": round(similarity, 4),
+                "size_diff_pct": round(size_diff_pct, 6),
+            })
+            matched_paths.add(str(candidate))
+
+        if matches:
+            best_match = _path_audit_best_rename_match(matches)
+            possible_renames.append({
+                "old_path": missing["filepath"],
+                "new_path": best_match.get("path") if best_match else None,
+                "similarity": best_match.get("similarity") if best_match else None,
+                "size_diff_pct": best_match.get("size_diff_pct") if best_match else None,
+                "reason": best_match.get("reason") if best_match else None,
+                "db_row": missing,
+                "matches": matches,
+            })
+        else:
+            orphan_db_rows.append(missing)
+
+    remaining_orphans: list[dict] = []
+    for orphan in orphan_db_rows:
+        old_path = Path(orphan["filepath"])
+        best_candidate: dict | None = None
+        for candidate in untracked:
+            if candidate.suffix.lower() != old_path.suffix.lower():
+                continue
+            try:
+                candidate_size = candidate.stat().st_size
+            except OSError:
+                continue
+            size_diff_pct = _path_audit_size_diff_pct(orphan.get("filesize_bytes"), candidate_size)
+            if size_diff_pct is None or size_diff_pct >= 0.10:
+                continue
+            token_overlap = _path_audit_token_overlap(old_path, candidate)
+            if token_overlap < 0.70:
+                continue
+            match = {
+                "old_path": orphan["filepath"],
+                "new_path": str(candidate),
+                "match_type": "relocation",
+                "token_overlap": round(token_overlap, 4),
+                "size_diff_pct": round(size_diff_pct, 6),
+                "db_row": orphan,
+            }
+            if best_candidate is None:
+                best_candidate = match
+                continue
+            if (
+                match["token_overlap"] > best_candidate["token_overlap"]
+                or (
+                    match["token_overlap"] == best_candidate["token_overlap"]
+                    and match["size_diff_pct"] < best_candidate["size_diff_pct"]
+                )
+            ):
+                best_candidate = match
+        if best_candidate:
+            relocation_candidates.append(best_candidate)
+        else:
+            remaining_orphans.append(orphan)
+    orphan_db_rows = remaining_orphans
+    orphan_analysis = _path_audit_orphan_analysis(orphan_db_rows, disk_files, root)
+    orphan_candidates = (
+        _path_audit_orphan_candidates(orphan_db_rows, disk_files)
+        if include_orphan_candidates else []
+    )
+    orphan_candidate_tiers = _path_audit_orphan_candidate_tier_counts(orphan_candidates)
+    stale_processed_state_rows = _path_audit_stale_processed_state_rows(root, db_path)
+
+    return {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "root": str(root),
+        "database": str(db_path),
+        "read_only": True,
+        "db_error": db_error,
+        "summary": {
+            "db_rows": len(db_rows),
+            "tracks_rows": source_counts["tracks_rows"],
+            "processed_state_rows": source_counts["processed_state_rows"],
+            "canonical_source": source_counts["canonical_source"],
+            "combined_db_paths": len(db_rows),
+            "mixed_root_db_paths": len(mixed_root_db_paths),
+            "repeated_processed_state_paths": source_counts["repeated_processed_state_paths"],
+            "cross_source_overlap_count": source_counts["cross_source_overlap_count"],
+            "historical_paths_count": source_counts["historical_paths_count"],
+            "stale_processed_state_rows_total": source_counts["stale_processed_state_rows_total"],
+            "active_processed_state_rows": source_counts["active_processed_state_rows"],
+            "disk_audio_files": len(disk_files),
+            "missing_files": len(missing_files),
+            "untracked_files": len(untracked),
+            "possible_renames": len(possible_renames),
+            "relocation_candidates": len(relocation_candidates),
+            "duplicate_db_entries": len(duplicate_db_entries),
+            "stale_queue_entries": 0,
+            "stale_processed_state_count": len(stale_processed_state_rows),
+            "orphan_db_rows": len(orphan_db_rows),
+            "orphan_candidate_scoring_enabled": include_orphan_candidates,
+        },
+        "path_sources": {
+            "tracks_rows": source_counts["tracks_rows"],
+            "processed_state_rows": source_counts["processed_state_rows"],
+            "canonical_source": source_counts["canonical_source"],
+            "combined_db_paths": len(db_rows),
+            "mixed_root_db_paths": len(mixed_root_db_paths),
+            "repeated_processed_state_paths": source_counts["repeated_processed_state_paths"],
+            "cross_source_overlap_count": source_counts["cross_source_overlap_count"],
+            "historical_paths_count": source_counts["historical_paths_count"],
+            "stale_processed_state_rows_total": source_counts["stale_processed_state_rows_total"],
+            "active_processed_state_rows": source_counts["active_processed_state_rows"],
+            "current_processed_state_stage": source_counts["current_processed_state_stage"],
+            "processed_state_path_column": source_counts["processed_state_path_column"],
+        },
+        "missing_files": missing_files,
+        "mixed_root_db_paths": mixed_root_db_paths,
+        **orphan_analysis,
+        "orphan_candidate_tiers": orphan_candidate_tiers,
+        "orphan_candidates": orphan_candidates,
+        "untracked_files": [str(path) for path in untracked],
+        "possible_renames": possible_renames,
+        "relocation_candidates": relocation_candidates,
+        "duplicate_db_entries": duplicate_db_entries,
+        "stale_queue_entries": _path_audit_stale_queue_entries(root),
+        "stale_processed_state_rows": stale_processed_state_rows,
+        "orphan_db_rows": orphan_db_rows,
+        "limitations": [
+            "rename matching is heuristic only: same basename or same filesize plus extension",
+            "filesize rename matching requires tracks.filesize_bytes to be populated",
+            "queue auditing checks JSON/JSONL files with 'queue' in the filename under data/",
+        ],
+    }
+
+
+def _path_audit_print_summary(report: dict, json_path: Path) -> None:
+    summary = report["summary"]
+    print("\n=== path-audit READ-ONLY ===\n")
+    print(f"  Root                  : {report['root']}")
+    print(f"  Database              : {report['database']}")
+    if report.get("db_error"):
+        print(f"  DB warning            : {report['db_error']}")
+    print(f"  DB rows               : {summary['db_rows']}")
+    print(f"  Canonical source      : {summary['canonical_source']}")
+    print(f"  Tracks rows           : {summary['tracks_rows']}")
+    print(f"  Processed-state rows  : {summary['processed_state_rows']}")
+    print(f"  Combined DB paths     : {summary['combined_db_paths']}")
+    print(f"  Mixed-root DB paths   : {summary['mixed_root_db_paths']}")
+    print(f"  Repeated pstate paths : {summary['repeated_processed_state_paths']}")
+    print(f"  Cross-source overlap  : {summary['cross_source_overlap_count']}")
+    print(f"  Historical paths      : {summary['historical_paths_count']}")
+    print(f"  Active pstate rows    : {summary['active_processed_state_rows']}")
+    print(f"  Stale pstate total    : {summary['stale_processed_state_rows_total']}")
+    print(f"  Disk audio files      : {summary['disk_audio_files']}")
+    print(f"  Missing files         : {summary['missing_files']}")
+    print(f"  Untracked files       : {summary['untracked_files']}")
+    print(f"  Possible renames      : {summary['possible_renames']}")
+    print(f"  Relocation candidates : {summary['relocation_candidates']}")
+    print(f"  Duplicate DB entries  : {summary['duplicate_db_entries']}")
+    print(f"  Stale queue entries   : {summary['stale_queue_entries']}")
+    print(f"  Stale pstate rows     : {summary['stale_processed_state_count']}")
+    print(f"  Orphan DB rows        : {summary['orphan_db_rows']}")
+    print(f"  Orphan scoring        : {summary['orphan_candidate_scoring_enabled']}")
+    if summary["orphan_db_rows"]:
+        print("  Orphans by top folder :")
+        for folder, count in report.get("orphan_by_top_folder", {}).items():
+            print(f"    {folder}: {count}")
+        print("  Orphan size matches   :")
+        for key, count in report.get("orphan_size_match_stats", {}).items():
+            print(f"    {key}: {count}")
+        print("  Orphan token matches  :")
+        for key, count in report.get("orphan_filename_token_match_stats", {}).items():
+            print(f"    {key}: {count}")
+        if summary["orphan_candidate_scoring_enabled"]:
+            print("  Orphan candidate tiers:")
+            for key, count in report.get("orphan_candidate_tiers", {}).items():
+                print(f"    {key}: {count}")
+    print(f"\n  JSON report           : {json_path}")
+
+
+def _path_audit_write_renames_csv(report: dict, csv_path: Path) -> None:
+    import csv
+
+    rows: list[dict] = []
+    for item in report.get("possible_renames", []):
+        best = _path_audit_best_rename_match(item.get("matches", []))
+        if not best:
+            continue
+        old_path = Path(item.get("old_path") or item.get("db_row", {}).get("filepath", ""))
+        new_path = Path(best.get("path", ""))
+        rows.append({
+            "similarity": best.get("similarity"),
+            "size_diff_pct": best.get("size_diff_pct"),
+            "reason": best.get("reason"),
+            "old_path": str(old_path),
+            "new_path": str(new_path),
+            "old_filename": old_path.name,
+            "new_filename": new_path.name,
+            "old_size": item.get("db_row", {}).get("filesize_bytes"),
+            "new_size": best.get("size"),
+        })
+
+    rows.sort(
+        key=lambda row: (
+            -(float(row["similarity"]) if row["similarity"] is not None else 0.0),
+            float(row["size_diff_pct"]) if row["size_diff_pct"] is not None else 999.0,
+        )
+    )
+    fieldnames = [
+        "similarity",
+        "size_diff_pct",
+        "reason",
+        "old_path",
+        "new_path",
+        "old_filename",
+        "new_filename",
+        "old_size",
+        "new_size",
+    ]
+    with csv_path.open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def _path_audit_write_orphan_candidates_csv(report: dict, csv_path: Path) -> None:
+    import csv
+
+    fieldnames = [
+        "old_path",
+        "candidate_path",
+        "score",
+        "token_overlap",
+        "size_diff_pct",
+        "same_extension",
+        "review_tier",
+        "old_filename",
+        "candidate_filename",
+        "old_size",
+        "candidate_size",
+        "reason",
+    ]
+    rows = list(report.get("orphan_candidates", []))
+    rows.sort(key=lambda row: (row["old_path"], -float(row["score"])))
+    with csv_path.open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def _path_audit_write_stale_rows_csv(report: dict, csv_path: Path) -> None:
+    import csv
+
+    fieldnames = ["old_path", "replacement_path", "stage", "reason"]
+    rows = [
+        {field: row.get(field, "") for field in fieldnames}
+        for row in report.get("stale_processed_state_rows", [])
+    ]
+    rows.sort(key=lambda row: (row["old_path"], row.get("stage") or ""))
+    with csv_path.open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def run_path_audit(args) -> int:
+    import json
+    from datetime import datetime
+
+    try:
+        root = resolve_library_root(args)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    db_path = _path_audit_db_path(root)
+    include_orphan_candidates = getattr(args, "include_orphan_candidates", False)
+    report = _path_audit_report(
+        root,
+        db_path,
+        include_orphan_candidates=include_orphan_candidates,
+    )
+    report["summary"]["stale_queue_entries"] = len(report["stale_queue_entries"])
+
+    log_dir = root / "logs" / "path_audit"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    json_path = log_dir / f"path_audit_{stamp}.json"
+    text_path = log_dir / f"path_audit_{stamp}.log"
+    rename_csv_path = log_dir / f"path_audit_{stamp}_possible_renames.csv"
+    stale_csv_path = log_dir / f"path_audit_{stamp}_stale_rows.csv"
+
+    json_text = json.dumps(report, indent=2, ensure_ascii=False)
+    json_path.write_text(json_text + "\n", encoding="utf-8")
+    text_path.write_text(
+        "\n".join(
+            [
+                "path-audit READ-ONLY",
+                f"root={report['root']}",
+                f"database={report['database']}",
+                *(f"{k}={v}" for k, v in report["summary"].items()),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    _path_audit_write_renames_csv(report, rename_csv_path)
+    if include_orphan_candidates:
+        orphan_csv_path = log_dir / f"path_audit_{stamp}_orphan_candidates.csv"
+        _path_audit_write_orphan_candidates_csv(report, orphan_csv_path)
+    _path_audit_write_stale_rows_csv(report, stale_csv_path)
+
+    _path_audit_print_summary(report, json_path)
+    return 0
+
+
+def _build_tracks_write_log(result: dict, log_path: Path) -> None:
+    lines = [
+        "build-tracks",
+        f"source_rows={result.get('source_rows', 0)}",
+        f"inserted={result.get('inserted', 0)}",
+        f"updated={result.get('updated', 0)}",
+        f"unchanged={result.get('unchanged', 0)}",
+        f"skipped_missing_file={result.get('skipped_missing_file', 0)}",
+        f"skipped_stale={result.get('skipped_stale', 0)}",
+        f"skipped_outside_root={result.get('skipped_outside_root', 0)}",
+        f"duplicate_filepaths_collapsed={result.get('duplicate_filepaths_collapsed', 0)}",
+        f"final_tracks_count={result.get('final_tracks_count', 0)}",
+    ]
+    log_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def run_build_tracks(args) -> int:
+    import sqlite3
+    from datetime import datetime
+
+    try:
+        root = resolve_library_root(args)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    db_path = _path_audit_db_path(root)
+    if not db_path.exists():
+        print(f"ERROR: database not found: {db_path}", file=sys.stderr)
+        return 2
+
+    log_dir = root / "logs" / "tracks"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_path = log_dir / f"{stamp}_build_tracks.log"
+
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("BEGIN")
+        result = _build_tracks_upsert(conn, root)
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+    _build_tracks_write_log(result, log_path)
+    print("\n=== build-tracks ===\n")
+    print(f"  Root                  : {root}")
+    print(f"  Database              : {db_path}")
+    print(f"  Source rows           : {result['source_rows']}")
+    print(f"  Inserted              : {result['inserted']}")
+    print(f"  Updated               : {result['updated']}")
+    print(f"  Unchanged             : {result['unchanged']}")
+    print(f"  Skipped missing file  : {result['skipped_missing_file']}")
+    print(f"  Skipped stale         : {result['skipped_stale']}")
+    print(f"  Final tracks count    : {result['final_tracks_count']}")
+    print(f"\n  Log                   : {log_path}")
+    return 0
+
+
+def run_metadata_score_online(args) -> int:
+    """Run read-only online metadata scoring against the canonical tracks table."""
+    try:
+        root = resolve_library_root(args)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    from modules import metadata_enrich_online
+
+    result = metadata_enrich_online.run(
+        root,
+        mock_providers=getattr(args, "mock_providers", False),
+    )
+    print("\n=== metadata-score-online ===\n")
+    print(f"  Root          : {root}")
+    print(f"  Tracks scored : {result['tracks_scored']}")
+    print(f"  Log           : {result['log_path']}")
+    print()
+    return 0
+
+
+def run_metadata_repair_scan(args) -> int:
+    """Generate deterministic metadata repair proposals without DB writes."""
+    try:
+        root = resolve_library_root(args)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    from modules import metadata_repair
+
+    result = metadata_repair.scan(root)
+    metadata_repair.print_scan_summary(result)
+    return 0
+
+
+def run_metadata_repair_apply(args) -> int:
+    """Dry-run or apply approved metadata repair proposals to tracks only."""
+    if getattr(args, "apply", False) and not getattr(args, "yes", False):
+        print("ERROR: --apply requires --yes for metadata-repair-apply.", file=sys.stderr)
+        return 2
+    try:
+        root = resolve_library_root(args)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    from modules import metadata_repair
+
+    result = metadata_repair.apply_approved(root, apply=bool(args.apply))
+    metadata_repair.print_apply_summary(result)
+    return 0
+
+
+def run_metadata_sanitation_scan(args) -> int:
+    """Generate deterministic metadata sanitation proposals without DB writes."""
+    try:
+        root = resolve_library_root(args)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    from modules import metadata_sanitation
+
+    result = metadata_sanitation.scan(root)
+    print("\n=== metadata-sanitation-scan ===")
+    print(f"root: {result['root']}")
+    print(f"queue: {result['queue_path']}")
+    print(
+        f"tracks scanned: {result['total_tracks']}  "
+        f"proposals: {result['proposal_count']}  "
+        f"skipped: {result['skipped_count']}"
+    )
+    confidence = result.get("counts", {}).get("by_confidence", {})
+    print(
+        "confidence: "
+        f"HIGH={confidence.get('HIGH', 0)} "
+        f"MEDIUM={confidence.get('MEDIUM', 0)} "
+        f"LOW={confidence.get('LOW', 0)}"
+    )
+    return 0
+
+
+def run_metadata_sanitation_apply(args) -> int:
+    """Dry-run or apply approved metadata sanitation proposals to tracks only."""
+    if getattr(args, "apply", False) and not getattr(args, "yes", False):
+        print("ERROR: --apply requires --yes for metadata-sanitation-apply.", file=sys.stderr)
+        return 2
+    try:
+        root = resolve_library_root(args)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    from modules import metadata_sanitation
+
+    result = metadata_sanitation.apply_approved(root, apply=bool(args.apply))
+    mode = "APPLY" if result.get("dry_run") is False else "DRY RUN"
+    print(f"\n=== metadata-sanitation-apply {mode} ===")
+    print(f"root: {result['root']}")
+    print(f"queue: {result['queue_path']}")
+    print(f"approved seen: {result['approved_seen']}")
+    print(
+        f"proposed: {result['proposed_count']}  "
+        f"applied: {result['applied_count']}  "
+        f"skipped: {result['skipped_count']}"
+    )
+    return 0
+
+
+def _load_enrichment_review_queue(root: Path) -> list[dict]:
+    queue_path = root / "data" / "intelligence" / "enrichment_review_queue.jsonl"
+    if not queue_path.exists():
+        return []
+
+    entries: list[dict] = []
+    for raw_line in queue_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(entry, dict):
+            entries.append(entry)
+    return entries
+
+
+def _print_enrichment_review_entry(entry: dict) -> None:
+    query = entry.get("query") or {}
+    best_match = entry.get("best_match") or {}
+    print(f"  filepath : {entry.get('filepath', '')}")
+    print(
+        "  query    : "
+        f"{query.get('artist', '')} - {query.get('title', '')}"
+    )
+    if best_match:
+        print(
+            "  best     : "
+            f"{best_match.get('provider', '')} | "
+            f"{best_match.get('artist', '')} - {best_match.get('title', '')}"
+        )
+    else:
+        print("  best     : -")
+    print(f"  score    : {entry.get('score', 0.0)}")
+    print(f"  conf     : {entry.get('confidence', 'LOW')}")
+    print(f"  action   : {entry.get('action_suggestion', 'ignore')}")
+    print()
+
+
+def run_enrichment_review(args) -> int:
+    try:
+        root = resolve_library_root(args)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    entries = _load_enrichment_review_queue(root)
+    total = len(entries)
+    summary = {
+        "auto_candidate": 0,
+        "review": 0,
+        "ignore": 0,
+    }
+    for entry in entries:
+        action = str(entry.get("action_suggestion", "ignore"))
+        if action not in summary:
+            action = "ignore"
+        summary[action] += 1
+
+    confidence_filter = getattr(args, "confidence", None)
+    action_filter = getattr(args, "action", None)
+    limit = getattr(args, "limit", None)
+    top_high = getattr(args, "top_high", None)
+
+    filtered = []
+    for entry in entries:
+        if confidence_filter and str(entry.get("confidence", "")).upper() != confidence_filter:
+            continue
+        if action_filter and str(entry.get("action_suggestion", "")) != action_filter:
+            continue
+        filtered.append(entry)
+
+    print("\n=== enrichment-review ===\n")
+    print(f"  Root             : {root}")
+    print(f"  Total entries    : {total}")
+    print(f"  auto_candidate   : {summary['auto_candidate']}")
+    print(f"  review           : {summary['review']}")
+    print(f"  ignore           : {summary['ignore']}")
+    if confidence_filter:
+        print(f"  Filter confidence: {confidence_filter}")
+    if action_filter:
+        print(f"  Filter action    : {action_filter}")
+
+    top_high_paths: set[str] = set()
+    if top_high is not None:
+        high_entries = [
+            entry for entry in entries
+            if str(entry.get("confidence", "")).upper() == "HIGH"
+        ]
+        high_entries.sort(key=lambda entry: float(entry.get("score", 0.0)), reverse=True)
+        top_high_entries = high_entries[:top_high]
+        top_high_paths = {str(entry.get("filepath", "")) for entry in top_high_entries}
+        print(f"  Top HIGH candidates ({top_high})")
+        print("  ---------------------------")
+        for entry in top_high_entries:
+            _print_enrichment_review_entry(entry)
+
+    visible = [
+        entry for entry in filtered
+        if str(entry.get("filepath", "")) not in top_high_paths
+    ]
+    if limit is not None:
+        visible = visible[:limit]
+    print(f"  Display count    : {len(visible)}")
+    print()
+    for entry in visible:
+        _print_enrichment_review_entry(entry)
+
+    return 0
+
+
+def run_enrichment_apply_approved(args) -> int:
+    """Apply approved enrichment metadata from review_state.json to tracks."""
+    _setup_logging(getattr(args, "verbose", False))
+
+    try:
+        root = resolve_library_root(args)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    mode = _apply_mode_or_error(args)
+    if mode is None:
+        return 2
+
+    from modules import enrichment_apply
+
+    result = enrichment_apply.apply_approved_enrichment(root, apply=mode)
+
+    print("\n=== enrichment-apply-approved ===\n")
+    print(f"  Root             : {root}")
+    print(f"  Database         : {result['db_path']}")
+    print(f"  Review state     : {result['state_path']}")
+    print(f"  Mode             : {'APPLY' if not result['dry_run'] else 'DRY-RUN'}")
+    print(f"  Approved seen    : {result['approved_seen']}")
+    print(f"  Proposed updates : {result['proposed_count']}")
+    print(f"  Applied updates  : {result['applied_count']}")
+    print(f"  Skipped          : {result['skipped_count']}")
+    print(f"  Log              : {result['log_path']}")
+
+    if result["changes"]:
+        print("\n  Sample proposed changes:")
+        for change in result["changes"][:5]:
+            fields = ", ".join(change.get("fields", []))
+            print(
+                f"    - track {change.get('track_id')} | {Path(change.get('filepath', '')).name} | "
+                f"{fields}"
+            )
+    if result["skipped"]:
+        print("\n  Sample skipped items:")
+        for skip in result["skipped"][:5]:
+            print(
+                f"    - track {skip.get('track_id')} | {skip.get('reason')} | {skip.get('filepath')}"
+            )
+    print()
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Read-only path reconciliation planning
+# ---------------------------------------------------------------------------
+def _path_reconcile_best_match(matches: list[dict]) -> dict | None:
+    if not matches:
+        return None
+    reason_rank = {
+        "same_basename": 0,
+        "fuzzy_filename": 1,
+        "same_size_and_extension": 2,
+    }
+    return sorted(matches, key=lambda m: reason_rank.get(m.get("reason", ""), 99))[0]
+
+
+def _path_reconcile_confidence(reason: str) -> float:
+    if reason == "same_basename":
+        return 0.90
+    if reason == "same_size_and_extension":
+        return 0.70
+    if reason == "fuzzy_filename":
+        return 0.80
+    return 0.50
+
+
+def _path_reconcile_candidate_tier(old_path: Path, new_path: Path, old_size, new_size) -> str:
+    token_overlap = _path_audit_token_overlap(old_path, new_path)
+    size_diff_pct = _path_audit_size_diff_pct(old_size, new_size)
+    if size_diff_pct is None:
+        size_similarity = 0.0
+    else:
+        size_similarity = max(0.0, 1.0 - min(size_diff_pct, 1.0))
+    same_extension = old_path.suffix.lower() == new_path.suffix.lower()
+    score = (token_overlap * 0.60) + (size_similarity * 0.30) + (0.10 if same_extension else 0.0)
+    return _path_audit_orphan_candidate_tier(
+        round(score, 6),
+        token_overlap,
+        size_diff_pct,
+        same_extension,
+        old_path,
+        new_path,
+    )
+
+
+def _path_reconcile_plan(root: Path, audit: dict) -> dict:
+    from datetime import datetime, timezone
+
+    actions: list[dict] = []
+    rename_by_old_path: dict[str, dict] = {}
+
+    for item in audit.get("possible_renames", []):
+        old_path = item.get("db_row", {}).get("filepath", "")
+        match = _path_reconcile_best_match(item.get("matches", []))
+        if not old_path or match is None:
+            continue
+        reason = match.get("reason", "unknown")
+        new_path = match.get("path")
+        review_tier = _path_reconcile_candidate_tier(
+            Path(old_path),
+            Path(new_path),
+            item.get("db_row", {}).get("filesize_bytes"),
+            match.get("size"),
+        ) if new_path else "REVIEW_CAREFULLY"
+        action = {
+            "action": "update_path_reference",
+            "old_path": old_path,
+            "new_path": new_path,
+            "confidence": _path_reconcile_confidence(reason),
+            "reason": reason,
+            "risk": "LOW" if review_tier == "AUTO_SAFE_CANDIDATE" else "REVIEW_REQUIRED",
+            "review_tier": review_tier,
+        }
+        actions.append(action)
+        rename_by_old_path[old_path] = action
+
+    for item in audit.get("relocation_candidates", []):
+        old_path = item.get("old_path", "")
+        new_path = item.get("new_path")
+        if not old_path or not new_path:
+            continue
+        action = {
+            "action": "update_path_reference",
+            "old_path": old_path,
+            "new_path": new_path,
+            "confidence": 0.65,
+            "reason": "relocation",
+            "risk": "REVIEW_REQUIRED",
+            "review_tier": "REVIEW_CAREFULLY",
+            "token_overlap": item.get("token_overlap"),
+            "size_diff_pct": item.get("size_diff_pct"),
+        }
+        actions.append(action)
+        rename_by_old_path[old_path] = action
+
+    for item in audit.get("orphan_candidates", []):
+        if item.get("review_tier") != "AUTO_SAFE_CANDIDATE":
+            continue
+        old_path = item.get("old_path", "")
+        new_path = item.get("candidate_path")
+        if not old_path or not new_path:
+            continue
+        action = {
+            "action": "update_path_reference",
+            "old_path": old_path,
+            "new_path": new_path,
+            "confidence": item.get("score", 0.95),
+            "reason": "orphan_auto_safe_candidate",
+            "risk": "LOW",
+            "review_tier": "AUTO_SAFE_CANDIDATE",
+            "token_overlap": item.get("token_overlap"),
+            "size_diff_pct": item.get("size_diff_pct"),
+        }
+        actions.append(action)
+        rename_by_old_path[old_path] = action
+
+    for entry in audit.get("stale_queue_entries", []):
+        old_path = entry.get("path", "")
+        candidate = rename_by_old_path.get(old_path)
+        if candidate:
+            actions.append({
+                "action": "update_queue_reference",
+                "queue_file": entry.get("queue_file"),
+                "old_path": old_path,
+                "new_path": candidate["new_path"],
+                "confidence": candidate["confidence"],
+                "reason": "candidate_found_from_path_audit",
+                "risk": candidate.get("risk", "LOW"),
+                "unresolved": False,
+            })
+        else:
+            actions.append({
+                "action": "update_queue_reference",
+                "queue_file": entry.get("queue_file"),
+                "old_path": old_path,
+                "new_path": None,
+                "confidence": 0.0,
+                "reason": "unresolved_no_candidate",
+                "risk": "REVIEW_REQUIRED",
+                "unresolved": True,
+            })
+
+    for row in audit.get("orphan_db_rows", []):
+        actions.append({
+            "action": "mark_orphan_candidate",
+            "old_path": row.get("filepath"),
+            "reason": "missing_file_no_rename_candidate",
+            "risk": "REVIEW_REQUIRED",
+        })
+
+    for duplicate in audit.get("duplicate_db_entries", []):
+        actions.append({
+            "action": "investigate_duplicate_path",
+            "filepath": duplicate.get("filepath"),
+            "count": duplicate.get("count"),
+            "row_ids": duplicate.get("row_ids", []),
+            "risk": "REVIEW_REQUIRED",
+        })
+
+    for row in audit.get("stale_processed_state_rows", []):
+        actions.append({
+            "action": "mark_stale_processed_state_path",
+            "old_path": row.get("old_path"),
+            "replacement_path": row.get("replacement_path"),
+            "stage": row.get("stage"),
+            "reason": row.get("reason", "superseded_by_existing_path"),
+            "source_rows": row.get("source_rows", []),
+            "risk": "LOW",
+            "report_only": True,
+        })
+
+    summary: dict[str, int] = {}
+    for action in actions:
+        key = action["action"]
+        summary[key] = summary.get(key, 0) + 1
+
+    return {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "root": str(root),
+        "database": audit.get("database"),
+        "dry_run": True,
+        "apply_supported": False,
+        "audit_summary": audit.get("summary", {}),
+        "audit_findings": {
+            "missing_files": audit.get("missing_files", []),
+            "mixed_root_db_paths": audit.get("mixed_root_db_paths", []),
+            "possible_renames": audit.get("possible_renames", []),
+            "relocation_candidates": audit.get("relocation_candidates", []),
+            "duplicate_db_entries": audit.get("duplicate_db_entries", []),
+            "stale_queue_entries": audit.get("stale_queue_entries", []),
+            "stale_processed_state_rows": audit.get("stale_processed_state_rows", []),
+            "orphan_db_rows": audit.get("orphan_db_rows", []),
+        },
+        "planned_action_summary": summary,
+        "planned_actions": actions,
+        "limitations": [
+            "plan only; no database, queue, file, or tag updates are implemented",
+            "rename candidates come from path-audit heuristics only",
+            "queue updates are unresolved unless the queue path exactly matches a rename old_path",
+        ],
+    }
+
+
+def _path_reconcile_write_text_plan(plan: dict, text_path: Path) -> None:
+    lines = [
+        "path-reconcile DRY-RUN PLAN",
+        f"root={plan['root']}",
+        f"database={plan['database']}",
+        "",
+        "Audit summary:",
+    ]
+    for key, value in plan.get("audit_summary", {}).items():
+        lines.append(f"  {key}: {value}")
+    lines.extend(["", "Planned actions:"])
+    for action in plan.get("planned_actions", []):
+        kind = action.get("action")
+        if kind == "update_path_reference":
+            lines.append(
+                "  update_path_reference "
+                f"{action.get('old_path')} -> {action.get('new_path')} "
+                f"confidence={action.get('confidence')} reason={action.get('reason')}"
+            )
+        elif kind == "update_queue_reference":
+            lines.append(
+                "  update_queue_reference "
+                f"{action.get('old_path')} -> {action.get('new_path')} "
+                f"queue={action.get('queue_file')} unresolved={action.get('unresolved')}"
+            )
+        elif kind == "mark_orphan_candidate":
+            lines.append(
+                f"  mark_orphan_candidate {action.get('old_path')} "
+                f"reason={action.get('reason')}"
+            )
+        elif kind == "investigate_duplicate_path":
+            lines.append(
+                f"  investigate_duplicate_path {action.get('filepath')} "
+                f"count={action.get('count')}"
+            )
+        elif kind == "mark_stale_processed_state_path":
+            lines.append(
+                "  mark_stale_processed_state_path "
+                f"{action.get('old_path')} -> {action.get('replacement_path')} "
+                f"stage={action.get('stage')} reason={action.get('reason')}"
+            )
+        else:
+            lines.append(f"  {kind}: {action}")
+    text_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _path_reconcile_write_csv_plan(plan: dict, csv_path: Path) -> None:
+    import csv
+
+    fieldnames = ["action", "confidence", "reason", "old_path", "new_path", "risk"]
+    rows = []
+    for action in plan.get("planned_actions", []):
+        rows.append({
+            "action": action.get("action"),
+            "confidence": action.get("confidence", ""),
+            "reason": action.get("reason", ""),
+            "old_path": action.get("old_path") or action.get("filepath", ""),
+            "new_path": action.get("new_path", ""),
+            "risk": action.get("risk", ""),
+        })
+    with csv_path.open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def _path_reconcile_print_summary(plan: dict, json_path: Path) -> None:
+    print("\n=== path-reconcile DRY-RUN PLAN ===\n")
+    print(f"  Root                  : {plan['root']}")
+    print(f"  Database              : {plan['database']}")
+    for action, count in sorted(plan.get("planned_action_summary", {}).items()):
+        print(f"  {action:<22}: {count}")
+    print(f"\n  JSON plan             : {json_path}")
+    print("  Apply                 : --apply not implemented; --apply-auto-safe-only available")
+
+
+def _path_reconcile_apply_auto_safe(root: Path, db_path: Path, plan: dict) -> dict:
+    import sqlite3
+    from collections import Counter
+
+    actions = [
+        action for action in plan.get("planned_actions", [])
+        if action.get("action") == "update_path_reference"
+        and action.get("review_tier") == "AUTO_SAFE_CANDIDATE"
+    ]
+    old_path_counts = Counter(action.get("old_path") for action in actions)
+    result = {
+        "total_candidates": len(actions),
+        "applied_count": 0,
+        "rows_updated": 0,
+        "skipped_count": 0,
+        "skipped": [],
+        "applied": [],
+    }
+
+    if not db_path.exists():
+        for action in actions:
+            result["skipped_count"] += 1
+            result["skipped"].append({
+                "old_path": action.get("old_path"),
+                "new_path": action.get("new_path"),
+                "reason": "processed_db_not_found",
+            })
+        return result
+
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    try:
+        table = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='processed_state'"
+        ).fetchone()
+        if table is None:
+            for action in actions:
+                result["skipped_count"] += 1
+                result["skipped"].append({
+                    "old_path": action.get("old_path"),
+                    "new_path": action.get("new_path"),
+                    "reason": "processed_state_table_missing",
+                })
+            return result
+
+        conn.execute("BEGIN")
+        for action in actions:
+            old_path_raw = action.get("old_path")
+            new_path_raw = action.get("new_path")
+            skip_reason = None
+            try:
+                if not old_path_raw or not new_path_raw:
+                    skip_reason = "missing_path_in_action"
+                elif old_path_counts[old_path_raw] > 1:
+                    skip_reason = "multiple_candidate_matches_for_old_path"
+                else:
+                    old_path = str(assert_path_under_root(old_path_raw, root))
+                    new_path = str(assert_path_under_root(new_path_raw, root))
+                    if not Path(new_path).exists():
+                        skip_reason = "new_path_missing_on_disk"
+                    else:
+                        old_rows = conn.execute(
+                            "SELECT DISTINCT stage FROM processed_state WHERE filepath = ?",
+                            (old_path,),
+                        ).fetchall()
+                        if not old_rows:
+                            skip_reason = "old_path_not_in_processed_state"
+                        else:
+                            conflict = None
+                            for row in old_rows:
+                                stage = row["stage"]
+                                exists = conn.execute(
+                                    "SELECT 1 FROM processed_state WHERE filepath = ? AND stage = ? LIMIT 1",
+                                    (new_path, stage),
+                                ).fetchone()
+                                if exists:
+                                    conflict = stage
+                                    break
+                            if conflict:
+                                skip_reason = f"new_path_already_exists_in_same_stage:{conflict}"
+                            else:
+                                cursor = conn.execute(
+                                    "UPDATE processed_state SET filepath = ? WHERE filepath = ?",
+                                    (new_path, old_path),
+                                )
+                                result["applied_count"] += 1
+                                result["rows_updated"] += cursor.rowcount
+                                result["applied"].append({
+                                    "old_path": old_path,
+                                    "new_path": new_path,
+                                    "rows_updated": cursor.rowcount,
+                                })
+            except ValueError as exc:
+                skip_reason = f"path_outside_root:{exc}"
+
+            if skip_reason:
+                result["skipped_count"] += 1
+                result["skipped"].append({
+                    "old_path": old_path_raw,
+                    "new_path": new_path_raw,
+                    "reason": skip_reason,
+                })
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+    return result
+
+
+def _path_reconcile_write_apply_auto_safe_log(result: dict, log_path: Path) -> None:
+    lines = [
+        "path-reconcile apply-auto-safe-only",
+        f"total_candidates={result.get('total_candidates', 0)}",
+        f"applied_count={result.get('applied_count', 0)}",
+        f"rows_updated={result.get('rows_updated', 0)}",
+        f"skipped_count={result.get('skipped_count', 0)}",
+        "",
+        "Applied:",
+    ]
+    for item in result.get("applied", []):
+        lines.append(
+            f"  {item.get('old_path')} -> {item.get('new_path')} "
+            f"rows_updated={item.get('rows_updated')}"
+        )
+    lines.append("")
+    lines.append("Skipped:")
+    for item in result.get("skipped", []):
+        lines.append(
+            f"  {item.get('old_path')} -> {item.get('new_path')} "
+            f"reason={item.get('reason')}"
+        )
+    log_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _path_reconcile_print_apply_auto_safe_summary(result: dict, log_path: Path) -> None:
+    print("\n=== path-reconcile APPLY AUTO-SAFE ONLY ===\n")
+    print(f"  Total candidates      : {result.get('total_candidates', 0)}")
+    print(f"  Applied               : {result.get('applied_count', 0)}")
+    print(f"  Rows updated          : {result.get('rows_updated', 0)}")
+    print(f"  Skipped               : {result.get('skipped_count', 0)}")
+    print(f"\n  Apply log             : {log_path}")
+
+
+def _path_reconcile_mark_stale_pstate(root: Path, db_path: Path, plan: dict) -> dict:
+    import sqlite3
+
+    actions = [
+        action for action in plan.get("planned_actions", [])
+        if action.get("action") == "mark_stale_processed_state_path"
+    ]
+    result = {
+        "total_candidates": len(actions),
+        "marked_count": 0,
+        "rows_updated": 0,
+        "skipped_count": 0,
+        "marked": [],
+        "skipped": [],
+    }
+
+    if not db_path.exists():
+        for action in actions:
+            result["skipped_count"] += 1
+            result["skipped"].append({
+                "old_path": action.get("old_path"),
+                "replacement_path": action.get("replacement_path"),
+                "reason": "processed_db_not_found",
+            })
+        return result
+
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    try:
+        table = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='processed_state'"
+        ).fetchone()
+        if table is None:
+            for action in actions:
+                result["skipped_count"] += 1
+                result["skipped"].append({
+                    "old_path": action.get("old_path"),
+                    "replacement_path": action.get("replacement_path"),
+                    "reason": "processed_state_table_missing",
+                })
+            return result
+
+        conn.execute("BEGIN")
+        for action in actions:
+            old_path_raw = action.get("old_path")
+            replacement_raw = action.get("replacement_path")
+            source_rows = [
+                row for row in action.get("source_rows", [])
+                if row.get("table") == "processed_state" and row.get("id") is not None
+            ]
+            skip_reason = None
+            row_id = None
+            try:
+                if not source_rows:
+                    skip_reason = "missing_processed_state_row_id"
+                elif not old_path_raw or not replacement_raw:
+                    skip_reason = "missing_path_in_action"
+                else:
+                    row_id = source_rows[0]["id"]
+                    old_path = str(assert_path_under_root(old_path_raw, root))
+                    replacement_path = str(assert_path_under_root(replacement_raw, root))
+                    if Path(old_path).exists():
+                        skip_reason = "old_path_exists_on_disk"
+                    elif not Path(replacement_path).exists():
+                        skip_reason = "replacement_path_missing_on_disk"
+                    else:
+                        stale_row = conn.execute(
+                            "SELECT id, filepath FROM processed_state WHERE id = ? AND filepath = ?",
+                            (row_id, old_path),
+                        ).fetchone()
+                        if stale_row is None:
+                            skip_reason = "processed_state_id_path_mismatch"
+                        else:
+                            replacement_row = conn.execute(
+                                "SELECT 1 FROM processed_state WHERE filepath = ? LIMIT 1",
+                                (replacement_path,),
+                            ).fetchone()
+                            if replacement_row is None:
+                                skip_reason = "replacement_path_not_in_processed_state"
+                            else:
+                                reason = f"superseded_by_existing_path:{replacement_path}"
+                                cursor = conn.execute(
+                                    "UPDATE processed_state "
+                                    "SET status = ?, reason = ? "
+                                    "WHERE id = ? AND filepath = ?",
+                                    ("stale", reason, row_id, old_path),
+                                )
+                                result["marked_count"] += 1
+                                result["rows_updated"] += cursor.rowcount
+                                result["marked"].append({
+                                    "id": row_id,
+                                    "old_path": old_path,
+                                    "replacement_path": replacement_path,
+                                    "rows_updated": cursor.rowcount,
+                                })
+            except ValueError as exc:
+                skip_reason = f"path_outside_root:{exc}"
+
+            if skip_reason:
+                result["skipped_count"] += 1
+                result["skipped"].append({
+                    "id": row_id,
+                    "old_path": old_path_raw,
+                    "replacement_path": replacement_raw,
+                    "reason": skip_reason,
+                })
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+    return result
+
+
+def _path_reconcile_write_mark_stale_pstate_log(result: dict, log_path: Path) -> None:
+    lines = [
+        "path-reconcile mark-stale-pstate",
+        f"total_candidates={result.get('total_candidates', 0)}",
+        f"marked_count={result.get('marked_count', 0)}",
+        f"rows_updated={result.get('rows_updated', 0)}",
+        f"skipped_count={result.get('skipped_count', 0)}",
+        "",
+        "Marked:",
+    ]
+    for item in result.get("marked", []):
+        lines.append(
+            f"  id={item.get('id')} {item.get('old_path')} "
+            f"replacement={item.get('replacement_path')} "
+            f"rows_updated={item.get('rows_updated')}"
+        )
+    lines.append("")
+    lines.append("Skipped:")
+    for item in result.get("skipped", []):
+        lines.append(
+            f"  id={item.get('id')} {item.get('old_path')} "
+            f"replacement={item.get('replacement_path')} reason={item.get('reason')}"
+        )
+    log_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _path_reconcile_print_mark_stale_pstate_summary(result: dict, log_path: Path) -> None:
+    print("\n=== path-reconcile MARK STALE PSTATE ===\n")
+    print(f"  Total candidates      : {result.get('total_candidates', 0)}")
+    print(f"  Marked                : {result.get('marked_count', 0)}")
+    print(f"  Rows updated          : {result.get('rows_updated', 0)}")
+    print(f"  Skipped               : {result.get('skipped_count', 0)}")
+    print(f"\n  Apply log             : {log_path}")
+
+
+def _path_reconcile_print_ledger_summary(rows: list[dict]) -> None:
+    print("\n=== path-reconcile LEDGER ===\n")
+    if not rows:
+        print("  No reconciliation ledger entries found.")
+        return
+
+    headers = ["ledger_id", "created_at", "operation_type", "status", "root", "affected_tables"]
+    widths = {name: len(name) for name in headers}
+    normalized_rows: list[dict[str, str]] = []
+    for row in rows:
+        normalized = {key: str(row.get(key) or "") for key in headers}
+        normalized_rows.append(normalized)
+        for key, value in normalized.items():
+            widths[key] = max(widths[key], len(value))
+
+    for header in headers:
+        print(f"  {header:<{widths[header]}}", end="  ")
+    print()
+    for header in headers:
+        print(f"  {'-' * widths[header]}", end="  ")
+    print()
+    for row in normalized_rows:
+        for header in headers:
+            print(f"  {row[header]:<{widths[header]}}", end="  ")
+        print()
+
+
+def _path_reconcile_verify_ledger_entry(row: dict) -> dict:
+    import json
+
+    issues: list[str] = []
+    normalized: dict[str, object] = dict(row)
+
+    for field in ("ledger_id", "created_at", "operation_type", "status"):
+        if not str(row.get(field) or "").strip():
+            issues.append(f"missing_required_field:{field}")
+
+    root = str(row.get("root") or "").strip()
+    if root and not Path(root).expanduser().exists():
+        issues.append(f"missing_root_path:{root}")
+
+    for field in ("old_path", "new_path"):
+        value = str(row.get(field) or "").strip()
+        if value and not Path(value).expanduser().exists():
+            issues.append(f"missing_referenced_path:{field}:{value}")
+
+    affected_raw = str(row.get("affected_tables") or "").strip()
+    affected_tables: list[str] = []
+    if affected_raw:
+        try:
+            parsed = json.loads(affected_raw)
+            if isinstance(parsed, list):
+                affected_tables = [str(item) for item in parsed if str(item).strip()]
+            elif isinstance(parsed, str):
+                affected_tables = [parsed]
+            else:
+                issues.append("affected_tables_not_list")
+        except Exception:
+            affected_tables = [item.strip() for item in affected_raw.split(",") if item.strip()]
+    else:
+        issues.append("missing_affected_tables")
+
+    before_raw = str(row.get("before_values_json") or "").strip()
+    after_raw = str(row.get("after_values_json") or "").strip()
+    for field, raw in (("before_values_json", before_raw), ("after_values_json", after_raw)):
+        if not raw:
+            issues.append(f"missing_{field}")
+            continue
+        try:
+            normalized[field] = json.loads(raw)
+        except Exception:
+            issues.append(f"invalid_json:{field}")
+
+    if not affected_tables:
+        issues.append("empty_affected_tables")
+
+    normalized["affected_tables"] = affected_tables
+    normalized["issues"] = issues
+    normalized["ok"] = not issues
+    return normalized
+
+
+def _path_reconcile_print_verify_ledger(result: dict) -> None:
+    print("\n=== path-reconcile VERIFY LEDGER ===\n")
+    print(f"  Ledger ID             : {result.get('ledger_id')}")
+    print(f"  Status                : {'OK' if result.get('ok') else 'ISSUES'}")
+    print(f"  Root                  : {result.get('root')}")
+    print(f"  Operation type        : {result.get('operation_type')}")
+    print(f"  Affected tables       : {', '.join(result.get('affected_tables', [])) or '—'}")
+    print(f"  Old path              : {result.get('old_path')}")
+    print(f"  New path              : {result.get('new_path')}")
+    if result.get("issues"):
+        print("  Issues:")
+        for issue in result["issues"]:
+            print(f"    - {issue}")
+    else:
+        print("  Issues                : none")
+
+
+def _path_reconcile_plan_review_state_candidates(plan_path: Path) -> list[Path]:
+    candidates = [
+        plan_path.with_name(f"{plan_path.stem}_review_state.json"),
+    ]
+    try:
+        root = plan_path.parent.parent.parent
+        candidates.append(root / "data" / "intelligence" / "path_reconcile_review_state.json")
+    except Exception:
+        pass
+    return candidates
+
+
+def _path_reconcile_load_review_state(plan_path: Path) -> dict:
+    import json
+
+    for candidate in _path_reconcile_plan_review_state_candidates(plan_path):
+        if not candidate.exists():
+            continue
+        try:
+            payload = json.loads(candidate.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if isinstance(payload, dict):
+            return payload
+    return {}
+
+
+def _path_reconcile_action_is_approved(action: dict, plan_path: Path) -> bool:
+    review_state = _path_reconcile_load_review_state(plan_path)
+
+    for field in ("approved", "is_approved"):
+        if action.get(field) is True:
+            return True
+    if str(action.get("review_status") or "").lower() == "approved":
+        return True
+    if str(action.get("approval_status") or "").lower() == "approved":
+        return True
+
+    approvals = review_state.get("approved_actions")
+    if isinstance(approvals, list):
+        for entry in approvals:
+            if isinstance(entry, str):
+                if entry == action.get("action_id") or entry == action.get("ledger_id"):
+                    return True
+            elif isinstance(entry, dict):
+                keys = (
+                    ("action_id", "action_id"),
+                    ("ledger_id", "ledger_id"),
+                    ("action", "action"),
+                    ("old_path", "old_path"),
+                    ("new_path", "new_path"),
+                )
+                if all(
+                    entry.get(entry_key) == action.get(action_key)
+                    for action_key, entry_key in keys
+                    if action.get(action_key) not in (None, "")
+                ):
+                    return True
+
+    items = review_state.get("items")
+    if isinstance(items, dict):
+        for key, value in items.items():
+            if not isinstance(value, dict):
+                continue
+            if str(value.get("review_status") or "").lower() != "approved":
+                continue
+            signature = _path_reconcile_action_signature(action)
+            if key == signature:
+                return True
+            if str(value.get("action_id") or "") == str(action.get("action_id") or ""):
+                return True
+            if value.get("old_path") == action.get("old_path") and value.get("new_path") == action.get("new_path"):
+                return True
+    return False
+
+
+def _path_reconcile_action_signature(action: dict) -> str:
+    return "|".join(
+        [
+            str(action.get("action") or ""),
+            str(action.get("old_path") or ""),
+            str(action.get("new_path") or ""),
+            str(action.get("queue_file") or ""),
+        ]
+    )
+
+
+def _path_reconcile_canonical_paths(root: Path) -> set[str]:
+    db_path = _path_audit_db_path(root)
+    if not db_path.exists():
+        return set()
+    try:
+        import sqlite3
+
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        try:
+            paths: set[str] = set()
+            for table in ("tracks", "processed_state"):
+                exists = conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+                    (table,),
+                ).fetchone()
+                if exists is None:
+                    continue
+                for row in conn.execute(f"SELECT filepath FROM {table} WHERE filepath IS NOT NULL"):
+                    raw = str(row["filepath"] or "")
+                    if raw:
+                        paths.add(str(Path(raw).expanduser().resolve(strict=False)))
+                        paths.add(raw)
+            return paths
+        finally:
+            conn.close()
+    except Exception:
+        return set()
+
+
+def _path_reconcile_validate_action(
+    action: dict,
+    *,
+    plan_path: Path,
+    root: Path,
+    canonical_paths: set[str],
+) -> dict:
+    import json
+
+    issues: list[str] = []
+    warnings: list[str] = []
+    action_type = str(action.get("action") or "").strip()
+    old_path = str(action.get("old_path") or "").strip()
+    new_path = str(action.get("new_path") or "").strip()
+    review_tier = str(action.get("review_tier") or "").strip()
+    risk = str(action.get("risk") or "").strip()
+    confidence = action.get("confidence")
+
+    allowed_actions = {
+        "update_path_reference",
+        "update_queue_reference",
+        "mark_orphan_candidate",
+        "investigate_duplicate_path",
+        "mark_stale_processed_state_path",
+    }
+    report_only_actions = {
+        "mark_orphan_candidate",
+        "investigate_duplicate_path",
+        "mark_stale_processed_state_path",
+    }
+
+    if not action_type:
+        issues.append("missing_action_type")
+    elif action_type not in allowed_actions:
+        issues.append(f"unsupported_action_type:{action_type}")
+
+    if action_type in report_only_actions or action.get("report_only") is True:
+        return {
+            "action": action,
+            "action_type": action_type,
+            "status": "skipped",
+            "reason": "report_only",
+            "issues": [],
+            "warnings": warnings,
+        }
+
+    if review_tier == "WEAK_MATCH":
+        issues.append("weak_match_rejected")
+
+    if review_tier == "REVIEW_CAREFULLY" and risk not in {"REVIEW_REQUIRED", "LOW"}:
+        issues.append(f"invalid_risk_for_review_tier:{risk or 'missing'}")
+
+    if risk == "REVIEW_REQUIRED" and not _path_reconcile_action_is_approved(action, plan_path):
+        issues.append("review_required_not_approved")
+
+    if action_type == "update_path_reference":
+        if not old_path:
+            issues.append("missing_old_path")
+        if not new_path:
+            issues.append("missing_new_path")
+        if old_path and not Path(old_path).expanduser().exists():
+            issues.append("old_path_missing_on_disk")
+        if new_path and not Path(new_path).expanduser().exists():
+            issues.append("new_path_missing_on_disk")
+    elif action_type == "update_queue_reference":
+        if not old_path:
+            issues.append("missing_old_path")
+        if action.get("unresolved") is True or not new_path:
+            warnings.append("queue_reference_unresolved")
+        elif not Path(new_path).expanduser().exists():
+            issues.append("new_path_missing_on_disk")
+    elif action_type == "mark_stale_processed_state_path":
+        if not old_path:
+            issues.append("missing_old_path")
+    elif action_type in {"mark_orphan_candidate", "investigate_duplicate_path"}:
+        if not old_path and not str(action.get("filepath") or "").strip():
+            issues.append("missing_reference_path")
+
+    if old_path:
+        resolved_old = str(Path(old_path).expanduser().resolve(strict=False))
+        if resolved_old not in canonical_paths and old_path not in canonical_paths:
+            issues.append("old_path_not_in_canonical_db")
+        try:
+            resolved_root = Path(old_path).expanduser().resolve(strict=False)
+            resolved_root.relative_to(root)
+        except Exception:
+            issues.append("old_path_outside_root")
+
+    if new_path:
+        try:
+            resolved_new = Path(new_path).expanduser().resolve(strict=False)
+            resolved_new.relative_to(root)
+        except Exception:
+            issues.append("new_path_outside_root")
+
+    if confidence is not None:
+        try:
+            conf = float(confidence)
+            if not 0.0 <= conf <= 1.0:
+                issues.append("confidence_out_of_range")
+        except Exception:
+            issues.append("confidence_not_numeric")
+
+    if review_tier and review_tier not in {"AUTO_SAFE_CANDIDATE", "REVIEW_CAREFULLY", "WEAK_MATCH"}:
+        warnings.append(f"unexpected_review_tier:{review_tier}")
+    if risk and risk not in {"LOW", "REVIEW_REQUIRED"}:
+        warnings.append(f"unexpected_risk:{risk}")
+
+    status = "valid" if not issues else "invalid"
+    return {
+        "action": action,
+        "action_type": action_type,
+        "status": status,
+        "reason": None if status == "valid" else issues[0],
+        "issues": issues,
+        "warnings": warnings,
+    }
+
+
+def _path_reconcile_validate_plan(plan_path: Path) -> dict:
+    import json
+    from datetime import datetime, timezone
+
+    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    if not isinstance(plan, dict):
+        raise ValueError("plan json must be an object")
+
+    plan_root_raw = str(plan.get("root") or "").strip()
+    if plan_root_raw:
+        root = Path(plan_root_raw).expanduser().resolve()
+    else:
+        root = plan_path.parent.parent.parent.resolve()
+    if not root.exists():
+        raise ValueError(f"plan root does not exist: {root}")
+
+    planned_actions = plan.get("planned_actions")
+    if not isinstance(planned_actions, list):
+        raise ValueError("plan json missing planned_actions list")
+
+    canonical_paths = _path_reconcile_canonical_paths(root)
+    validation_records: list[dict] = []
+    reasons: dict[str, int] = {}
+    totals = {"valid": 0, "invalid": 0, "skipped": 0}
+
+    for action in planned_actions:
+        if not isinstance(action, dict):
+            record = {
+                "action": action,
+                "status": "invalid",
+                "reason": "action_not_object",
+                "issues": ["action_not_object"],
+                "warnings": [],
+            }
+        else:
+            record = _path_reconcile_validate_action(
+                action,
+                plan_path=plan_path,
+                root=root,
+                canonical_paths=canonical_paths,
+            )
+        status = record["status"]
+        totals[status] = totals.get(status, 0) + 1
+        if status != "valid":
+            for issue in record.get("issues", []):
+                reasons[issue] = reasons.get(issue, 0) + 1
+        validation_records.append(record)
+
+    result = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "plan_path": str(plan_path),
+        "root": str(root),
+        "total_actions": len(planned_actions),
+        "valid_actions": totals.get("valid", 0),
+        "invalid_actions": totals.get("invalid", 0),
+        "skipped_actions": totals.get("skipped", 0),
+        "reasons": dict(sorted(reasons.items(), key=lambda item: (-item[1], item[0]))),
+        "validation_records": validation_records,
+    }
+    return result
+
+
+def _path_reconcile_write_validation_result(root: Path, result: dict) -> Path:
+    from datetime import datetime
+
+    log_dir = root / "logs" / "path_reconcile"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    day = datetime.now().strftime("%Y%m%d")
+    path = log_dir / f"{day}_validate_plan.json"
+    path.write_text(
+        json.dumps(result, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def _path_reconcile_latest_plan_path(root: Path) -> Path | None:
+    log_dir = root / "logs" / "path_reconcile"
+    if not log_dir.exists():
+        return None
+    candidates = sorted(log_dir.glob("*_path_reconcile_plan.json"))
+    return candidates[-1] if candidates else None
+
+
+def _path_reconcile_print_validate_summary(result: dict, output_path: Path) -> None:
+    print("\n=== path-reconcile VALIDATE PLAN ===\n")
+    print(f"  Plan path             : {result.get('plan_path')}")
+    print(f"  Root                  : {result.get('root')}")
+    print(f"  Total actions         : {result.get('total_actions', 0)}")
+    print(f"  Valid actions         : {result.get('valid_actions', 0)}")
+    print(f"  Invalid actions       : {result.get('invalid_actions', 0)}")
+    print(f"  Skipped actions       : {result.get('skipped_actions', 0)}")
+    print(f"  Validation JSON       : {output_path}")
+    if result.get("reasons"):
+        print("  Reasons:")
+        for reason, count in result["reasons"].items():
+            print(f"    - {reason}: {count}")
+
+
+def run_path_reconcile(args) -> int:
+    import json
+    from datetime import datetime
+
+    ledger_mode = getattr(args, "ledger", False)
+    verify_ledger = getattr(args, "verify_ledger", None)
+    validate_plan = getattr(args, "validate_plan", None)
+    if ledger_mode and verify_ledger:
+        print("path-reconcile --ledger cannot be combined with --verify-ledger", file=sys.stderr)
+        return 2
+    if validate_plan and (ledger_mode or verify_ledger):
+        print("path-reconcile --validate-plan cannot be combined with ledger modes", file=sys.stderr)
+        return 2
+    if ledger_mode or verify_ledger:
+        if getattr(args, "apply", False) or getattr(args, "apply_auto_safe_only", False) or getattr(args, "mark_stale_pstate", False) or getattr(args, "dry_run", False):
+            print("path-reconcile ledger modes are read-only and cannot be combined with apply or dry-run flags", file=sys.stderr)
+            return 2
+        if ledger_mode:
+            rows = [dict(row) for row in db.list_reconciliation_ledger()]
+            _path_reconcile_print_ledger_summary(rows)
+            return 0
+        row = db.get_reconciliation_ledger(str(verify_ledger))
+        if row is None:
+            print(f"ERROR: reconciliation ledger entry not found: {verify_ledger}", file=sys.stderr)
+            return 1
+        result = _path_reconcile_verify_ledger_entry(dict(row))
+        _path_reconcile_print_verify_ledger(result)
+        return 0 if result.get("ok") else 1
+
+    if validate_plan:
+        try:
+            plan_path = Path(validate_plan).expanduser().resolve()
+        except Exception as exc:
+            print(f"ERROR: invalid plan path: {exc}", file=sys.stderr)
+            return 2
+        if not plan_path.exists():
+            print(f"ERROR: plan json does not exist: {plan_path}", file=sys.stderr)
+            return 2
+        try:
+            result = _path_reconcile_validate_plan(plan_path)
+        except Exception as exc:
+            print(f"ERROR: failed to validate plan: {exc}", file=sys.stderr)
+            return 1
+        output_path = _path_reconcile_write_validation_result(Path(result["root"]), result)
+        _path_reconcile_print_validate_summary(result, output_path)
+        return 0 if result.get("invalid_actions", 0) == 0 else 1
+
+    if getattr(args, "apply", False):
+        print("path-reconcile --apply is not implemented yet", file=sys.stderr)
+        return 2
+    apply_auto_safe = getattr(args, "apply_auto_safe_only", False)
+    mark_stale_pstate = getattr(args, "mark_stale_pstate", False)
+    if not getattr(args, "dry_run", False) and not apply_auto_safe and not mark_stale_pstate:
+        print("path-reconcile requires --dry-run", file=sys.stderr)
+        return 2
+
+    try:
+        root = resolve_library_root(args)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    db_path = _path_audit_db_path(root)
+    audit = _path_audit_report(
+        root,
+        db_path,
+        include_orphan_candidates=apply_auto_safe,
+    )
+    audit["summary"]["stale_queue_entries"] = len(audit["stale_queue_entries"])
+    plan = _path_reconcile_plan(root, audit)
+
+    log_dir = root / "logs" / "path_reconcile"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    if apply_auto_safe:
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_path = log_dir / f"{stamp}_apply_auto_safe.log"
+        try:
+            result = _path_reconcile_apply_auto_safe(root, db_path, plan)
+        except Exception as exc:
+            result = {
+                "total_candidates": 0,
+                "applied_count": 0,
+                "rows_updated": 0,
+                "skipped_count": 0,
+                "skipped": [{"old_path": "", "new_path": "", "reason": f"rolled_back:{exc}"}],
+                "applied": [],
+            }
+            _path_reconcile_write_apply_auto_safe_log(result, log_path)
+            print(f"ERROR: path-reconcile apply-auto-safe-only rolled back: {exc}", file=sys.stderr)
+            return 1
+        _path_reconcile_write_apply_auto_safe_log(result, log_path)
+        _path_reconcile_print_apply_auto_safe_summary(result, log_path)
+        return 0
+    if mark_stale_pstate:
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_path = log_dir / f"{stamp}_mark_stale_pstate.log"
+        try:
+            result = _path_reconcile_mark_stale_pstate(root, db_path, plan)
+        except Exception as exc:
+            result = {
+                "total_candidates": 0,
+                "marked_count": 0,
+                "rows_updated": 0,
+                "skipped_count": 0,
+                "marked": [],
+                "skipped": [{"id": None, "old_path": "", "replacement_path": "", "reason": f"rolled_back:{exc}"}],
+            }
+            _path_reconcile_write_mark_stale_pstate_log(result, log_path)
+            print(f"ERROR: path-reconcile mark-stale-pstate rolled back: {exc}", file=sys.stderr)
+            return 1
+        _path_reconcile_write_mark_stale_pstate_log(result, log_path)
+        _path_reconcile_print_mark_stale_pstate_summary(result, log_path)
+        return 0
+
+    day = datetime.now().strftime("%Y%m%d")
+    json_path = log_dir / f"{day}_path_reconcile_plan.json"
+    text_path = log_dir / f"{day}_path_reconcile_plan.txt"
+    csv_path = log_dir / f"{day}_path_reconcile_plan.csv"
+
+    json_path.write_text(
+        json.dumps(plan, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    _path_reconcile_write_text_plan(plan, text_path)
+    _path_reconcile_write_csv_plan(plan, csv_path)
+    _path_reconcile_print_summary(plan, json_path)
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # Standalone playlist generation
 # ---------------------------------------------------------------------------
 def run_playlists(args) -> int:
@@ -1025,15 +3998,20 @@ def run_cue_suggest(args) -> int:
 
     Modes:
       --dry-run   analyse and print cues, no DB writes or sidecars
-      (no flag)   analyse + store in DB
+      --apply     analyse + store in DB after confirmation
+      (no flag)   dry-run preview
     """
     from modules import cue_suggest
 
     _setup_logging(getattr(args, "verbose", False))
-    db.init_db()
+    do_apply = _apply_mode_or_error(args)
+    if do_apply is None:
+        return 2
+    dry_run = not do_apply
+    if do_apply:
+        db.init_db()
 
     custom_path = _resolve_path(getattr(args, "path", None))
-    dry_run     = getattr(args, "dry_run", False)
     min_conf    = getattr(args, "min_confidence", config.CUE_SUGGEST_MIN_CONFIDENCE)
 
     if custom_path is not None:
@@ -1244,7 +4222,12 @@ def run_analyze_missing(args) -> int:
     from modules import analyze_missing
 
     _setup_logging(getattr(args, "verbose", False))
-    db.init_db()
+    do_apply = _apply_mode_or_error(args)
+    if do_apply is None:
+        return 2
+    dry_run = not do_apply
+    if do_apply:
+        db.init_db()
 
     raw_path = getattr(args, "path", None)
     path = _resolve_path(raw_path) if raw_path else None
@@ -1257,7 +4240,7 @@ def run_analyze_missing(args) -> int:
 
     return analyze_missing.run(
         path             = path,
-        dry_run          = getattr(args, "dry_run",           False),
+        dry_run          = dry_run,
         limit            = getattr(args, "limit",             None),
         timeout_sec      = getattr(args, "timeout_sec",       None),
         min_confidence   = getattr(args, "min_confidence",    0.0),
@@ -1346,10 +4329,16 @@ def run_metadata_clean(args) -> int:
 
     Modes:
       --dry-run   scan + preview, no file writes (default when neither flag given)
-      (no flag)   scan + apply all changes
+      --apply     scan + apply all changes after confirmation
+      (no flag)   dry-run preview
     """
     _setup_logging(getattr(args, "verbose", False))
-    db.init_db()
+    do_apply = _apply_mode_or_error(args)
+    if do_apply is None:
+        return 2
+    dry_run = not do_apply
+    if do_apply:
+        db.init_db()
 
     custom_path = _resolve_path(getattr(args, "path", None))
 
@@ -1371,8 +4360,6 @@ def run_metadata_clean(args) -> int:
             )
         return 0
 
-    dry_run = getattr(args, "dry_run", False)
-
     log.info(
         "metadata-clean: scanning %d track(s)  dry_run=%s",
         len(paths), dry_run,
@@ -1383,6 +4370,10 @@ def run_metadata_clean(args) -> int:
     report_dir.mkdir(parents=True, exist_ok=True)
 
     scanned, changed, fields = metadata_clean.run(paths, dry_run=dry_run)
+    log_action(
+        f"METADATA-CLEAN {'DRY-RUN' if dry_run else 'APPLY'} DONE: "
+        f"{scanned} scanned, {changed} {'planned' if dry_run else 'applied'}, {fields} fields"
+    )
 
     if not dry_run:
         log.info(
@@ -1409,6 +4400,453 @@ def _print_metadata_clean_summary(scanned: int, changed: int, fields: int) -> No
 
 
 # ---------------------------------------------------------------------------
+# Extract Track Metadata
+# ---------------------------------------------------------------------------
+_RE_EXTRACT_CAMELOT = re.compile(r"^(1[0-2]|[1-9])[AB]$", re.IGNORECASE)
+_RE_EXTRACT_NUMBER = re.compile(r"(\d+(?:\.\d+)?)")
+
+
+def _extract_tag_text(tags, *keys: str) -> str:
+    if tags is None:
+        return ""
+    for key in keys:
+        try:
+            raw = tags.get(key)
+        except Exception:
+            raw = None
+        if raw is None:
+            continue
+        if isinstance(raw, (list, tuple)):
+            for item in raw:
+                text = _extract_tag_text({"_": item}, "_")
+                if text:
+                    return text
+            continue
+        if hasattr(raw, "text"):
+            text_values = getattr(raw, "text", None)
+            if isinstance(text_values, (list, tuple)):
+                for item in text_values:
+                    text = str(item).strip()
+                    if text:
+                        return text
+            else:
+                text = str(text_values).strip()
+                if text:
+                    return text
+            continue
+        text = str(raw).strip()
+        if text:
+            return text
+    return ""
+
+
+def _extract_numeric_tag(tags, *keys: str) -> float | None:
+    text = _extract_tag_text(tags, *keys)
+    if not text:
+        return None
+    try:
+        return float(text)
+    except Exception:
+        match = _RE_EXTRACT_NUMBER.search(text)
+        if not match:
+            return None
+        try:
+            return float(match.group(1))
+        except Exception:
+            return None
+
+
+def _classify_key_value(value: str) -> tuple[str | None, str | None]:
+    text = value.strip()
+    if not text:
+        return None, None
+    if _RE_EXTRACT_CAMELOT.match(text):
+        return None, text.upper()
+    return text, None
+
+
+def _extract_local_metadata(path: Path) -> dict[str, object] | None:
+    try:
+        from mutagen import File as MFile
+    except Exception as exc:
+        log.error("mutagen is unavailable: %s", exc)
+        return None
+
+    try:
+        easy_audio = MFile(str(path), easy=True)
+        full_audio = MFile(str(path))
+    except Exception:
+        return None
+
+    if easy_audio is None and full_audio is None:
+        return None
+
+    easy_tags = easy_audio if easy_audio is not None else {}
+    full_tags = getattr(full_audio, "tags", None) if full_audio is not None else None
+    info = getattr(full_audio, "info", None) or getattr(easy_audio, "info", None)
+
+    raw_artist = _extract_tag_text(easy_tags, "artist")
+    raw_title = _extract_tag_text(easy_tags, "title")
+    album = _extract_tag_text(easy_tags, "album")
+    genre = _extract_tag_text(easy_tags, "genre")
+
+    artist = raw_artist if is_valid_artist(raw_artist) else ""
+    title = raw_title if is_valid_title(raw_title) else ""
+    filename_parse = parse_filename_metadata(path.stem)
+    parse_attempted = not artist or not title
+    parse_accepted = bool(filename_parse.accepted and filename_parse.artist and filename_parse.title)
+    if parse_accepted:
+        if not artist:
+            artist = filename_parse.artist
+        if not title:
+            title = filename_parse.combined_title()
+
+    bpm = _extract_numeric_tag(easy_tags, "bpm")
+    if bpm is None:
+        bpm = _extract_numeric_tag(full_tags, "TBPM", "tmpo", "BPM", "bpm")
+
+    key_musical = ""
+    key_camelot = ""
+    for source_tags, keys in [
+        (easy_tags, ("initialkey", "key", "musicalkey")),
+        (full_tags, ("TKEY", "initialkey", "KEY", "key")),
+    ]:
+        raw = _extract_tag_text(source_tags, *keys)
+        if not raw:
+            continue
+        musical, camelot = _classify_key_value(raw)
+        if camelot and not key_camelot:
+            key_camelot = camelot
+        if musical and not key_musical:
+            key_musical = musical
+
+    duration_sec = None
+    bitrate_kbps = None
+    if info is not None:
+        length = getattr(info, "length", None)
+        bitrate = getattr(info, "bitrate", None)
+        try:
+            if length is not None:
+                duration_sec = float(length)
+        except Exception:
+            duration_sec = None
+        try:
+            if bitrate is not None:
+                bitrate_kbps = int(round(float(bitrate) / 1000.0))
+        except Exception:
+            bitrate_kbps = None
+
+    parse_confidence = "HIGH" if artist and title and is_valid_artist(raw_artist) and is_valid_title(raw_title) else (
+        filename_parse.parse_confidence if parse_accepted else ("LOW" if parse_attempted else "HIGH")
+    )
+
+    return {
+        "artist": artist or None,
+        "title": title or None,
+        "album": album or None,
+        "genre": genre or None,
+        "bpm": bpm,
+        "key_musical": key_musical or None,
+        "key_camelot": key_camelot or None,
+        "duration_sec": duration_sec,
+        "bitrate_kbps": bitrate_kbps,
+        "parse_confidence": parse_confidence,
+        "_filename_parse_attempted": parse_attempted,
+        "_filename_parse_accepted": parse_accepted,
+    }
+
+
+def _extract_row_is_blank(value) -> bool:
+    return value is None or (isinstance(value, str) and value.strip() == "")
+
+
+def _extract_track_metadata_updates(row: dict[str, object], extracted: dict[str, object]) -> tuple[dict[str, object], dict[str, int], bool]:
+    updates: dict[str, object] = {}
+    field_counts = {
+        "artist": 0,
+        "title": 0,
+        "album": 0,
+        "genre": 0,
+        "bpm": 0,
+        "key_musical": 0,
+        "key_camelot": 0,
+        "duration_sec": 0,
+        "bitrate_kbps": 0,
+        "parse_confidence": 0,
+    }
+    changed = False
+
+    for field in field_counts:
+        current = row.get(field)
+        extracted_value = extracted.get(field)
+        if not _extract_row_is_blank(current):
+            continue
+        if extracted_value is None or extracted_value == "":
+            continue
+        updates[field] = extracted_value
+        field_counts[field] = 1
+        changed = True
+
+    return updates, field_counts, changed
+
+
+def _write_extract_log(
+    log_path: Path,
+    *,
+    root: Path,
+    scanned: int,
+    updated: int,
+    skipped_existing: int,
+    unreadable_files: int,
+    parse_attempted: int,
+    parse_accepted: int,
+    parse_rejected: int,
+    field_counts: dict[str, int],
+    sample_updates: list[dict[str, object]],
+    dry_run: bool,
+) -> None:
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "extract-track-metadata",
+        f"root={root}",
+        f"mode={'DRY-RUN' if dry_run else 'APPLY'}",
+        f"scanned={scanned}",
+        f"updated={updated}",
+        f"skipped_existing={skipped_existing}",
+        f"unreadable_files={unreadable_files}",
+        f"filename_parse_attempted={parse_attempted}",
+        f"filename_parse_accepted={parse_accepted}",
+        f"filename_parse_rejected={parse_rejected}",
+        "field_counts=" + json.dumps(field_counts, sort_keys=True),
+    ]
+    if sample_updates:
+        lines.append("sample_updates=" + json.dumps(sample_updates[:5], sort_keys=True))
+    log_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def run_extract_track_metadata(args) -> int:
+    """
+    Populate missing track metadata from audio file tags.
+
+    Dry-run by default. Use --apply --yes to write to the DB.
+    """
+    _setup_logging(getattr(args, "verbose", False))
+
+    root = resolve_library_root(args)
+    do_apply = bool(getattr(args, "apply", False))
+    yes = bool(getattr(args, "yes", False))
+    if do_apply and not yes:
+        print("ERROR: --apply requires --yes for extract-track-metadata.", file=sys.stderr)
+        return 2
+    dry_run = not do_apply
+
+    db_path = root / "logs" / "processed.db"
+    log_dir = root / "logs" / "metadata_extract"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / f"{time.strftime('%Y%m%d_%H%M%S')}_extract.log"
+
+    if not db_path.exists():
+        _write_extract_log(
+            log_path,
+            root=root,
+            scanned=0,
+            updated=0,
+            skipped_existing=0,
+            unreadable_files=0,
+            parse_attempted=0,
+            parse_accepted=0,
+            parse_rejected=0,
+            field_counts={},
+            sample_updates=[],
+            dry_run=dry_run,
+        )
+        print(f"extract-track-metadata: no database found at {db_path}")
+        return 0
+
+    import sqlite3
+
+    def _table_columns() -> list[str]:
+        try:
+            with sqlite3.connect(f"file:{db_path}?mode=ro", uri=True) as conn:
+                rows = conn.execute("PRAGMA table_info(tracks)").fetchall()
+            return [row[1] for row in rows]
+        except Exception:
+            return []
+
+    columns = _table_columns()
+    if "filepath" not in columns:
+        _write_extract_log(
+            log_path,
+            root=root,
+            scanned=0,
+            updated=0,
+            skipped_existing=0,
+            unreadable_files=0,
+            parse_attempted=0,
+            parse_accepted=0,
+            parse_rejected=0,
+            field_counts={},
+            sample_updates=[],
+            dry_run=dry_run,
+        )
+        print("extract-track-metadata: tracks table is not available")
+        return 0
+
+    if do_apply and "album" not in columns:
+        with sqlite3.connect(str(db_path)) as migrate_conn:
+            migrate_conn.execute("ALTER TABLE tracks ADD COLUMN album TEXT")
+        columns.append("album")
+    if do_apply and "parse_confidence" not in columns:
+        with sqlite3.connect(str(db_path)) as migrate_conn:
+            migrate_conn.execute("ALTER TABLE tracks ADD COLUMN parse_confidence TEXT")
+        columns.append("parse_confidence")
+
+    target_fields = [
+        "artist",
+        "title",
+        "album",
+        "genre",
+        "bpm",
+        "key_musical",
+        "key_camelot",
+        "duration_sec",
+        "bitrate_kbps",
+        "parse_confidence",
+    ]
+    select_fields = ["id", "filepath"]
+    for field in target_fields:
+        if field in columns:
+            select_fields.append(field)
+        else:
+            select_fields.append(f"NULL AS {field}")
+
+    rows: list[dict[str, object]] = []
+    try:
+        with sqlite3.connect(f"file:{db_path}?mode=ro", uri=True) as conn:
+            conn.row_factory = sqlite3.Row
+            for row in conn.execute(
+                f"SELECT {', '.join(select_fields)} FROM tracks ORDER BY id"
+            ):
+                rows.append(dict(row))
+    except Exception as exc:
+        print(f"ERROR: failed to read tracks table: {exc}", file=sys.stderr)
+        _write_extract_log(
+            log_path,
+            root=root,
+            scanned=0,
+            updated=0,
+            skipped_existing=0,
+            unreadable_files=0,
+            parse_attempted=0,
+            parse_accepted=0,
+            parse_rejected=0,
+            field_counts={},
+            sample_updates=[],
+            dry_run=dry_run,
+        )
+        return 1
+
+    scanned = len(rows)
+    updated = 0
+    skipped_existing = 0
+    unreadable_files = 0
+    parse_attempted = 0
+    parse_accepted = 0
+    parse_rejected = 0
+    field_counts = {field: 0 for field in target_fields}
+    sample_updates: list[dict[str, object]] = []
+
+    def _process_rows(write_conn=None) -> None:
+        nonlocal updated, skipped_existing, unreadable_files
+        nonlocal parse_attempted, parse_accepted, parse_rejected
+        for row in rows:
+            raw_path = str(row.get("filepath") or "")
+            try:
+                resolved = assert_path_under_root(raw_path, root)
+            except Exception:
+                unreadable_files += 1
+                continue
+            if not resolved.exists() or not resolved.is_file():
+                unreadable_files += 1
+                continue
+
+            extracted = _extract_local_metadata(resolved)
+            if extracted is None:
+                unreadable_files += 1
+                continue
+            if extracted.get("_filename_parse_attempted"):
+                parse_attempted += 1
+                if extracted.get("_filename_parse_accepted"):
+                    parse_accepted += 1
+                else:
+                    parse_rejected += 1
+
+            updates, changed_counts, changed = _extract_track_metadata_updates(row, extracted)
+            if not changed:
+                skipped_existing += 1
+                continue
+
+            for field, count in changed_counts.items():
+                field_counts[field] += count
+
+            if write_conn is not None and updates:
+                placeholders = ", ".join(f"{field}=?" for field in updates)
+                params = list(updates.values()) + [row["filepath"]]
+                write_conn.execute(
+                    f"UPDATE tracks SET {placeholders} WHERE filepath=?",
+                    params,
+                )
+            updated += 1
+            if len(sample_updates) < 5:
+                sample_updates.append({
+                    "filepath": str(resolved),
+                    "fields": list(updates.keys()),
+                })
+
+    if do_apply:
+        with sqlite3.connect(str(db_path)) as write_conn:
+            _process_rows(write_conn)
+    else:
+        _process_rows(None)
+
+    _write_extract_log(
+        log_path,
+        root=root,
+        scanned=scanned,
+        updated=updated,
+        skipped_existing=skipped_existing,
+        unreadable_files=unreadable_files,
+        parse_attempted=parse_attempted,
+        parse_accepted=parse_accepted,
+        parse_rejected=parse_rejected,
+        field_counts=field_counts,
+        sample_updates=sample_updates,
+        dry_run=dry_run,
+    )
+
+    print("\n=== extract-track-metadata complete ===")
+    print(f"  Root            : {root}")
+    print(f"  Scanned         : {scanned}")
+    print(f"  Updated         : {updated}")
+    print(f"  Skipped existing: {skipped_existing}")
+    print(f"  Unreadable      : {unreadable_files}")
+    print(f"  Parse accepted  : {parse_accepted}/{parse_attempted}")
+    print(f"  Mode            : {'APPLY' if do_apply else 'DRY-RUN'}")
+    print(f"  Log             : {log_path}")
+    print("  Fields updated  :")
+    for field in target_fields:
+        print(f"    {field}: {field_counts[field]}")
+    if sample_updates:
+        print("  Sample updated tracks:")
+        for sample in sample_updates[:5]:
+            fields = ", ".join(sample["fields"]) if sample["fields"] else "(none)"
+            print(f"    - {sample['filepath']} [{fields}]")
+    print()
+
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # Tag Normalize
 # ---------------------------------------------------------------------------
 def run_tag_normalize(args) -> int:
@@ -1417,6 +4855,10 @@ def run_tag_normalize(args) -> int:
     or a trailing ID3v1 block, and normalise them to ID3v2.3 / no ID3v1.
     """
     _setup_logging(getattr(args, "verbose", False))
+    do_apply = _apply_mode_or_error(args)
+    if do_apply is None:
+        return 2
+    dry_run = not do_apply
 
     custom_path = _resolve_path(getattr(args, "path", None))
     if custom_path is not None:
@@ -1432,11 +4874,14 @@ def run_tag_normalize(args) -> int:
         log.warning("tag-normalize: no MP3 files found in scan path")
         return 0
 
-    dry_run = getattr(args, "dry_run", False)
     scanned, normalized, v24, v1 = tag_normalize.run(
         paths=mp3_paths,
         dry_run=dry_run,
         verbose=getattr(args, "verbose", False),
+    )
+    log_action(
+        f"TAG-NORMALIZE {'DRY-RUN' if dry_run else 'APPLY'}: "
+        f"{scanned} scanned, {normalized} {'planned' if dry_run else 'applied'}"
     )
 
     if not dry_run:
@@ -1574,7 +5019,12 @@ def run_db_prune_stale(args) -> int:
     Rows are marked, never deleted, so you can always review what was pruned.
     """
     _setup_logging(getattr(args, "verbose", False))
-    db.init_db()
+    do_apply = _apply_mode_or_error(args)
+    if do_apply is None:
+        return 2
+    dry_run = not do_apply
+    if do_apply:
+        db.init_db()
 
     raw_path = getattr(args, "path", None)
     lib_root = _resolve_path(raw_path) if raw_path else Path(config.RB_LINUX_ROOT)
@@ -1583,7 +5033,6 @@ def run_db_prune_stale(args) -> int:
         log.error("db-prune-stale: path not found: %s", lib_root or raw_path)
         return 1
 
-    dry_run = getattr(args, "dry_run", False)
     mode    = "DRY-RUN" if dry_run else "APPLY"
     log.info("db-prune-stale %s: scanning DB against %s", mode, lib_root)
 
@@ -1595,7 +5044,7 @@ def run_db_prune_stale(args) -> int:
     print(f"  Stale rows      : {pruned}"
           + (" (would mark stale)" if dry_run else " (marked status='stale')"))
     if pruned and dry_run:
-        print( "  Run without --dry-run to apply.")
+        print( "  Run with --apply --yes to apply.")
     if pruned and not dry_run:
         print( "  These rows are now excluded from rekordbox-export.")
         print( "  They are NOT deleted — query the DB to review them:")
@@ -1721,6 +5170,10 @@ def run_convert_audio(args) -> int:
     from modules import convert_audio
 
     _setup_logging(getattr(args, "verbose", False))
+    do_apply = _apply_mode_or_error(args)
+    if do_apply is None:
+        return 2
+    dry_run = not do_apply
 
     src_raw     = getattr(args, "src",     None)
     dst_raw     = getattr(args, "dst",     None)
@@ -1755,7 +5208,6 @@ def run_convert_audio(args) -> int:
     workers   = getattr(args, "workers",              4)
     overwrite = getattr(args, "overwrite",             False)
     tolerance = getattr(args, "verify_tolerance_sec",  1.0)
-    dry_run   = getattr(args, "dry_run",               False)
     verbose   = getattr(args, "verbose",               False)
     no_prog   = getattr(args, "no_progress",           False)
 
@@ -1788,6 +5240,31 @@ def run_convert_audio(args) -> int:
 
     log_action(f"CONVERT-AUDIO {'DRY-RUN' if dry_run else 'DONE'}: rc={rc}")
     return rc
+
+
+# ---------------------------------------------------------------------------
+# Review Queue
+# ---------------------------------------------------------------------------
+def run_review_queue_command(args) -> int:
+    """
+    Keep review-queue read-only unless --apply is explicitly confirmed.
+    Dry-run mode maps to the existing list-only queue view.
+    """
+    _setup_logging(getattr(args, "verbose", False))
+
+    if getattr(args, "list_only", False):
+        setattr(args, "dry_run", True)
+        print("MODE: DRY-RUN")
+        log_action("review-queue: MODE DRY-RUN")
+    else:
+        do_apply = _apply_mode_or_error(args)
+        if do_apply is None:
+            return 2
+        if not do_apply:
+            setattr(args, "list_only", True)
+
+    from intelligence.enrichment.runner import run_review_queue
+    return run_review_queue(args)
 
 
 # ---------------------------------------------------------------------------
@@ -1959,6 +5436,9 @@ def main() -> None:
             "Metadata Clean (global junk removal):\n"
             "  python pipeline.py metadata-clean --dry-run      # preview all field changes\n"
             "  python pipeline.py metadata-clean                # apply changes to library\n\n"
+            "Metadata Sanitation:\n"
+            "  python pipeline.py metadata-sanitation-scan --root /mnt/music_ssd/KKDJ\n"
+            "  python pipeline.py metadata-sanitation-apply --root /mnt/music_ssd/KKDJ --apply --yes\n\n"
             "Label Clean (local, Phase 1):\n"
             "  python pipeline.py label-clean                   # scan + report, no writes\n"
             "  python pipeline.py label-clean --write-tags      # write high-confidence labels\n"
@@ -2253,12 +5733,20 @@ def main() -> None:
             "  comment         — URL/promo stripped; Camelot + BPM tokens also removed\n\n"
             "Examples:\n"
             "  python pipeline.py metadata-clean --dry-run   # preview, no writes\n"
-            "  python pipeline.py metadata-clean             # apply changes\n"
+            "  python pipeline.py metadata-clean --apply --yes  # apply changes\n"
         ),
     )
     p_mc.add_argument(
         "--dry-run", action="store_true",
         help="Preview what would be cleaned — make no file changes",
+    )
+    p_mc.add_argument(
+        "--apply", action="store_true",
+        help="Apply metadata tag changes. Without this flag, preview only.",
+    )
+    p_mc.add_argument(
+        "--yes", action="store_true",
+        help="Confirm writes when used with --apply.",
     )
     p_mc.add_argument(
         "--verbose", "-v", action="store_true",
@@ -2270,6 +5758,41 @@ def main() -> None:
             "Scan audio files in this directory instead of pulling from the database. "
             "Example: --path /mnt/music_ssd/KKDJ/"
         ),
+    )
+
+    # ----- extract-track-metadata subcommand -----
+    p_etm = subparsers.add_parser(
+        "extract-track-metadata",
+        help="Populate missing track metadata from local audio tags",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Read existing audio tags and populate missing metadata in the tracks table.\n\n"
+            "Fields considered:\n"
+            "  artist, title, album, genre, bpm, key_musical, duration_sec, bitrate_kbps\n\n"
+            "Safety:\n"
+            "  Dry-run by default.\n"
+            "  Use --apply --yes to write DB updates.\n"
+            "  Audio files are never modified.\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py extract-track-metadata --root /mnt/music_ssd/KKDJ\n"
+            "  python3 pipeline.py extract-track-metadata --root /mnt/music_ssd/KKDJ --apply --yes\n"
+        ),
+    )
+    p_etm.add_argument(
+        "--root", metavar="DIR",
+        help="Library root whose tracks table should be scanned.",
+    )
+    p_etm.add_argument(
+        "--apply", action="store_true",
+        help="Write missing metadata back to the tracks table.",
+    )
+    p_etm.add_argument(
+        "--yes", action="store_true",
+        help="Confirm DB writes when used with --apply.",
+    )
+    p_etm.add_argument(
+        "--verbose", action="store_true",
+        help="Enable debug logging",
     )
 
     # ----- tag-normalize subcommand -----
@@ -2289,13 +5812,21 @@ def main() -> None:
             "Non-MP3 files (FLAC, WAV, AIFF, M4A, OGG, OPUS) are always skipped.\n\n"
             "Examples:\n"
             "  python pipeline.py tag-normalize --dry-run\n"
-            "  python pipeline.py tag-normalize\n"
+            "  python pipeline.py tag-normalize --apply --yes\n"
             "  python pipeline.py tag-normalize --path /mnt/music_ssd/KKDJ/sorted/\n"
         ),
     )
     p_tn.add_argument(
         "--dry-run", action="store_true",
         help="Detect issues without writing any files",
+    )
+    p_tn.add_argument(
+        "--apply", action="store_true",
+        help="Normalize tag files. Without this flag, preview only.",
+    )
+    p_tn.add_argument(
+        "--yes", action="store_true",
+        help="Confirm writes when used with --apply.",
     )
     p_tn.add_argument(
         "--verbose", action="store_true",
@@ -2437,12 +5968,20 @@ def main() -> None:
             "After pruning, rekordbox-export will no longer warn about them.\n\n"
             "Examples:\n"
             "  python3 pipeline.py db-prune-stale --dry-run\n"
-            "  python3 pipeline.py db-prune-stale --path /mnt/music_ssd/KKDJ/\n"
+            "  python3 pipeline.py db-prune-stale --path /mnt/music_ssd/KKDJ/ --apply --yes\n"
         ),
     )
     p_dps.add_argument(
         "--dry-run", action="store_true",
         help="Report stale rows without marking them",
+    )
+    p_dps.add_argument(
+        "--apply", action="store_true",
+        help="Mark stale DB rows. Without this flag, report only.",
+    )
+    p_dps.add_argument(
+        "--yes", action="store_true",
+        help="Confirm DB writes when used with --apply.",
     )
     p_dps.add_argument(
         "--path", metavar="DIR",
@@ -2479,7 +6018,7 @@ def main() -> None:
             "      --dst /mnt/music_ssd/KKDJ/inbox \\\n"
             "      --archive /mnt/music_ssd/originals_m4a\n\n"
             "  python3 pipeline.py convert-audio --src /downloads --dst /music --archive /archive \\\n"
-            "      --workers 8 --verify-tolerance-sec 2.0 --dry-run\n"
+            "      --workers 8 --verify-tolerance-sec 2.0 --apply --yes\n"
         ),
     )
     p_ca.add_argument(
@@ -2516,6 +6055,14 @@ def main() -> None:
     p_ca.add_argument(
         "--dry-run", action="store_true",
         help="Probe sources and show what would be converted — write no files",
+    )
+    p_ca.add_argument(
+        "--apply", action="store_true",
+        help="Convert files and archive originals. Without this flag, preview only.",
+    )
+    p_ca.add_argument(
+        "--yes", action="store_true",
+        help="Confirm file writes and moves when used with --apply.",
     )
     p_ca.add_argument(
         "--no-progress", action="store_true",
@@ -2615,6 +6162,268 @@ def main() -> None:
     p_or.add_argument(
         "--verbose-list", action="store_true",
         help="Print every untracked file path (default: summary only)",
+    )
+
+    # ----- path-audit subcommand -----
+    p_pa = subparsers.add_parser(
+        "path-audit",
+        help="Read-only audit of DB/file path inconsistencies",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Detect DB/filesystem path inconsistencies without modifying the DB,\n"
+            "moving files, or writing tags.\n\n"
+            "Finds:\n"
+            "  missing files, untracked files, possible renames, duplicate DB\n"
+            "  filepath entries, stale queue entries, and orphan DB rows.\n\n"
+            "Logs are written to <root>/logs/path_audit/.\n\n"
+            "Example:\n"
+            "  python3 pipeline.py path-audit --root /mnt/music_ssd/KKDJ\n"
+        ),
+    )
+    p_pa.add_argument(
+        "--root", metavar="DIR", required=True,
+        help="Library root to audit. DB defaults to <root>/logs/processed.db when present.",
+    )
+    p_pa.add_argument(
+        "--include-orphan-candidates", action="store_true",
+        help="Enable expensive top-5 orphan candidate scoring and CSV export.",
+    )
+
+    # ----- build-tracks subcommand -----
+    p_bt = subparsers.add_parser(
+        "build-tracks",
+        help="Populate tracks from valid non-stale processed_state rows",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Build the canonical current-state tracks table from processed_state.\n"
+            "This command updates only the tracks table. It never moves files,\n"
+            "writes tags, deletes rows, or modifies processed_state.\n\n"
+            "Example:\n"
+            "  python3 pipeline.py build-tracks --root /mnt/music_ssd/KKDJ\n"
+        ),
+    )
+    p_bt.add_argument(
+        "--root", metavar="DIR", required=True,
+        help="Library root. DB defaults to <root>/logs/processed.db.",
+    )
+
+    # ----- metadata-score-online subcommand -----
+    p_mso = subparsers.add_parser(
+        "metadata-score-online",
+        help="Read-only online metadata candidate scoring from tracks",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Score Spotify/Deezer-style metadata candidates against tracks without\n"
+            "writing audio tags, updating the DB, or changing files.\n\n"
+            "Input:\n"
+            "  <root>/logs/processed.db tracks table\n\n"
+            "Output:\n"
+            "  <root>/logs/enrichment/*_enrich_online.jsonl\n\n"
+            "Example:\n"
+            "  python3 pipeline.py metadata-score-online --root /mnt/music_ssd/KKDJ\n"
+        ),
+    )
+    p_mso.add_argument(
+        "--root", metavar="DIR", required=True,
+        help="Library root. DB defaults to <root>/logs/processed.db.",
+    )
+    p_mso.add_argument(
+        "--mock-providers", action="store_true",
+        help="Use deterministic mock Spotify/Deezer candidates for scoring tests.",
+    )
+
+    # ----- metadata-repair-scan subcommand -----
+    p_mrs = subparsers.add_parser(
+        "metadata-repair-scan",
+        help="Generate deterministic metadata repair proposals",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Scan tracks for safe artist/title metadata repairs using only the\n"
+            "canonical DB and deterministic filename parsing. The scan does not\n"
+            "write the DB, audio tags, or library files; it writes only the queue\n"
+            "JSONL under <root>/data/intelligence/.\n\n"
+            "Example:\n"
+            "  python3 pipeline.py metadata-repair-scan --root /mnt/music_ssd/KKDJ\n"
+        ),
+    )
+    p_mrs.add_argument(
+        "--root", metavar="DIR", required=True,
+        help="Library root. DB defaults to <root>/logs/processed.db.",
+    )
+
+    # ----- metadata-repair-apply subcommand -----
+    p_mra = subparsers.add_parser(
+        "metadata-repair-apply",
+        help="Dry-run or apply approved metadata repairs to tracks only",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Read metadata_repair_state.json and apply only approved HIGH/MEDIUM\n"
+            "repair proposals to tracks.artist/title. No tags, files, BPM, key,\n"
+            "cue fields, or processed_state rows are changed.\n\n"
+            "Default mode: dry-run\n"
+            "Apply mode : --apply --yes\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py metadata-repair-apply --root /mnt/music_ssd/KKDJ\n"
+            "  python3 pipeline.py metadata-repair-apply --root /mnt/music_ssd/KKDJ --apply --yes\n"
+        ),
+    )
+    p_mra.add_argument(
+        "--root", metavar="DIR", required=True,
+        help="Library root. DB defaults to <root>/logs/processed.db.",
+    )
+    p_mra.add_argument(
+        "--apply", action="store_true",
+        help="Apply approved updates to the tracks table. Dry-run is the default.",
+    )
+    p_mra.add_argument(
+        "--yes", action="store_true",
+        help="Confirm apply mode. Required together with --apply.",
+    )
+
+    # ----- metadata-sanitation-scan subcommand -----
+    p_mss = subparsers.add_parser(
+        "metadata-sanitation-scan",
+        help="Generate deterministic metadata sanitation proposals",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Scan tracks for suspicious artist/title contamination using only the\n"
+            "canonical DB and deterministic sanitation rules. The scan does not\n"
+            "write the DB, audio tags, or library files; it writes only the queue\n"
+            "JSONL under <root>/data/intelligence/.\n\n"
+            "Example:\n"
+            "  python3 pipeline.py metadata-sanitation-scan --root /mnt/music_ssd/KKDJ\n"
+        ),
+    )
+    p_mss.add_argument(
+        "--root", metavar="DIR", required=True,
+        help="Library root. DB defaults to <root>/logs/processed.db.",
+    )
+
+    # ----- metadata-sanitation-apply subcommand -----
+    p_msa = subparsers.add_parser(
+        "metadata-sanitation-apply",
+        help="Dry-run or apply approved metadata sanitation proposals to tracks only",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Read metadata_sanitation_state.json and apply only approved artist/title\n"
+            "sanitation proposals to tracks.artist/title. No tags, files, BPM, key,\n"
+            "cue fields, or processed_state rows are changed.\n\n"
+            "Default mode: dry-run\n"
+            "Apply mode : --apply --yes\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py metadata-sanitation-apply --root /mnt/music_ssd/KKDJ\n"
+            "  python3 pipeline.py metadata-sanitation-apply --root /mnt/music_ssd/KKDJ --apply --yes\n"
+        ),
+    )
+    p_msa.add_argument(
+        "--root", metavar="DIR", required=True,
+        help="Library root. DB defaults to <root>/logs/processed.db.",
+    )
+    p_msa.add_argument(
+        "--apply", action="store_true",
+        help="Apply approved updates to the tracks table. Dry-run is the default.",
+    )
+    p_msa.add_argument(
+        "--yes", action="store_true",
+        help="Confirm apply mode. Required together with --apply.",
+    )
+
+    # ----- enrichment-review subcommand -----
+    p_er = subparsers.add_parser(
+        "enrichment-review",
+        help="Inspect enrichment review queue entries without modifying anything",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Read the enrichment review queue JSONL and print summary counts plus\n"
+            "optional filtered entry details. This command is read-only.\n\n"
+            "Queue file:\n"
+            "  <root>/data/intelligence/enrichment_review_queue.jsonl\n\n"
+            "Example:\n"
+            "  python3 pipeline.py enrichment-review --root /mnt/music_ssd/KKDJ\n"
+        ),
+    )
+    p_er.add_argument(
+        "--root", metavar="DIR", required=True,
+        help="Library root containing data/intelligence/enrichment_review_queue.jsonl.",
+    )
+    p_er.add_argument(
+        "--confidence",
+        choices=["HIGH", "MEDIUM", "LOW"],
+        default=None,
+        help="Only display entries with this confidence.",
+    )
+    p_er.add_argument(
+        "--action",
+        choices=["auto_candidate", "review", "ignore"],
+        default=None,
+        help="Only display entries with this action suggestion.",
+    )
+    p_er.add_argument(
+        "--limit", metavar="N", type=int, default=None,
+        help="Limit the number of displayed entries.",
+    )
+    p_er.add_argument(
+        "--top-high", metavar="N", type=int, default=None, dest="top_high",
+        help="Show the top N HIGH-confidence entries by score before the filtered list.",
+    )
+
+    # ----- path-reconcile subcommand -----
+    p_pr = subparsers.add_parser(
+        "path-reconcile",
+        help="Create a dry-run reconciliation plan from path-audit findings",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Generate a reconciliation plan for DB/filesystem path inconsistencies.\n"
+            "Default mode is planning-only. --apply-auto-safe-only may update\n"
+            "processed_state.filepath for AUTO_SAFE_CANDIDATE rows only; it never\n"
+            "moves files, edits queues, or writes tags.\n"
+            "Read-only ledger inspection is also available via --ledger and\n"
+            "--verify-ledger.\n\n"
+            "Output:\n"
+            "  <root>/logs/path_reconcile/YYYYMMDD_path_reconcile_plan.json\n"
+            "  <root>/logs/path_reconcile/YYYYMMDD_path_reconcile_plan.txt\n\n"
+            "Example:\n"
+            "  python3 pipeline.py path-reconcile --root /mnt/music_ssd/KKDJ --dry-run\n"
+            "  python3 pipeline.py path-reconcile --root /mnt/music_ssd/KKDJ --apply-auto-safe-only\n"
+            "  python3 pipeline.py path-reconcile --root /mnt/music_ssd/KKDJ --mark-stale-pstate\n"
+            "  python3 pipeline.py path-reconcile --ledger\n"
+            "  python3 pipeline.py path-reconcile --verify-ledger <ledger-id>\n"
+            "  python3 pipeline.py path-reconcile --validate-plan <plan-json>\n"
+        ),
+    )
+    p_pr.add_argument(
+        "--root", metavar="DIR",
+        help="Library root to reconcile. DB defaults to <root>/logs/processed.db when present.",
+    )
+    p_pr.add_argument(
+        "--ledger", action="store_true",
+        help="List recent reconciliation ledger entries (read-only).",
+    )
+    p_pr.add_argument(
+        "--verify-ledger", metavar="LEDGER_ID",
+        dest="verify_ledger",
+        help="Verify a reconciliation ledger entry for structure and path consistency (read-only).",
+    )
+    p_pr.add_argument(
+        "--validate-plan", metavar="PLAN_JSON",
+        dest="validate_plan",
+        help="Validate a reconciliation plan JSON before any future apply mode.",
+    )
+    p_pr.add_argument(
+        "--dry-run", action="store_true",
+        help="Required. Generate a plan without applying changes.",
+    )
+    p_pr.add_argument(
+        "--apply", action="store_true",
+        help="Reserved for a future release; currently exits with an error.",
+    )
+    p_pr.add_argument(
+        "--apply-auto-safe-only", action="store_true",
+        help="Update processed_state.filepath only for AUTO_SAFE_CANDIDATE path references.",
+    )
+    p_pr.add_argument(
+        "--mark-stale-pstate", action="store_true",
+        help="Mark superseded processed_state rows stale without changing paths.",
     )
 
     # ----- playlists subcommand -----
@@ -2806,8 +6615,8 @@ def main() -> None:
             "and write the results back to the database and audio file tags.\n\n"
             "Safe to run multiple times — will not overwrite valid existing values.\n\n"
             "Examples:\n"
-            "  python3 pipeline.py analyze-missing\n"
-            "  python3 pipeline.py analyze-missing --path /mnt/music_ssd/KKDJ/\n"
+            "  python3 pipeline.py analyze-missing --dry-run\n"
+            "  python3 pipeline.py analyze-missing --path /mnt/music_ssd/KKDJ/ --apply --yes\n"
             "  python3 pipeline.py analyze-missing --limit 50 --timeout-sec 300\n"
             "  python3 pipeline.py analyze-missing --dry-run --verbose\n"
         ),
@@ -2819,6 +6628,14 @@ def main() -> None:
     p_am.add_argument(
         "--dry-run", action="store_true",
         help="Run detection but do not write to DB or audio file tags",
+    )
+    p_am.add_argument(
+        "--apply", action="store_true",
+        help="Write BPM/key results and perform enabled corrupt isolation. Without this flag, preview only.",
+    )
+    p_am.add_argument(
+        "--yes", action="store_true",
+        help="Confirm DB, tag, and file isolation writes when used with --apply.",
     )
     p_am.add_argument(
         "--limit", metavar="N", type=int, default=None,
@@ -2984,7 +6801,7 @@ def main() -> None:
             "  logs/cue_suggest/runs/cues_TIMESTAMP.csv (per-run detail log)\n\n"
             "Examples:\n"
             "  python pipeline.py cue-suggest --dry-run\n"
-            "  python pipeline.py cue-suggest\n"
+            "  python pipeline.py cue-suggest --apply --yes\n"
             "  python pipeline.py cue-suggest --limit 20 --track 'Black Coffee'\n"
             "  python pipeline.py cue-suggest --export-format json\n"
         ),
@@ -2992,6 +6809,14 @@ def main() -> None:
     p_cs.add_argument(
         "--dry-run", action="store_true",
         help="Analyse and print cue points — make no DB writes",
+    )
+    p_cs.add_argument(
+        "--apply", action="store_true",
+        help="Store cue suggestions and write enabled outputs. Without this flag, preview only.",
+    )
+    p_cs.add_argument(
+        "--yes", action="store_true",
+        help="Confirm DB and output writes when used with --apply.",
     )
     p_cs.add_argument(
         "--min-confidence", type=float, metavar="FLOAT",
@@ -3874,14 +7699,56 @@ def main() -> None:
             "  n / next   — leave entry in queue, move to next\n"
             "  q / quit   — exit without further changes\n\n"
             "Examples:\n"
-            "  python3 pipeline.py review-queue\n"
             "  python3 pipeline.py review-queue --list-only\n"
+            "  python3 pipeline.py review-queue --apply --yes\n"
         ),
     )
     p_rq.add_argument(
         "--list-only", action="store_true", default=False,
         dest="list_only",
         help="Print all queued items and exit — do not prompt for actions",
+    )
+    p_rq.add_argument(
+        "--apply", action="store_true",
+        help="Enable interactive queue changes. Without this flag, list-only dry-run mode is used.",
+    )
+    p_rq.add_argument(
+        "--yes", action="store_true",
+        help="Confirm queue/tag writes when used with --apply.",
+    )
+
+    # ----- enrichment-apply-approved subcommand -----
+    p_eaa = subparsers.add_parser(
+        "enrichment-apply-approved",
+        help="Apply approved enrichment metadata to the tracks table (dry-run by default)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Controlled enrichment apply step.\n\n"
+            "Reads data/intelligence/enrichment_review_state.json and applies only\n"
+            "approved HIGH-confidence metadata to the tracks table. No audio tags\n"
+            "or filenames are changed.\n\n"
+            "Default mode: dry-run\n"
+            "Apply mode : --apply --yes\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py enrichment-apply-approved --root /mnt/music_ssd/KKDJ\n"
+            "  python3 pipeline.py enrichment-apply-approved --root /mnt/music_ssd/KKDJ --apply --yes\n"
+        ),
+    )
+    p_eaa.add_argument(
+        "--root", metavar="DIR", required=True,
+        help="Library root containing logs/processed.db and enrichment review state.",
+    )
+    p_eaa.add_argument(
+        "--apply", action="store_true",
+        help="Apply approved updates to the tracks table. Dry-run is the default.",
+    )
+    p_eaa.add_argument(
+        "--yes", action="store_true",
+        help="Confirm apply mode. Required together with --apply.",
+    )
+    p_eaa.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Enable debug logging",
     )
 
     # Warn if running outside a virtualenv (advisory only, non-fatal)
@@ -3919,6 +7786,9 @@ def main() -> None:
     if args.command == "metadata-clean":
         sys.exit(run_metadata_clean(args))
 
+    if args.command == "extract-track-metadata":
+        sys.exit(run_extract_track_metadata(args))
+
     if args.command == "tag-normalize":
         sys.exit(run_tag_normalize(args))
 
@@ -3939,6 +7809,36 @@ def main() -> None:
 
     if args.command == "orphan-scan":
         sys.exit(run_orphan_scan(args))
+
+    if args.command == "path-audit":
+        sys.exit(run_path_audit(args))
+
+    if args.command == "build-tracks":
+        sys.exit(run_build_tracks(args))
+
+    if args.command == "metadata-score-online":
+        sys.exit(run_metadata_score_online(args))
+
+    if args.command == "metadata-repair-scan":
+        sys.exit(run_metadata_repair_scan(args))
+
+    if args.command == "metadata-repair-apply":
+        sys.exit(run_metadata_repair_apply(args))
+
+    if args.command == "metadata-sanitation-scan":
+        sys.exit(run_metadata_sanitation_scan(args))
+
+    if args.command == "metadata-sanitation-apply":
+        sys.exit(run_metadata_sanitation_apply(args))
+
+    if args.command == "enrichment-review":
+        sys.exit(run_enrichment_review(args))
+
+    if args.command == "enrichment-apply-approved":
+        sys.exit(run_enrichment_apply_approved(args))
+
+    if args.command == "path-reconcile":
+        sys.exit(run_path_reconcile(args))
 
     if args.command == "playlists":
         sys.exit(run_playlists(args))
@@ -4038,8 +7938,7 @@ def main() -> None:
         sys.exit(_rc)
 
     if args.command == "review-queue":
-        from intelligence.enrichment.runner import run_review_queue
-        sys.exit(run_review_queue(args))
+        sys.exit(run_review_queue_command(args))
 
     if args.command == "build-fewshot":
         from ai.review_dataset import build_fewshot

@@ -1,31 +1,26 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
-import Dashboard from './pages/Dashboard'
-import Jobs from './pages/Jobs'
-import Tracks from './pages/Tracks'
-import Collection from './pages/Collection'
-import BpmReview from './pages/BpmReview'
-import SetBuilder from './pages/SetBuilder'
-import Export from './pages/Export'
-import SsdSync from './pages/SsdSync'
-import Settings from './pages/Settings'
+import CrateMind from './pages/CrateMind'
 import ErrorBoundary from './components/ErrorBoundary'
+import Reconciliation from './pages/Reconciliation'
+import MetadataRepair from './pages/MetadataRepair'
+import MetadataSanitation from './pages/MetadataSanitation'
+import Quality from './pages/Quality'
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<ErrorBoundary><Collection /></ErrorBoundary>} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="jobs" element={<Jobs />} />
-          <Route path="tracks" element={<Tracks />} />
-          <Route path="collection" element={<ErrorBoundary><Collection /></ErrorBoundary>} />
-          <Route path="bpm-review" element={<BpmReview />} />
-          <Route path="set-builder" element={<SetBuilder />} />
-          <Route path="export" element={<Export />} />
-          <Route path="ssd-sync" element={<SsdSync />} />
-          <Route path="settings" element={<Settings />} />
+          <Route index element={<ErrorBoundary><CrateMind /></ErrorBoundary>} />
+          <Route path="issues" element={<ErrorBoundary><CrateMind /></ErrorBoundary>} />
+          <Route path="enrichment" element={<ErrorBoundary><CrateMind /></ErrorBoundary>} />
+          <Route path="audit" element={<ErrorBoundary><CrateMind /></ErrorBoundary>} />
+          <Route path="folders" element={<ErrorBoundary><CrateMind /></ErrorBoundary>} />
+          <Route path="quality" element={<ErrorBoundary><Quality /></ErrorBoundary>} />
+          <Route path="metadata-repair" element={<ErrorBoundary><MetadataRepair /></ErrorBoundary>} />
+          <Route path="metadata-sanitation" element={<ErrorBoundary><MetadataSanitation /></ErrorBoundary>} />
+          <Route path="reconciliation" element={<ErrorBoundary><Reconciliation /></ErrorBoundary>} />
         </Route>
       </Routes>
     </BrowserRouter>

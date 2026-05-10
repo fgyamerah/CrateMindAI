@@ -23,6 +23,7 @@ import pytest
 # ---------------------------------------------------------------------------
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import modules.artist_merge as am
 from modules.artist_merge import (
     MERGE_CATEGORY_SAFE_ALIAS,
     MERGE_CATEGORY_SAME_PRIMARY_COLLAB,
@@ -35,6 +36,7 @@ from modules.artist_merge import (
     _classify_merge,
     _pick_canonical,
     FolderInfo,
+    MergeGroup,
 )
 
 
@@ -460,3 +462,329 @@ class TestPickCanonical:
         # HOSH is all-uppercase → penalized
         result = _pick_canonical(folders)
         assert result == "H.O.S.H"
+
+
+# ===========================================================================
+# Safety behavior — filesystem / DB / destructive operation boundaries
+# ===========================================================================
+
+def _dummy(path: Path, data: bytes = b"fake audio data") -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    return path
+
+
+def _folder(root: Path, letter: str, name: str, filenames: list[str]) -> FolderInfo:
+    folder = root / letter / name
+    files = [_dummy(folder / filename, data=f"{name}:{filename}".encode()) for filename in filenames]
+    return FolderInfo(
+        path=folder,
+        display_name=name,
+        primary_artist=extract_primary_artist(name),
+        letter=letter,
+        files=files,
+        has_collab_suffix=_has_collab_suffix(name),
+    )
+
+
+def _merge_group(root: Path, canonical: str = "Heavy K") -> MergeGroup:
+    canonical_fi = _folder(root, "H", canonical, ["keep.mp3"])
+    alias_fi = _folder(root, "H", "Heavy-K", ["move.mp3"])
+    return MergeGroup(
+        normalized_key="heavy k",
+        canonical_name=canonical,
+        canonical_letter="H",
+        canonical_path=root / "H" / canonical,
+        folders=[canonical_fi, alias_fi],
+        total_files=sum(len(fi.files) for fi in [canonical_fi, alias_fi]),
+        merge_category=MERGE_CATEGORY_SAFE_ALIAS,
+        is_safe=True,
+        reason="safe alias: hyphen/space variant",
+    )
+
+
+@pytest.fixture
+def db_spy(monkeypatch):
+    calls = {"get_track": [], "upsert_track": [], "delete": [], "update_path": []}
+    rows: dict[str, dict] = {}
+
+    class Conn:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def execute(self, sql, params=()):
+            calls["delete"].append((sql, params))
+
+    def get_track(path: str):
+        calls["get_track"].append(path)
+        return rows.get(path)
+
+    def upsert_track(path: str, **kwargs):
+        calls["upsert_track"].append((path, kwargs))
+
+    def update_track_path_references(old_path, new_path, context):
+        calls["update_path"].append((str(old_path), str(new_path), context))
+        return {"status": "updated"}
+
+    monkeypatch.setattr(am.db, "get_track", get_track)
+    monkeypatch.setattr(am.db, "upsert_track", upsert_track)
+    monkeypatch.setattr(am.db, "get_conn", lambda: Conn())
+    monkeypatch.setattr(am.db, "update_track_path_references", update_track_path_references)
+    return calls, rows
+
+
+@pytest.fixture
+def log_spy(monkeypatch):
+    messages: list[str] = []
+    monkeypatch.setattr(am, "log_action", lambda message: messages.append(message))
+    return messages
+
+
+def test_apply_merge_dry_run_does_not_move_or_delete_db_rows(tmp_path, db_spy, log_spy):
+    group = _merge_group(tmp_path)
+    src = tmp_path / "H" / "Heavy-K" / "move.mp3"
+    dest = tmp_path / "H" / "Heavy K" / "move.mp3"
+
+    stats = am._apply_merge(group, dry_run=True)
+
+    assert stats["moved"] == 1  # current implementation counts would-move items
+    assert src.exists()
+    assert not dest.exists()
+    calls, _ = db_spy
+    assert calls["get_track"] == []
+    assert calls["upsert_track"] == []
+    assert calls["delete"] == []
+    assert any("[DRY] move" in msg for msg in log_spy)
+
+
+def test_run_dry_run_reports_intended_operations_without_moving(tmp_path, db_spy, log_spy, capsys):
+    _folder(tmp_path, "H", "Heavy K", ["keep.mp3"])
+    _folder(tmp_path, "H", "Heavy-K", ["move.mp3"])
+    report_dir = tmp_path / "reports"
+
+    rc = am.run_dry_run(tmp_path, report_dir)
+
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert (tmp_path / "H" / "Heavy-K" / "move.mp3").exists()
+    assert not (tmp_path / "H" / "Heavy K" / "move.mp3").exists()
+    assert "Artist Merge — Dry Run" in out
+    assert "Safe Alias Merges" in out
+    assert (report_dir / "artist_merge_dry_run.json").exists()
+    calls, _ = db_spy
+    assert calls["delete"] == []
+
+
+def test_apply_moves_only_in_apply_mode(tmp_path, db_spy, log_spy):
+    group = _merge_group(tmp_path)
+    src = tmp_path / "H" / "Heavy-K" / "move.mp3"
+    dest = tmp_path / "H" / "Heavy K" / "move.mp3"
+
+    dry = am._apply_merge(group, dry_run=True)
+    assert dry["moved"] == 1
+    assert src.exists()
+    assert not dest.exists()
+
+    applied = am._apply_merge(group, dry_run=False)
+    assert applied["moved"] == 1
+    assert not src.exists()
+    assert dest.exists()
+
+
+def test_collision_does_not_overwrite_existing_target(tmp_path, db_spy, log_spy):
+    canonical_fi = _folder(tmp_path, "H", "Heavy K", ["track.mp3"])
+    alias_fi = _folder(tmp_path, "H", "Heavy-K", ["track.mp3"])
+    existing = tmp_path / "H" / "Heavy K" / "track.mp3"
+    existing.write_bytes(b"existing")
+    src = tmp_path / "H" / "Heavy-K" / "track.mp3"
+    src.write_bytes(b"source")
+    group = MergeGroup(
+        normalized_key="heavy k",
+        canonical_name="Heavy K",
+        canonical_letter="H",
+        canonical_path=tmp_path / "H" / "Heavy K",
+        folders=[canonical_fi, alias_fi],
+        total_files=2,
+        merge_category=MERGE_CATEGORY_SAFE_ALIAS,
+        is_safe=True,
+        reason="safe alias",
+    )
+
+    stats = am._apply_merge(group, dry_run=False)
+    collision = tmp_path / "H" / "Heavy K" / "track (1).mp3"
+
+    assert stats["collisions"] == 1
+    assert stats["moved"] == 1
+    assert existing.read_bytes() == b"existing"
+    assert collision.exists()
+    assert collision.read_bytes() == b"source"
+    assert any("COLLISION" in msg for msg in log_spy)
+
+
+def test_apply_db_updates_use_central_path_update_helper(tmp_path, db_spy, log_spy):
+    calls, rows = db_spy
+    group = _merge_group(tmp_path)
+    src = tmp_path / "H" / "Heavy-K" / "move.mp3"
+    rows[str(src)] = {
+        "artist": "Heavy-K",
+        "title": "Move",
+        "genre": "Afro House",
+        "bpm": 123.0,
+        "key_musical": "A minor",
+        "key_camelot": "8A",
+        "duration_sec": 300.0,
+        "bitrate_kbps": 320,
+        "filesize_bytes": 12345,
+        "status": "ok",
+    }
+
+    am._apply_merge(group, dry_run=False)
+    dest = tmp_path / "H" / "Heavy K" / "move.mp3"
+
+    assert calls["update_path"] == [(str(src), str(dest), "artist_merge")]
+    assert calls["upsert_track"] == []
+    assert calls["delete"] == []
+
+
+def test_apply_without_db_row_moves_file_without_db_update(tmp_path, db_spy, log_spy):
+    calls, _ = db_spy
+    group = _merge_group(tmp_path)
+    src = tmp_path / "H" / "Heavy-K" / "move.mp3"
+    dest = tmp_path / "H" / "Heavy K" / "move.mp3"
+
+    stats = am._apply_merge(group, dry_run=False)
+
+    assert stats["moved"] == 1
+    assert not src.exists()
+    assert dest.exists()
+    assert calls["update_path"] == [(str(src), str(dest), "artist_merge")]
+    assert calls["get_track"] == []
+    assert calls["upsert_track"] == []
+    assert calls["delete"] == []
+
+
+def test_destination_remains_inside_expected_library_root(tmp_path, db_spy, log_spy):
+    group = _merge_group(tmp_path, canonical="A..Outside")
+
+    stats = am._apply_merge(group, dry_run=False)
+    moved = tmp_path / "H" / "A..Outside" / "move.mp3"
+
+    assert stats["moved"] == 1
+    assert moved.exists()
+    assert moved.resolve().is_relative_to(tmp_path.resolve())
+    assert not (tmp_path.parent / "A..Outside" / "move.mp3").exists()
+
+
+def test_repeated_apply_is_idempotent_after_source_folder_removed(tmp_path, db_spy, log_spy):
+    group = _merge_group(tmp_path)
+
+    first = am._apply_merge(group, dry_run=False)
+    second = am._apply_merge(group, dry_run=False)
+
+    assert first["moved"] == 1
+    assert second["moved"] == 0
+    assert (tmp_path / "H" / "Heavy K" / "move.mp3").exists()
+
+
+def test_move_failure_does_not_touch_db(tmp_path, db_spy, log_spy, monkeypatch):
+    calls, rows = db_spy
+    group = _merge_group(tmp_path)
+    src = tmp_path / "H" / "Heavy-K" / "move.mp3"
+    rows[str(src)] = {
+        "artist": "Heavy-K",
+        "title": "Move",
+        "genre": "",
+        "bpm": None,
+        "key_musical": None,
+        "key_camelot": None,
+        "duration_sec": None,
+        "bitrate_kbps": None,
+        "filesize_bytes": None,
+        "status": "ok",
+    }
+
+    def fail_move(src_arg, dest_arg):
+        raise OSError("simulated move failure")
+
+    monkeypatch.setattr(am.shutil, "move", fail_move)
+
+    stats = am._apply_merge(group, dry_run=False)
+
+    assert stats["errors"] == 1
+    assert src.exists()
+    assert calls["upsert_track"] == []
+    assert calls["update_path"] == []
+    assert calls["delete"] == []
+    assert any("ERROR moving" in msg for msg in log_spy)
+
+
+def test_db_failure_after_successful_move_leaves_partial_state_exposed(
+    tmp_path, db_spy, log_spy, monkeypatch
+):
+    calls, rows = db_spy
+    group = _merge_group(tmp_path)
+    src = tmp_path / "H" / "Heavy-K" / "move.mp3"
+    dest = tmp_path / "H" / "Heavy K" / "move.mp3"
+    rows[str(src)] = {
+        "artist": "Heavy-K",
+        "title": "Move",
+        "genre": "",
+        "bpm": None,
+        "key_musical": None,
+        "key_camelot": None,
+        "duration_sec": None,
+        "bitrate_kbps": None,
+        "filesize_bytes": None,
+        "status": "ok",
+    }
+
+    def fail_update(old_path, new_path, context):
+        calls["update_path"].append((str(old_path), str(new_path), context))
+        raise RuntimeError("simulated db failure")
+
+    monkeypatch.setattr(am.db, "update_track_path_references", fail_update)
+
+    stats = am._apply_merge(group, dry_run=False)
+
+    assert stats["errors"] == 1
+    assert not src.exists()
+    assert dest.exists()
+    assert calls["delete"] == []
+    # This documents current unsafe behavior: filesystem move is not rolled
+    # back when DB update fails after the move.
+
+
+def test_metadata_values_are_preserved_by_central_path_update(tmp_path, db_spy, log_spy):
+    calls, rows = db_spy
+    group = _merge_group(tmp_path)
+    src = tmp_path / "H" / "Heavy-K" / "move.mp3"
+    rows[str(src)] = {
+        "artist": "Heavy-K",
+        "title": "Move",
+        "genre": "Afro House",
+        "bpm": 124.0,
+        "key_musical": "G minor",
+        "key_camelot": "6A",
+        "duration_sec": 301.0,
+        "bitrate_kbps": 320,
+        "filesize_bytes": 98765,
+        "status": "ok",
+    }
+
+    am._apply_merge(group, dry_run=False)
+
+    assert calls["update_path"] == [
+        (str(src), str(tmp_path / "H" / "Heavy K" / "move.mp3"), "artist_merge")
+    ]
+    assert calls["upsert_track"] == []
+    # cue data is not stored in tracks rows and artist-merge does not write tags.
+
+
+def test_no_review_queue_update_hook_present_for_artist_merge():
+    # Artist-merge writes reports for ambiguous groups, but this module has no
+    # review queue path/update hook to reconcile stale queued paths after moves.
+    assert not hasattr(am, "ARTIST_REVIEW_QUEUE")
+    assert not hasattr(am, "_update_review_queue")

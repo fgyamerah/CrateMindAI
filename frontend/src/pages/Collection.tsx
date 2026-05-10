@@ -509,10 +509,8 @@ function RunEntryInspector({
 
 function RunResultsPanel({
   onEntrySelect,
-  selectedEntry,
 }: {
   onEntrySelect: (entry: RunDetailEntry | null, group?: ResultGroup) => void
-  selectedEntry: SelectedRunEntry | null
 }) {
   const [runList, setRunList]               = useState<RunListItem[]>([])
   const [listLoading, setListLoading]       = useState(true)
@@ -605,7 +603,7 @@ function RunResultsPanel({
         ) : (
           <select
             style={{
-              background: 'var(--bg-secondary)', color: 'var(--text)',
+              background: 'var(--bg)', color: 'var(--text)', colorScheme: 'dark',
               border: '1px solid var(--border)', borderRadius: 3,
               fontSize: 11, padding: '2px 6px', maxWidth: 400,
             }}
@@ -762,8 +760,6 @@ function RunResultsPanel({
 // Page
 // ---------------------------------------------------------------------------
 
-const PRESETS: Preset[] = ['Clean', 'Normalize', 'Enrich', 'Full Pass']
-
 export default function Collection() {
   // ── Tree / selection ────────────────────────────────────────────────────
   const [treeNodes, setTreeNodes]       = useState<DirNode[]>(FALLBACK_TREE)
@@ -775,7 +771,6 @@ export default function Collection() {
   const [tracks, setTracks]             = useState<TrackSummary[]>([])
   const [tracksLoading, setTracksLoading] = useState(false)
   const [globalCount, setGlobalCount]   = useState<number | null>(null)
-  const [folderCount, setFolderCount]   = useState<number | null>(null)
 
   // ── Table state ──────────────────────────────────────────────────────────
   const [selectedTrack, setSelectedTrack] = useState<TrackSummary | null>(null)
@@ -834,12 +829,10 @@ export default function Collection() {
     ])
       .then(([rows, stats]) => {
         setTracks(rows)
-        setFolderCount(stats.folder_count)
         if (globalCount === null) setGlobalCount(stats.global_count)
       })
       .catch(() => {
         setTracks([])
-        setFolderCount(0)
       })
       .finally(() => setTracksLoading(false))
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1162,7 +1155,6 @@ export default function Collection() {
           {centerView === 'results' ? (
             <RunResultsPanel
               onEntrySelect={(e, g) => setSelectedRunEntry(e && g ? { entry: e, group: g } : null)}
-              selectedEntry={selectedRunEntry}
             />
           ) : (<>
           <div className="collection-analysis-bar">

@@ -1,13 +1,16 @@
 """
 Health and version routes.
 
-  GET /api/health   — liveness check; always returns 200 while the server is up
+  GET /api/health   — liveness + selected root details
+  GET /api/stats    — read-only counts and latest path-audit summary
   GET /api/version  — backend and toolkit version strings
 """
 from fastapi import APIRouter
+from typing import Any, Optional
 from pydantic import BaseModel
 
 from ...core.config import BACKEND_VERSION, PIPELINE_PY, TOOLKIT_ROOT
+from ...services import read_only as read_only_service
 
 # Import toolkit version without running the full pipeline module
 import importlib.util, sys
@@ -29,8 +32,20 @@ def _toolkit_version() -> str:
 
 
 class HealthResponse(BaseModel):
-    status: str
-    pipeline_py_found: bool
+    ok: bool
+    library_root: str
+    db_path: str
+    db_exists: bool
+
+
+class StatsResponse(BaseModel):
+    tracks_count: int
+    disk_audio_files: int
+    missing_files: int
+    untracked_files: int
+    stale_processed_state_total: int
+    canonical_source: str
+    last_audit_report: Optional[dict[str, Any]] = None
 
 
 class VersionResponse(BaseModel):
@@ -42,9 +57,17 @@ class VersionResponse(BaseModel):
 @router.get("/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
     return HealthResponse(
-        status="ok",
-        pipeline_py_found=PIPELINE_PY.is_file(),
+        ok=True,
+        library_root=str(read_only_service.get_library_root()),
+        db_path=str(read_only_service.get_db_path()),
+        db_exists=read_only_service.db_exists(),
     )
+
+
+@router.get("/stats", response_model=StatsResponse)
+async def stats() -> StatsResponse:
+    payload = read_only_service.build_stats_payload()
+    return StatsResponse(**payload)
 
 
 @router.get("/version", response_model=VersionResponse)

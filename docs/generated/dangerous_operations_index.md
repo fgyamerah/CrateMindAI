@@ -1,0 +1,1625 @@
+# Generated Dangerous Operation Index
+
+## `ai/metadata_schema.py`
+- Line 144: `# Per-track normalization result (replaces raw 3-tuple)`
+- Line 152: `Replaces the raw tuple (current_tags, proposed, error).`
+- Line 163: `"""True when this result is a no-op — do not apply any changes."""`
+
+## `ai/normalizer.py`
+- Line 11: `→ apply_normalized() if --apply              (write back via mutagen easy tags)`
+- Line 15: `- apply requires explicit --apply flag AND confidence >= --min-confidence`
+- Line 16: `- Only writes artist, title (+ version), and label — never BPM, key, or cues`
+- Line 17: `- Reuses existing tag-write pattern (mutagen easy mode, same as sanitizer.py)`
+- Line 85: `Read metadata from an audio file using mutagen easy tags.`
+- Line 92: `from mutagen import File as MFile`
+- Line 111: `# Tag writing (apply step — mutagen easy mode, same pattern as sanitizer.py)`
+- Line 114: `def _apply_tags(path: Path, fields: Dict[str, str], dry_run: bool) -> bool:`
+- Line 116: `Write a subset of metadata fields back to a file using mutagen easy tags.`
+- Line 117: `Only writes non-empty proposed values. Returns True on success.`
+- Line 119: `In dry_run mode, validates the file is readable but writes nothing.`
+- Line 124: `from mutagen import File as MFile`
+- Line 137: `audio.save()`
+- Line 140: `log.error("Tag write failed for %s: %s", path.name, exc)`
+- Line 150: `Apply deterministic cleanup to a title tag before AI normalization.`
+- Line 316: `Return this exact JSON structure (replace values, keep all keys):`
+- Line 466: `proposed, guard_reason = _apply_hard_guards(proposed, current_tags, path.name)`
+- Line 551: `def _apply_hard_guards(`
+- Line 582: `# AI artist output is ignored entirely — always overwrite with current tag.`
+- Line 645: `Artist is not checked here — it is hard-locked in _apply_hard_guards`
+- Line 661: `# Build effective apply-time tag values from a NormalizedMetadata`
+- Line 706: `def _replace(m: re.Match) -> str:`
+- Line 713: `deduped = re.sub(r"\([^)]+\)", _replace, title)`
+- Line 751: `title        → mutagen easy 'title'  (combined with version if present)`
+- Line 752: `organization → mutagen easy 'organization'  (label / TPUB)`
+- Line 783: `# Apply step`
+- Line 786: `def apply_normalized(`
+- Line 793: `Write the proposed changes back to the audio file.`
+- Line 795: `Only writes fields that appear in the changes list (i.e. fields that`
+- Line 799: `return True  # nothing to write`
+- Line 801: `# Build the fields dict using effective values, keyed by mutagen easy tag name`
+- Line 819: `return _apply_tags(path, field_map, dry_run)`
+- Line 892: `print("Status: PREVIEW  (pass --apply to write changes)")`
+- Line 909: `4. If --apply: write high-confidence diffs`
+- Line 910: `5. If --output-json: write structured results to JSON`
+- Line 925: `do_apply      = getattr(args, "apply", False)`
+- Line 929: `# --apply and --dry-run are mutually exclusive`
+- Line 930: `if do_apply and dry_run:`
+- Line 931: `print("ERROR: --apply and --dry-run are mutually exclusive.", file=sys.stderr)`
+- Line 934: `# Default mode is preview (neither --apply nor --dry-run passed)`
+- Line 935: `preview_only = not do_apply and not dry_run`
+- Line 973: `mode_label = "DRY-RUN" if dry_run else ("APPLY" if do_apply else "PREVIEW")`
+- Line 983: `_rl.set_counter("applied", do_apply)`
+- Line 1008: `write_error: Optional[str] = None`
+- Line 1061: `elif do_apply:`
+- Line 1062: `ok = apply_normalized(path, proposed, changes, dry_run=False)`
+- Line 1075: `write_error = "tag write failed"`
+- Line 1077: `_proc.record(_stage, path, "error", "write_failed")`
+- Line 1080: `_rl.record_outcome("errors", str(path), "write_failed", "")`
+- Line 1092: `applied, result.rejection_reason, write_error or result.error,`
+- Line 1104: `"error":            write_error or result.error,`
+- Line 1124: `print(f"\n  {changeable} change(s) ready — re-run with --apply to write them.")`
+- Line 1134: `print(f"Preview saved to: {out_path}")`
+- Line 1136: `print(f"WARNING: Could not write JSON output to {out_path}: {exc}", file=sys.stderr)`
+
+## `ai/review_dataset.py`
+- Line 12: `write_queue_entry(path, model_name, current_tags, proposed_dict,`
+- Line 14: `write_accepted(filename, current_tags, parsed, model_name, proposed_dict,`
+- Line 16: `write_rejected(filename, current_tags, parsed, model_name, proposed_dict,`
+- Line 18: `build_fewshot(limit) -> int          — reads accepted, writes fewshot file`
+- Line 51: `fh.write(json.dumps(record, ensure_ascii=False) + "\n")`
+- Line 53: `log.warning("review_dataset: could not write to %s: %s", path, exc)`
+- Line 89: `# Public: write review_queue entry`
+- Line 92: `def write_queue_entry(`
+- Line 121: `# Public: write accepted example`
+- Line 124: `def write_accepted(`
+- Line 134: `Append one record to accepted_examples.jsonl when --apply writes a change.`
+- Line 150: `# Public: write rejected example`
+- Line 153: `def write_rejected(`
+- Line 186: `Read accepted_examples.jsonl, pick a diverse subset, write fewshot_examples.jsonl.`
+- Line 228: `# Write fewshot file (overwrite — always a fresh curated snapshot)`
+- Line 242: `fh.write(json.dumps(record, ensure_ascii=False) + "\n")`
+- Line 244: `log.error("build_fewshot: failed to write %s: %s", config.AI_FEWSHOT_EXAMPLES, exc)`
+
+## `backend/app/api/routes/analysis.py`
+- Line 17: `flag handles all detection and tag writes.`
+
+## `backend/app/api/routes/jobs.py`
+- Line 129: `# Read with errors="replace" so a corrupt byte sequence doesn't 500`
+- Line 130: `text = log_path.read_text(encoding="utf-8", errors="replace")`
+
+## `backend/app/api/routes/playlists.py`
+- Line 5: `GET   /api/playlists                      — list saved set playlists (from pipeline DB)`
+- Line 40: `When the job succeeds the playlist is saved to the pipeline DB and will`
+- Line 96: `Return saved set playlists from the pipeline DB, newest first.`
+
+## `backend/app/api/routes/sync.py`
+- Line 57: `Use this to review pending changes before committing a full sync run.`
+- Line 75: `allow_delete is False by default.  Setting it True adds --delete to`
+- Line 82: `allow_delete = body.allow_delete,`
+- Line 90: `if body.allow_delete:`
+- Line 91: `flags.append("--delete")`
+
+## `backend/app/core/config.py`
+- Line 33: `# The pipeline writes to processed.db; the backend only ever reads it.`
+- Line 80: `# dependencies (mutagen, librosa, etc.) are available to subprocesses.`
+- Line 105: `# The SSD is write-only from the pipeline's perspective (never read for`
+
+## `backend/app/core/db.py`
+- Line 75: `"""Yield a WAL-mode connection; commit on clean exit, rollback on error."""`
+- Line 83: `conn.commit()`
+- Line 115: `Create tables if they don't exist and apply any pending column migrations.`
+
+## `backend/app/core/pipeline_db.py`
+- Line 4: `The backend NEVER writes to this database — it belongs to the pipeline.`
+- Line 34: `# uri=True + ?mode=ro prevents any accidental write`
+
+## `backend/app/schemas/bpm_analysis.py`
+- Line 74: `dry_run=True adds --dry-run (no writes).`
+
+## `backend/app/schemas/sync.py`
+- Line 48: `allow_delete: bool = Field(`
+- Line 51: `"Pass --delete to rsync — removes files from the destination that "`
+
+## `backend/app/services/bpm_analysis.py`
+- Line 6: `Mirrors the heuristics in modules/analyzer.py _apply_bpm_correction() so`
+- Line 8: `Detection is purely read-only: it reads the pipeline DB and writes anomaly`
+- Line 168: `# Don't overwrite human review decisions (reviewed/ignored/requeued).`
+
+## `backend/app/services/playlist_service.py`
+- Line 4: `The backend never writes to the pipeline database.  All playlist records`
+
+## `backend/app/services/process_registry.py`
+- Line 9: `All writes happen from asyncio tasks on the same event loop (create_task).`
+
+## `backend/app/services/rsync_runner.py`
+- Line 9: `• No --delete by default; user must explicitly request it via allow_delete=True.`
+- Line 22: `Updates are written to the DB at most once per second to avoid write churn.`
+- Line 52: `# Minimum seconds between DB progress writes (throttle)`
+- Line 121: `FastAPI event loop and does NOT spawn a job or write to the DB.`
+- Line 193: `output = raw_bytes.decode("utf-8", errors="replace")`
+- Line 292: `allow_delete: bool = False,`
+- Line 304: `cmd = _build_rsync_cmd(src, dst, allow_delete=allow_delete)`
+- Line 305: `job = job_service.create_job("ssd-sync", _cmd_args(src, allow_delete))`
+- Line 317: `def _cmd_args(src: Path, allow_delete: bool) -> List[str]:`
+- Line 320: `if allow_delete:`
+- Line 321: `args.append("--delete")`
+- Line 325: `def _build_rsync_cmd(src: Path, dst: Path, allow_delete: bool) -> List[str]:`
+- Line 332: `if allow_delete:`
+- Line 333: `cmd.append("--delete")`
+- Line 339: `# Background runner (parses progress, writes to log file and DB)`
+- Line 345: `Reads stdout line by line, writes to the log file, and parses rsync`
+- Line 353: `last_progress_write = 0.0`
+- Line 372: `log_fh.write(line_bytes)`
+- Line 376: `line_str = line_bytes.decode("utf-8", errors="replace")`
+- Line 380: `if now - last_progress_write >= _PROGRESS_THROTTLE_S:`
+- Line 383: `last_progress_write = now`
+- Line 402: `log_fh.write(f"\n\n--- RUNNER ERROR ---\n{exc}\n".encode())`
+
+## `backend/app/services/toolkit_runner.py`
+- Line 73: `"--write-tags",`
+- Line 75: `"--overwrite",`
+- Line 78: `"--apply",`
+- Line 227: `log_fh.write(f"\n\n--- RUNNER ERROR ---\n{exc}\n".encode())`
+
+## `config.py`
+- Line 114: `# ID3 settings`
+- Line 116: `ID3_VERSION  = 3      # ID3v2.3 — best Rekordbox compatibility`
+- Line 130: `LABEL_CLEAN_THRESHOLD = 0.85    # minimum confidence for automatic tag write-back`
+- Line 140: `CUE_SUGGEST_WRITE_SIDECARS = False    # write .cues.json sidecar next to each audio file`
+- Line 144: `# Sets are saved directly to the SSD DJ library so they're visible on Windows/Rekordbox.`
+- Line 153: `# dedupe subcommand — where duplicate files are moved (never deleted outright).`
+- Line 172: `# that should never have their contents renamed (exports, logs, sets).`
+- Line 272: `# Minimum confidence to auto-apply an online enrichment change.`
+
+## `db.py`
+- Line 139: `conn.commit()`
+- Line 233: `Files are NEVER deleted from the database — they are marked status='stale'`
+- Line 238: `dry_run:  if True, report but do not write any changes`
+- Line 408: `def save_track_history(`
+- Line 492: `def save_cue_points(filepath: str, cues: list) -> None:`
+- Line 497: `Existing cues for the same filepath+cue_type are replaced.`
+- Line 549: `def save_set_playlist(name: str, tracks: list, config_json: str = "",`
+- Line 623: `Uses conn.execute() (not executescript) to avoid the implicit COMMIT that`
+- Line 624: `executescript issues — that COMMIT can discard the INSERT that follows in`
+- Line 687: `"""Delete all processed_state rows for a stage (implements --reset-stage)."""`
+- Line 690: `conn.execute("DELETE FROM processed_state WHERE stage=?", (stage,))`
+- Line 693: `def rename_processed_path(old_filepath: str, new_filepath: str) -> None:`
+- Line 695: `Update filepath in all processed_state rows after a file is renamed.`
+- Line 696: `Called by filename-normalize after each successful rename so that other`
+
+## `intelligence/artist/artist_alias_store.py`
+- Line 68: `# Load / save`
+- Line 111: `def save(self) -> None:`
+- Line 118: `log.error("Could not save alias store to %s: %s", self.path, exc)`
+- Line 138: `Return canonical after applying normalize_artist_string() to both sides.`
+- Line 193: `Saves nothing to disk — call save() explicitly.`
+- Line 219: `Call save() explicitly after adding all entries for the current run.`
+- Line 265: `def save(self) -> None:`
+- Line 271: `log.error("Could not save review queue to %s: %s", self.path, exc)`
+
+## `intelligence/artist/artist_normalizer.py`
+- Line 33: `# Smart / curly quote pairs: (unicode char, ASCII replacement)`
+- Line 73: `# names / acronyms and left unchanged. Above this threshold we apply title-case.`
+- Line 126: `# Single-word entity: apply length-based acronym guard`
+- Line 173: `Apply all normalization steps to a single artist name string.`
+- Line 193: `result = result.replace(smart, straight)`
+
+## `intelligence/artist/runner.py`
+- Line 11: `→ preview / apply / review-queue`
+- Line 14: `- Preview is the default — no writes without --apply`
+- Line 15: `- Never rewrites the title field`
+- Line 17: `- Only writes artist when confidence >= --min-confidence`
+- Line 19: `- Dry-run and --apply are mutually exclusive`
+- Line 34: `from ai.normalizer import _collect_files, _read_full_tags, _apply_tags`
+- Line 370: `print("Status: PREVIEW        (pass --apply to write changes)")`
+- Line 390: `do_apply       = getattr(args, "apply", False)`
+- Line 394: `if do_apply and dry_run:`
+- Line 395: `print("ERROR: --apply and --dry-run are mutually exclusive.", file=sys.stderr)`
+- Line 431: `mode_label = "DRY-RUN" if dry_run else ("APPLY" if do_apply else "PREVIEW")`
+- Line 440: `_rl.set_counter("applied", do_apply)`
+- Line 547: `elif do_apply and not dry_run:`
+- Line 548: `ok = _apply_tags(path, {"artist": changes[0]["new"]}, dry_run=False)`
+- Line 568: `skipped_reason = "tag write failed"`
+- Line 570: `_proc.record(_stage, path, "error", "write_failed")`
+- Line 573: `_rl.record_outcome("errors", str(path), "write_failed", "")`
+- Line 603: `review_queue.save()`
+- Line 604: `log.debug("Saved review queue (%d entries) to %s", len(review_queue), config.ARTIST_REVIEW_QUEUE)`
+- Line 624: `if not do_apply and preview_pending:`
+- Line 625: `print(f"\n  {preview_pending} change(s) ready — re-run with --apply to write them.")`
+- Line 635: `print(f"Preview saved to: {out_path}")`
+- Line 637: `print(f"WARNING: Could not write JSON output: {exc}", file=sys.stderr)`
+
+## `intelligence/enrichment/deezer_lookup.py`
+- Line 102: `return s.replace('"', "")`
+
+## `intelligence/enrichment/metadata_matcher.py`
+- Line 49: `>= THRESHOLD_APPLY (0.90)  → "ready"  (auto-apply when --apply is set)`
+- Line 75: `THRESHOLD_APPLY   — minimum confidence to auto-apply`
+- Line 97: `THRESHOLD_APPLY  = 0.90   # confidence >= this → ready to apply`
+- Line 98: `THRESHOLD_REVIEW = 0.75   # confidence in [this, THRESHOLD_APPLY) → needs review`
+- Line 612: `if top_conf >= THRESHOLD_APPLY:`
+
+## `intelligence/enrichment/runner.py`
+- Line 10: `→ _apply_enrichment()   if --apply    (write tags + ISRC to disk)`
+- Line 20: `when Spotify+Deezer confidence is below the apply threshold OR when the file's`
+- Line 27: `- Preview is the default — no writes without --apply.`
+- Line 57: `from ai.normalizer import _collect_files, _apply_tags`
+- Line 62: `THRESHOLD_APPLY,`
+- Line 155: `Delete a single easy-tag key from an audio file and save.`
+- Line 157: `Uses mutagen easy tags (same interface as _apply_tags).  Returns True on`
+- Line 158: `success, False if the file could not be opened or saved.  Does not raise.`
+- Line 161: `from mutagen import File as MFile`
+- Line 167: `audio.save()`
+- Line 177: `do_write: bool,`
+- Line 190: `Writes to disk only when do_write=True and dry_run=False.`
+- Line 199: `if do_write and not dry_run:`
+- Line 212: `from mutagen import File as MFile`
+- Line 265: `MP3  : ID3 TSRC frame (not exposed by mutagen easy tags)`
+- Line 276: `from mutagen.id3 import ID3`
+- Line 277: `tags = ID3(str(path))`
+- Line 282: `from mutagen.flac import FLAC`
+- Line 294: `# Tag writing (ISRC — not available via mutagen easy tags)`
+- Line 297: `def _write_isrc(path: Path, isrc: str) -> bool:`
+- Line 299: `Write an ISRC to an audio file.`
+- Line 301: `MP3  : ID3 TSRC frame (ID3v2.3, consistent with config.ID3_VERSION)`
+- Line 309: `from mutagen.id3 import ID3, TSRC`
+- Line 310: `tags = ID3(str(path))`
+- Line 312: `tags.save(v2_version=config.ID3_VERSION)`
+- Line 316: `from mutagen.flac import FLAC`
+- Line 319: `audio.save()`
+- Line 323: `log.warning("ISRC write failed for %s: %s", path.name, exc)`
+- Line 329: `# Apply changes to disk`
+- Line 332: `def _apply_enrichment(`
+- Line 338: `Write proposed changes from an EnrichmentMatch to the audio file.`
+- Line 341: `ISRC is written via _write_isrc() since it cannot be set through easy tags.`
+- Line 342: `All other fields use _apply_tags() (mutagen easy mode, same as ai-normalize).`
+- Line 348: `isrc_to_write: Optional[str] = None`
+- Line 360: `isrc_to_write = value`
+- Line 368: `ok = _apply_tags(path, easy_fields, dry_run)`
+- Line 374: `if isrc_to_write and not dry_run:`
+- Line 375: `ok = _write_isrc(path, isrc_to_write)`
+- Line 377: `written["TSRC"] = isrc_to_write`
+- Line 413: `# Traxsource fallback: triggered when best-so-far is below the apply threshold`
+- Line 415: `_TRAXSOURCE_THRESHOLD  = THRESHOLD_APPLY   # mirrors new apply threshold (0.90)`
+- Line 500: `#   a) Best-so-far confidence is below the apply threshold, OR`
+- Line 614: `print("Status: PREVIEW  (pass --apply to write changes)")`
+- Line 630: `fh.write(json.dumps(record, ensure_ascii=False) + "\n")`
+- Line 632: `log.warning("enrichment dataset write failed (%s): %s", path.name, exc)`
+- Line 737: `def _save_review_queue(queue_path: Path, entries: List[Dict[str, Any]]) -> None:`
+- Line 738: `"""Write review queue to JSON atomically via a temp file."""`
+- Line 744: `tmp.replace(queue_path)`
+- Line 746: `log.warning("Could not save review queue %s: %s", queue_path.name, exc)`
+- Line 758: `Deduplicates by file_path — an existing entry for the same file is replaced`
+- Line 780: `_save_review_queue(queue_path, entries)`
+- Line 845: `shutil.move(str(path), str(target))`
+- Line 862: `or runs an interactive loop allowing apply / skip / delete per item.`
+- Line 864: `apply  — writes the proposed changes to the audio file, removes from queue.`
+- Line 866: `delete — alias for skip.`
+- Line 895: `raw = input("  Action (a=apply  s=skip  d=delete  n=next  q=quit): ").strip().lower()`
+- Line 907: `if raw in ("s", "skip", "d", "delete"):`
+- Line 909: `_save_review_queue(_ENRICH_REVIEW_QUEUE, entries)`
+- Line 914: `if raw in ("a", "apply"):`
+- Line 920: `_save_review_queue(_ENRICH_REVIEW_QUEUE, entries)`
+- Line 924: `print("  No changes to apply — removing from queue.")`
+- Line 926: `_save_review_queue(_ENRICH_REVIEW_QUEUE, entries)`
+- Line 934: `ok, written = _apply_enrichment(fpath, mock_match, dry_run=False)`
+- Line 938: `_save_review_queue(_ENRICH_REVIEW_QUEUE, entries)`
+- Line 940: `print("  ERROR: tag write failed — entry kept in queue.")`
+- Line 964: `5. If --apply: write high-confidence changes`
+- Line 976: `do_apply        = getattr(args, "apply", False)`
+- Line 986: `if do_apply and dry_run:`
+- Line 987: `print("ERROR: --apply and --dry-run are mutually exclusive.", file=sys.stderr)`
+- Line 990: `preview_only = not do_apply and not dry_run`
+- Line 1037: `_rl.set_counter("applied", do_apply)`
+- Line 1040: `mode_label = "JUNK-CLEAN-ONLY (DRY-RUN)" if not do_apply else "JUNK-CLEAN-ONLY (APPLY)"`
+- Line 1042: `mode_label = "DRY-RUN" if dry_run else ("APPLY" if do_apply else "PREVIEW")`
+- Line 1114: `do_write=(do_apply or clean_junk_only),`
+- Line 1128: `written = "WRITTEN" if (do_apply and not dry_run) else "PREVIEW"`
+- Line 1197: `# Needs human review — never auto-apply; persist to review queue`
+- Line 1213: `elif do_apply:`
+- Line 1225: `ok, written_fields = _apply_enrichment(path, match, dry_run=False)`
+- Line 1244: `error = "tag write failed"`
+- Line 1246: `_proc.record(_stage, path, "error", "write_failed")`
+- Line 1249: `_rl.record_outcome("errors", str(path), "write_failed", "")`
+- Line 1274: `# Dataset logging (only in apply / dry-run modes, not bare preview)`
+- Line 1316: `print(f"\n  {changeable} change(s) ready — re-run with --apply to write them.")`
+- Line 1326: `print(f"Preview saved to: {out_path}")`
+- Line 1328: `print(f"WARNING: Could not write JSON output: {exc}", file=sys.stderr)`
+
+## `intelligence/enrichment/spotify_lookup.py`
+- Line 209: `return s.replace('"', "")`
+
+## `intelligence/enrichment/traxsource_lookup.py`
+- Line 11: `a) Spotify + Deezer combined confidence is below the apply threshold, OR`
+
+## `intelligence/label/cleaner.py`
+- Line 2: `Label cleaning — detection, confidence scoring, and optional tag write-back.`
+- Line 10: `Write-back only occurs when confidence >= WRITE_THRESHOLD (default 0.85),`
+- Line 11: `which intentionally limits automatic writes to embedded-tag cases where the`
+- Line 136: `# Now apply normalization for the remaining structural checks`
+- Line 185: `from mutagen import File as MFile`
+- Line 215: `#: Minimum confidence for automatic write-back (--write-tags).`
+- Line 218: `WRITE_THRESHOLD = 0.85`
+- Line 237: `writable: bool = False            # True ↔ confidence >= write_threshold AND label found`
+- Line 247: `write_threshold: float = WRITE_THRESHOLD,`
+- Line 273: `writable=bool(cleaned) and confidence >= write_threshold,`
+- Line 369: `write_threshold: float = WRITE_THRESHOLD,`
+- Line 384: `r = detect_label(path, write_threshold)`
+- Line 406: `# Second pass: apply canonical names from alias registry`
+- Line 415: `# Tag write-back`
+- Line 418: `def write_label_tag(path: Path, label: str) -> bool:`
+- Line 420: `Write label to the file's organization/TPUB tag.`
+- Line 425: `from mutagen import File as MFile`
+- Line 428: `log.warning("mutagen returned None for %s — skipping write", path)`
+- Line 431: `audio.save()`
+- Line 434: `log.warning("Could not write label tag to %s: %s", path, exc)`
+
+## `intelligence/label/exporters.py`
+- Line 15: `path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")`
+- Line 20: `path.write_text("\n".join(r.label_name for r in records) + "\n", encoding="utf-8")`
+- Line 32: `w = csv.DictWriter(f, fieldnames=fieldnames)`
+- Line 33: `w.writeheader()`
+- Line 38: `w.writerow(row)`
+- Line 44: `path.unlink()`
+- Line 98: `conn.commit()`
+
+## `intelligence/label/reports.py`
+- Line 58: `path.write_text(`
+- Line 67: `w = csv.DictWriter(f, fieldnames=_FIELDNAMES)`
+- Line 68: `w.writeheader()`
+- Line 70: `w.writerow(_row_dict(r))`
+- Line 77: `path.write_text(`
+- Line 129: `path.write_text(_summary_text(results, written) + "\n", encoding="utf-8")`
+- Line 147: `Write all report files to output_dir.`
+
+## `intelligence/label/sources/base.py`
+- Line 74: `cache_file.write_text(text, encoding="utf-8")`
+
+## `intelligence/label/utils.py`
+- Line 14: `name = name.replace("&", " and ")`
+
+## `modules/analyze_missing.py`
+- Line 3: `run detection only on those, write results back to DB and audio file tags.`
+- Line 125: `def _write_tags_bpm_key(`
+- Line 133: `Write newly-detected BPM and/or key to audio file tags.`
+- Line 134: `Only writes fields that were actually detected (not None).`
+- Line 135: `Uses format-specific mutagen APIs — no easy-tag wrapper — to match the`
+- Line 138: `MP3/ID3 : TBPM (BPM integer string), TKEY (Camelot, e.g. "8A")`
+- Line 144: `Returns False only on a write error.`
+- Line 153: `from mutagen.id3 import ID3, ID3NoHeaderError, TBPM, TKEY`
+- Line 155: `audio = ID3(str(path))`
+- Line 156: `except ID3NoHeaderError:`
+- Line 157: `audio = ID3()`
+- Line 162: `audio.save(str(path), v2_version=3)`
+- Line 165: `from mutagen.flac import FLAC`
+- Line 173: `audio.save()`
+- Line 176: `from mutagen.mp4 import MP4`
+- Line 182: `audio.save()`
+- Line 185: `log.debug("Tag write: unsupported format %s — skipping %s", suffix, path.name)`
+- Line 191: `log.warning("Tag write failed for %s: %s", path.name, exc)`
+- Line 309: `shutil.move(str(src), str(dest))`
+- Line 334: `fh.write(f"\n{'='*72}\n")`
+- Line 335: `fh.write(f"analyze-missing run — {datetime.now().isoformat(timespec='seconds')}\n")`
+- Line 336: `fh.write(f"{'='*72}\n")`
+- Line 343: `fh.write(line + "\n")`
+- Line 358: `(file renamed, deleted, or filename truncated)`
+- Line 374: `f"file not found (parent dir OK — possible rename or truncation): {path_obj}",`
+- Line 387: `# Log writer`
+- Line 407: `fh.write(line + "\n")`
+- Line 429: `and write results back to the DB and audio file tags.`
+- Line 582: `# Nothing detected — skip DB/tag write`
+- Line 613: `# Write to DB`
+- Line 625: `# Write to audio file tags`
+- Line 626: `tag_ok = _write_tags_bpm_key(`
+- Line 660: `_log_line(fh, f"  Tag write errs   : {tag_errors}")`
+- Line 682: `+ (" [DRY RUN — no writes]" if dry_run else "")`
+
+## `modules/analyzer.py`
+- Line 6: `cue data.  The analyzer NEVER overwrites values that already exist — either`
+- Line 95: `def _apply_bpm_correction(raw_bpm: float, genre: str, name: str, source: str) -> Optional[float]:`
+- Line 141: `return _apply_bpm_correction(raw_bpm, genre, path.name, "librosa")`
+- Line 287: `return _apply_bpm_correction(raw_bpm, genre, path.name, "aubio")`
+- Line 332: `with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:`
+- Line 337: `config.FFPROBE_BIN.replace("ffprobe", "ffmpeg"),`
+- Line 350: `path.name, ffmpeg_result.stderr.decode(errors="replace")[:200],`
+- Line 355: `tmp_path.unlink(missing_ok=True)`
+- Line 379: `Mixed In Key (and Rekordbox) write these values directly to the file.  We`
+- Line 396: `from mutagen.id3 import ID3, ID3NoHeaderError  # type: ignore`
+- Line 398: `tags = ID3(str(path))`
+- Line 399: `except ID3NoHeaderError:`
+- Line 416: `from mutagen.flac import FLAC  # type: ignore`
+- Line 438: `from mutagen.mp4 import MP4  # type: ignore`
+- Line 470: `previous run or from Mixed In Key via tagger write-back) or directly in the`
+
+## `modules/artist_folder_clean.py`
+- Line 17: `→ if valid → rename / merge`
+- Line 24: `"rename"     — camelot_prefix, cleaned name valid, target folder does not exist`
+- Line 303: `status:          str                   # "rename"|"merge"|"recover"|"suspicious"|"review"`
+- Line 346: `1. Read the embedded 'artist' tag via mutagen easy tags.`
+- Line 358: `from mutagen import File as MFile`
+- Line 446: `status = "merge" if target_exists else "rename"`
+- Line 523: `target for all files — used for rename/merge outcomes).`
+- Line 535: `"FOLDER-CLEAN: collision — %s → %s (renamed to avoid overwrite)",`
+- Line 539: `f"FOLDER-CLEAN: COLLISION {src.name!r} renamed"`
+- Line 557: `shutil.move(str(src), str(dest))`
+- Line 572: `def _apply_recovery(result: CleanResult, dry_run: bool) -> Dict[str, int]:`
+- Line 587: `"FOLDER-CLEAN: collision — %s → %s (renamed to avoid overwrite)",`
+- Line 591: `f"FOLDER-CLEAN: COLLISION {src.name!r} renamed"`
+- Line 609: `shutil.move(str(src), str(dest))`
+- Line 628: `def _apply_clean(result: CleanResult, dry_run: bool) -> Dict[str, int]:`
+- Line 630: `Apply one CleanResult (rename or merge only).`
+- Line 633: `if result.status not in ("rename", "merge"):`
+- Line 668: `conn.execute("DELETE FROM tracks WHERE filepath=?", (old_str,))`
+- Line 727: `def _write_report(`
+- Line 737: `renames    = [r for r in results if r.status == "rename"]`
+- Line 747: `"renames":           len(renames),`
+- Line 752: `"files_affected":    sum(len(r.files) for r in renames + merges + recovered),`
+- Line 754: `"renames":    [_result_to_dict(r) for r in renames],`
+- Line 775: `Scan the library, detect bad folder names, write a dry-run report, and`
+- Line 782: `report_path = _write_report(report_dir, results, dry_run=True)`
+- Line 784: `renames    = [r for r in results if r.status == "rename"]`
+- Line 801: `f"  Will rename              : {len(renames):>4}"`
+- Line 802: `f"  ({sum(len(r.files) for r in renames)} files)"`
+- Line 821: `if renames:`
+- Line 822: `print(f"\n  Renames  [{len(renames)}]")`
+- Line 824: `for r in sorted(renames, key=lambda x: x.original_name.lower()):`
+- Line 896: `"FOLDER-CLEAN dry-run: %d bad — %d rename, %d merge,"`
+- Line 898: `len(results), len(renames), len(merges),`
+- Line 903: `f" {len(renames)} rename, {len(merges)} merge,"`
+- Line 910: `def run_apply(sorted_root: Path, report_dir: Path) -> int:`
+- Line 912: `Apply all actionable folders:`
+- Line 913: `rename  / merge   — move all files to the cleaned artist folder`
+- Line 920: `log.info("FOLDER-CLEAN: scanning %s (apply)", sorted_root)`
+- Line 921: `log_action("FOLDER-CLEAN APPLY START")`
+- Line 924: `actionable = [r for r in results if r.status in ("rename", "merge", "recover")]`
+- Line 931: `_write_report(report_dir, results, dry_run=False)`
+- Line 939: `"renamed":         0,`
+- Line 955: `stats = _apply_recovery(r, dry_run=False)`
+- Line 962: `stats = _apply_clean(r, dry_run=False)`
+- Line 963: `if r.status == "rename":`
+- Line 964: `global_stats["renamed"] += 1`
+- Line 993: `report_path = _write_report(`
+- Line 1001: `print(f"  Folders renamed          : {global_stats['renamed']}")`
+- Line 1005: `print(f"  Collisions renamed       : {global_stats['collisions']}")`
+- Line 1014: `"FOLDER-CLEAN apply done:"`
+- Line 1015: `" %d renamed, %d merged, %d recovered, %d moved,"`
+- Line 1017: `global_stats["renamed"], global_stats["merged"],`
+- Line 1022: `f"FOLDER-CLEAN APPLY DONE:"`
+- Line 1023: `f" {global_stats['renamed']} renamed,"`
+
+## `modules/artist_merge.py`
+- Line 19: `Both SAFE_ALIAS and SAME_PRIMARY_COLLAB are auto-applied in --apply mode.`
+- Line 138: `- Replaces hyphens / underscores with spaces`
+- Line 557: `# Apply a single merge group`
+- Line 560: `def _apply_merge(group: MergeGroup, dry_run: bool) -> Dict[str, int]:`
+- Line 592: `"ARTIST-MERGE: collision — %s → %s (renamed to avoid overwrite)",`
+- Line 596: `f"ARTIST-MERGE: COLLISION {src.name!r} renamed → {dest.name!r}"`
+- Line 615: `shutil.move(str(src), str(dest))`
+- Line 638: `"DELETE FROM tracks WHERE filepath=?", (old_str,)`
+- Line 700: `def _write_report(`
+- Line 707: `"""Write the merge report JSON to report_dir. Returns the report path."""`
+- Line 776: `Scan the library, compute merge groups, write a report, and print a`
+- Line 786: `report_path = _write_report(report_dir, safe, ambiguous, dry_run=True)`
+- Line 806: `print(f"\n  Safe Alias Merges  (auto-applied with --apply)")`
+- Line 812: `print(f"\n  Same Primary Artist — Collab Variants  (auto-applied with --apply)")`
+- Line 843: `def run_apply(sorted_root: Path, report_dir: Path) -> int:`
+- Line 845: `Apply all safe merges (both SAFE_ALIAS and SAME_PRIMARY_COLLAB): move`
+- Line 851: `log.info("ARTIST-MERGE: scanning %s (apply)", sorted_root)`
+- Line 852: `log_action("ARTIST-MERGE APPLY START")`
+- Line 859: `_write_report(report_dir, safe, ambiguous, dry_run=False)`
+- Line 879: `stats = _apply_merge(group, dry_run=False)`
+- Line 886: `report_path = _write_report(`
+- Line 902: `print(f"  Collisions renamed  : {global_stats['collisions']}")`
+- Line 910: `"ARTIST-MERGE apply done: %d merged, %d moved, %d collisions, %d errors",`
+- Line 917: `f"ARTIST-MERGE APPLY DONE: {global_stats['groups_merged']} groups,"`
+
+## `modules/artist_repair.py`
+- Line 16: `- Preview by default; no writes without --apply.`
+- Line 18: `write-eligible with --apply.  All others go to review queue only.`
+- Line 24: `relative structure preserved.  Requires --apply to execute.`
+- Line 234: `from mutagen import File as MFile`
+- Line 274: `apply_blocked: bool      # True when confidence < HIGH_CONFIDENCE`
+- Line 304: `apply_blocked = False`
+- Line 308: `apply_blocked = True`
+- Line 312: `apply_blocked = True`
+- Line 316: `apply_blocked = True`
+- Line 329: `apply_blocked=apply_blocked,`
+- Line 356: `HIGH  — all sides found in known_artists (write-eligible with --apply)`
+- Line 378: `conf, apply_blocked, known_side = HIGH_CONFIDENCE, False, "all"`
+- Line 380: `conf, apply_blocked, known_side = MEDIUM_CONFIDENCE, True, "some"`
+- Line 382: `conf, apply_blocked, known_side = LOW_CONFIDENCE, True, "none"`
+- Line 399: `apply_blocked=apply_blocked,`
+- Line 432: `from mutagen import File as MFile`
+- Line 443: `def _write_artist_tag(path: Path, new_artist: str) -> bool:`
+- Line 445: `from mutagen import File as MFile`
+- Line 450: `audio.save()`
+- Line 453: `log.error("Write failed for %s: %s", path.name, exc)`
+- Line 474: `def _save_queue(queue_path: Path, entries: List[dict]) -> None:`
+- Line 475: `"""Save queue to disk, creating parent dirs as needed."""`
+- Line 552: `_save_queue(queue_path, existing)`
+- Line 564: `apply_mode  = getattr(args, "apply",              False)`
+- Line 582: `mode_label = "APPLY" if apply_mode else "PREVIEW"`
+- Line 658: `print(f"    conf     : {cand.confidence:.2f}  blocked: {cand.apply_blocked}")`
+- Line 661: `if cand.apply_blocked:`
+- Line 670: `"apply_blocked":   True,`
+- Line 675: `print("    → QUEUED for review (confidence below apply threshold)")`
+- Line 677: `if move_review and apply_mode:`
+- Line 682: `shutil.move(str(path), str(dest))`
+- Line 692: `_proc.record(_stage, path, "review", "apply_blocked")`
+- Line 694: `# High confidence — eligible for write`
+- Line 696: `if apply_mode:`
+- Line 697: `ok = _write_artist_tag(path, cand.proposed)`
+- Line 708: `_proc.record(_stage, path, "error", "write_failed")`
+- Line 709: `print("    [ERROR] write_failed")`
+- Line 712: `print("    → WOULD APPLY (pass --apply to write)")`
+- Line 716: `# Write review queue`
+- Line 721: `log.error("Could not write review queue: %s", exc)`
+- Line 723: `# Write JSON summary`
+- Line 744: `log.warning("Could not write summary: %s", exc)`
+- Line 757: `if not apply_mode and flagged_count:`
+- Line 759: `print("Preview mode — no files modified. Pass --apply to write high-confidence repairs.")`
+- Line 762: `if not (move_review and apply_mode):`
+- Line 763: `print("  Pass --apply --move-artist-review to quarantine review files.")`
+- Line 766: `f"ARTIST-REPAIR {'APPLY' if apply_mode else 'PREVIEW'}: "`
+- Line 786: `do_apply      = getattr(args, "apply_approved", False)`
+- Line 797: `if do_list or (not do_apply and approve_idx is None and reject_idx is None):`
+- Line 803: `print("  --apply-approved       write approved repairs to audio file tags")`
+- Line 818: `_save_queue(queue_path, entries)`
+- Line 832: `_save_queue(queue_path, entries)`
+- Line 834: `# --apply-approved`
+- Line 835: `if do_apply:`
+- Line 839: `print("No approved (unapplied) entries to apply.")`
+- Line 842: `print(f"Applying {len(eligible)} approved repair(s)...")`
+- Line 865: `ok = _write_artist_tag(path, proposed)`
+- Line 877: `print(f"  [{idx}] ERROR: write failed for {path.name}", file=sys.stderr)`
+- Line 879: `_save_queue(queue_path, entries)`
+
+## `modules/audit_quality.py`
+- Line 18: `- Actions (move / write-tag) are opt-in via parameters`
+- Line 21: `Quality tag locations (when --write-tags is active):`
+- Line 22: `MP3  : TXXX:QUALITY  (ID3v2.3 custom text frame)`
+- Line 254: `def _write_quality_tag(`
+- Line 260: `Write a QUALITY tag to the audio file.`
+- Line 263: `MP3  : TXXX:QUALITY  (ID3v2.3 custom text frame)`
+- Line 268: `Returns True on success / skip; False on write failure.`
+- Line 272: `log.debug("[DRY-RUN] Would write QUALITY=%s to %s", tier.value, path.name)`
+- Line 280: `from mutagen.id3 import ID3, TXXX, ID3NoHeaderError`
+- Line 282: `tags = ID3(str(path))`
+- Line 283: `except ID3NoHeaderError:`
+- Line 284: `tags = ID3()`
+- Line 287: `tags.save(str(path), v2_version=config.ID3_VERSION)`
+- Line 292: `from mutagen.flac import FLAC`
+- Line 295: `audio.save()`
+- Line 300: `from mutagen.mp4 import MP4, MP4FreeForm`
+- Line 304: `audio.save()`
+- Line 312: `"Skipping QUALITY tag write for %s "`
+- Line 319: `log.debug("Skipping QUALITY tag write for unsupported format %s", path.suffix)`
+- Line 323: `log.warning("Could not write QUALITY tag to %s: %s", path.name, exc)`
+- Line 365: `shutil.move(str(path), str(dest))`
+- Line 374: `# Report writers`
+- Line 382: `def _write_reports(`
+- Line 389: `Write CSV and/or JSON reports to `report_dir`.`
+- Line 404: `w = csv.DictWriter(fh, fieldnames=_REPORT_FIELDS)`
+- Line 405: `w.writeheader()`
+- Line 407: `w.writerow({`
+- Line 431: `json_path.write_text(`
+- Line 490: `write_tags:      bool           = False,`
+- Line 504: `- Writes CSV + JSON reports to report_dir`
+- Line 510: `write_tags     — write QUALITY tag to each file`
+- Line 541: `"dry_run=%s  move_low=%s  write_tags=%s  min_lossy_kbps=%d",`
+- Line 543: `dry_run, move_low_dir or "off", write_tags, min_lossy_kbps,`
+- Line 591: `# --- Optional: write quality tag ---`
+- Line 592: `if write_tags and tier != QualityTier.UNKNOWN:`
+- Line 594: `wrote = _write_quality_tag(path, tier, dry_run=dry_run)`
+- Line 598: `log.debug("Tag write skipped for unsupported format: %s", path.suffix)`
+- Line 618: `report_paths = _write_reports(results, report_dir, report_formats, dry_run=dry_run)`
+- Line 636: `Return True if the file format has supported tag-write handling.`
+- Line 637: `AIFF/WAV return True but _write_quality_tag() skips them gracefully.`
+
+## `modules/convert_audio.py`
+- Line 7: `3. Skip if output already exists, unless --overwrite`
+- Line 133: `overwrite:    bool,`
+- Line 151: `if dst.exists() and not overwrite:`
+- Line 153: `"output already exists (pass --overwrite to force)", None, None)`
+- Line 176: `"-y",                  # overwrite output silently`
+- Line 189: `dst.unlink(missing_ok=True)`
+- Line 194: `err = r.stderr.decode(errors="replace").strip()[:300]`
+- Line 195: `dst.unlink(missing_ok=True)`
+- Line 204: `dst.unlink(missing_ok=True)`
+- Line 211: `dst.unlink(missing_ok=True)`
+- Line 225: `shutil.move(str(src), str(archive_dest))`
+- Line 255: `"""Write line to log file (if open) and emit via module logger."""`
+- Line 258: `fh.write(line + "\n")`
+- Line 271: `overwrite:     bool           = False,`
+- Line 324: `_wlog(fh, f"  overwrite : {overwrite}")`
+- Line 347: `overwrite=overwrite, tolerance=tolerance,`
+- Line 375: `# Write detailed per-file log (sorted by source path — deterministic)`
+
+## `modules/cue_suggest.py`
+- Line 142: `"""Subset accepted by db.save_cue_points (note not in schema)."""`
+- Line 188: `return str(ffprobe).replace("ffprobe", "ffmpeg")`
+- Line 205: `path.name, proc.stderr.decode(errors="replace")[:200])`
+- Line 589: `Read track metadata directly from audio tags via mutagen.`
+- Line 594: `from mutagen import File as _MutagenFile`
+- Line 595: `audio = _MutagenFile(str(path), easy=True)`
+- Line 690: `def _write_run_csv(results: List[TrackCues], runs_dir: Path) -> Path:`
+- Line 700: `w = csv.DictWriter(fh, fieldnames=fields)`
+- Line 701: `w.writeheader()`
+- Line 704: `w.writerow({`
+- Line 767: `def _write_master_json(out_dir: Path) -> Path:`
+- Line 778: `path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")`
+- Line 782: `def _write_master_csv(out_dir: Path) -> Path:`
+- Line 798: `w = csv.DictWriter(fh, fieldnames=base + cue_cols, extrasaction="ignore")`
+- Line 799: `w.writeheader()`
+- Line 815: `w.writerow(row)`
+- Line 823: `def _write_sidecar_json(tc: TrackCues) -> None:`
+- Line 827: `sidecar.write_text(`
+- Line 831: `log.warning("Could not write sidecar %s: %s", sidecar, exc)`
+- Line 851: `dry_run:        Print results only; no DB writes or file output.`
+- Line 865: `write_sidecars = getattr(config, "CUE_SUGGEST_WRITE_SIDECARS", False)`
+- Line 931: `db.save_cue_points(str(path), [c.to_db_dict() for c in storable])`
+- Line 933: `if write_sidecars:`
+- Line 934: `_write_sidecar_json(tc)`
+- Line 938: `run_csv = _write_run_csv(results, runs_dir)`
+- Line 944: `p = _write_master_json(out_dir)`
+- Line 947: `p = _write_master_csv(out_dir)`
+
+## `modules/dedupe.py`
+- Line 7: `3. Duplicates are MOVED to /music/duplicates/ (never deleted automatically).`
+- Line 35: `"""Run rmlint over scan_dirs, write output to output_dir. Returns CSV path."""`
+- Line 103: `shutil.move(str(dup_path), str(dest))`
+
+## `modules/doc_gen.py`
+- Line 6: `- README.md      — the "Subcommands" section only (full replacement of`
+- Line 10: `All three outputs are complete, self-contained files safe to overwrite.`
+- Line 169: `cat_title = cat.replace("_", " ").title()`
+- Line 190: `Return a new README.md string where the Subcommands section is replaced`
+- Line 197: `If the markers are present, the content between them is replaced.`
+- Line 200: `is replaced and wrapped with markers.`
+- Line 213: `# Markers already present — replace content between them`
+- Line 323: `return name.lower().replace(" ", "-").replace("/", "-")`
+
+## `modules/doc_registry.py`
+- Line 40: `"Does not write tags, move files, or modify the DB."`
+- Line 87: `"Replaces DJ_MUSIC_ROOT and all derived paths (inbox, library, "`
+- Line 108: `"  The pipeline NEVER overwrites existing BPM, key, or cue values.\n"`
+- Line 163: `"description": "Preview all field changes — make no file writes.",`
+- Line 190: `"description": "Standardize MP3 ID3 tag format for Rekordbox (ID3v2.4 → ID3v2.3, remove ID3v1).",`
+- Line 214: `"description": "Detect BPM and key for tracks missing that data — writes to DB and audio tags.",`
+- Line 225: `"description": "Run detection but do not write to DB or audio file tags.",`
+- Line 269: `"Safe to run multiple times — will not overwrite valid existing values.\n"`
+- Line 287: `"description": "Probe and classify; log intended actions; write no files.",`
+- Line 295: `"flag": "--write-tags",`
+- Line 296: `"description": "Write a QUALITY tag to each file. UNKNOWN files are skipped.",`
+- Line 317: `"python3 pipeline.py audit-quality --write-tags",`
+- Line 329: `"  MP3  : TXXX:QUALITY  (ID3v2.3 custom text frame)\n"`
+- Line 346: `"flag": "--apply",`
+- Line 347: `"description": "Apply all recoverable renames and merges. Unrecoverable folders go to the review report only.",`
+- Line 358: `"python3 pipeline.py artist-folder-clean --apply",`
+- Line 359: `"python3 pipeline.py artist-folder-clean --apply --path /mnt/music_ssd/KKDJ/",`
+- Line 364: `"  camelot_prefix  e.g. '1A - Afrikan Roots'       -> rename/merge\n"`
+- Line 381: `"flag": "--apply",`
+- Line 382: `"description": "Apply safe merges. Uncertain merges go to the review report.",`
+- Line 393: `"python3 pipeline.py artist-merge --apply",`
+- Line 394: `"python3 pipeline.py artist-merge --apply --path /mnt/music_ssd/KKDJ/",`
+- Line 421: `"Stale rows are marked status='stale' — they are NEVER deleted.\n"`
+- Line 457: `"flag": "--overwrite",`
+- Line 468: `"description": "Probe sources and show what would be converted. Write no files.",`
+- Line 558: `"toolkit XML will overwrite MIK cue data on next Rekordbox import."`
+- Line 640: `{"flag": "--dry-run", "description": "Analyse and print cue points. No DB writes."},`
+- Line 700: `{"flag": "--dry-run", "description": "Preview the set. Write no files."},`
+- Line 833: `"description": "Write suggestions to a JSON file in HARMONIC_SUGGEST_OUTPUT_DIR.",`
+- Line 835: `{"flag": "--dry-run", "description": "Print suggestions only — do not write JSON output."},`
+- Line 925: `"description": "Detect, normalize, and optionally write back label metadata (Phase 1: local).",`
+- Line 933: `"flag": "--write-tags",`
+- Line 934: `"description": "Write high-confidence labels (>= threshold) back to the organization/TPUB tag.",`
+- Line 943: `"description": "Minimum confidence for write-back.",`
+- Line 963: `"python3 pipeline.py label-clean --write-tags",`
+- Line 965: `"python3 pipeline.py label-clean --write-tags --confidence-threshold 0.75",`
+- Line 975: `"Write-back only applies when confidence >= threshold (default 0.85).\n"`
+- Line 991: `"description": "Preview generated output to stdout — write no files.",`
+- Line 996: `"description": "Write generated files here instead of the project root.",`
+- Line 1020: `"description": "Exit with code 1 if any mismatches are found (useful in CI/pre-commit).",`
+
+## `modules/filename_normalize.py`
+- Line 6: `Renames audio files to:`
+- Line 11: `- Preview by default; pass apply=True to commit renames.`
+- Line 14: `- No overwrite: collisions get a safe suffix ' (1)', ' (2)', etc.`
+- Line 31: `# Files whose artist tags look like concatenated names are not renamed.`
+- Line 82: `"""Extract a plain string from a mutagen tag value."""`
+- Line 85: `# Mutagen ID3 text frames expose .text as a list`
+- Line 97: `Handles MP3 (ID3), FLAC (Vorbis), M4A (MP4), OGG, OPUS, WAV, AIFF.`
+- Line 100: `from mutagen import File as _MFile`
+- Line 110: `# ID3 (MP3, AIFF, WAV)`
+- Line 116: `# Vorbis Comment (FLAC, OGG, OPUS) — case-insensitive keys in mutagen`
+- Line 213: `# Artist review queue writer`
+- Line 216: `def _write_review_entry(`
+- Line 240: `fh.write(json.dumps(entry, ensure_ascii=False) + "\n")`
+- Line 242: `print(f"    [WARN] Could not write review queue: {exc}")`
+- Line 284: `def run(input_dir: Path, *, apply: bool = False, verbose: bool = False,`
+- Line 289: `Walk input_dir for audio files and rename them to the canonical pattern.`
+- Line 292: `scanned, candidates, renamed, skipped_no_tags, skipped_unsafe_artist,`
+- Line 298: `scanned=0, candidates=0, renamed=0,`
+- Line 332: `if apply:`
+- Line 340: `if apply:`
+- Line 356: `if apply:`
+- Line 368: `mode = "APPLY" if apply else "PREVIEW"`
+- Line 373: `print("  RENAME:")`
+- Line 383: `if apply:`
+- Line 385: `src.rename(dst)`
+- Line 386: `stats["renamed"] += 1`
+- Line 387: `_proc.rename_path(src, dst)`
+- Line 401: `if apply and move_artist_review:`
+- Line 407: `shutil.move(str(path), str(dest))`
+- Line 414: `_write_review_entry(path, artist, title, album, moved=moved, moved_to=moved_to)`
+- Line 424: `action = "will move" if (apply and move_artist_review) else "use --move-artist-review --apply to move"`
+
+## `modules/harmonic.py`
+- Line 280: `"""Strip version/remix suffixes, then apply standard normalization."""`
+- Line 654: `# Apply energy direction bias`
+- Line 669: `# Apply absolute BPM step penalty — prevents 122→150 type jumps regardless`
+- Line 742: `def write_suggestions_json(`
+- Line 748: `"""Write suggestions to a JSON file and return the path."""`
+- Line 752: `stem   = Path(from_filepath).stem[:30].replace(" ", "_")`
+- Line 780: `path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")`
+- Line 843: `# Apply absolute BPM step penalty`
+
+## `modules/junk_patterns.py`
+- Line 44: `phrase_patterns     Ordered list of (compiled_re, replacement) tuples;`
+- Line 137: `phrase_patterns.append((compiled, entry.get("replacement", "")))`
+
+## `modules/library_dedupe.py`
+- Line 8: `→ keep one, quarantine the rest (safe to auto-apply)`
+- Line 10: `→ keep highest quality, quarantine rest (safe to auto-apply)`
+- Line 31: `- Apply mode moves files to quarantine dir (never deletes outright).`
+- Line 209: `Read metadata from an audio file using mutagen.`
+- Line 213: `from mutagen import File as MFile`
+- Line 444: `space_saved  = sum(`
+- Line 453: `print(f"  Space that would be freed       : {space_saved / (1024*1024):.1f} MB")`
+- Line 487: `print(f"\nRun with --apply to quarantine {total_remove} file(s).")`
+- Line 491: `# Apply mode`
+- Line 541: `shutil.move(str(info.path), str(dest))`
+- Line 549: `def apply_changes(`
+- Line 598: `# Summary print (apply mode)`
+- Line 601: `def print_apply_summary(`
+- Line 623: `print(f"\n  Files are in quarantine (not deleted). Review and remove manually.")`
+- Line 643: `Pass dry_run=False (via --apply) to actually quarantine.`
+- Line 653: `mode = "DRY-RUN" if dry_run else "APPLY"`
+- Line 680: `quarantined, bytes_freed = apply_changes(groups, quarantine_dir, dry_run=False, source_root=source_root)`
+- Line 682: `print_apply_summary(scanned, groups, quarantined, bytes_freed, quarantine_dir, dry_run=False)`
+
+## `modules/library_organize.py`
+- Line 11: `- Preview by default; pass apply=True to commit moves.`
+- Line 16: `- No overwrite: collisions get a safe suffix ' (1)', ' (2)', etc.`
+- Line 273: `from mutagen import File as _MFile`
+- Line 290: `# ID3 (MP3 / AIFF / WAV)`
+- Line 322: `apply: bool = False,`
+- Line 345: `mode = "APPLY" if apply else "PREVIEW"`
+- Line 390: `if apply:`
+- Line 393: `shutil.move(str(src), str(dst))`
+- Line 395: `_proc.rename_path(src, dst)`
+- Line 400: `if not apply and stats["candidates"] > 0:`
+- Line 401: `print(f"\nRun with --apply to flatten {stats['candidates']} file(s).")`
+- Line 413: `apply: bool = False,`
+- Line 435: `return _run_flatten(sorted_root, apply=apply, verbose=verbose, limit=limit)`
+- Line 459: `mode = "APPLY" if apply else "PREVIEW"`
+- Line 475: `if apply:`
+- Line 496: `if apply:`
+- Line 507: `if apply:`
+- Line 513: `if apply:`
+- Line 528: `label = "  CHKARTISTNAMES:" if apply else "  WOULD MOVE TO CHKARTISTNAMES:"`
+- Line 536: `if apply:`
+- Line 539: `shutil.move(str(src), str(dst))`
+- Line 541: `_proc.rename_path(src, dst)`
+- Line 559: `if apply:`
+- Line 562: `shutil.move(str(src), str(dst))`
+- Line 564: `_proc.rename_path(src, dst)`
+
+## `modules/metadata_clean.py`
+- Line 8: `ID3v2   title, artist, album, albumartist, genre, comment, publisher (TPUB),`
+- Line 15: `ID3v1   block removed on save (v1=0) — ID3v1 comment junk cannot persist`
+- Line 18: `python pipeline.py metadata-clean --dry-run   # preview, no writes`
+- Line 19: `python pipeline.py metadata-clean             # apply`
+- Line 76: `# Easy-tag fields (mutagen easy=True)`
+- Line 87: `# ID3 raw frame mappings`
+- Line 90: `_ID3_TEXT_FRAMES: Dict[str, str] = {`
+- Line 99: `_ID3_URL_FRAMES: Dict[str, str] = {`
+- Line 135: `# Raw ID3 field names (not handled via easy tags)`
+- Line 137: `list(_ID3_TEXT_FRAMES.keys()) +`
+- Line 138: `list(_ID3_URL_FRAMES.keys()) +`
+- Line 193: `tag_family: str  = "ID3v2"   # "ID3v2" | "APEv2" | "easy"`
+- Line 275: `# Catalog number: format-aware read / write`
+- Line 281: `from mutagen import File as MFile`
+- Line 301: `return v.decode("utf-8", errors="replace") if isinstance(v, bytes) else str(v)`
+- Line 308: `def _write_catalog_number(path: Path, value: str) -> None:`
+- Line 311: `from mutagen import File as MFile`
+- Line 316: `from mutagen.id3 import TXXX`
+- Line 331: `audio.save(v2_version=config.ID3_VERSION)`
+- Line 343: `audio.save()`
+- Line 345: `from mutagen.mp4 import MP4FreeForm`
+- Line 350: `audio.save()`
+- Line 352: `log.debug("Could not write catalog number to %s: %s", path, exc)`
+- Line 366: `from mutagen import File as MFile`
+- Line 383: `# ID3 raw frame read`
+- Line 386: `def _read_id3_extra(tags) -> Dict[str, str]:`
+- Line 387: `"""Read extra ID3 frames from an open ID3 tags object."""`
+- Line 391: `for field_name, frame_id in _ID3_TEXT_FRAMES.items():`
+- Line 399: `for field_name, frame_id in _ID3_URL_FRAMES.items():`
+- Line 409: `# WXXX — User-defined URL frames (shown as "User-defined URL" in Kid3)`
+- Line 493: `v = v.decode("utf-8", errors="replace")`
+- Line 496: `v = raw.decode("utf-8", errors="replace") if isinstance(raw, bytes) else str(raw)`
+- Line 506: `"""Read extra tag frames not exposed by mutagen's easy interface."""`
+- Line 509: `from mutagen import File as MFile`
+- Line 514: `return _read_id3_extra(audio.tags)`
+- Line 535: `from mutagen.apev2 import APEv2`
+- Line 554: `# Tag writing — ID3`
+- Line 557: `def _write_id3_raw_changes(tags, raw_changes: List[FieldChange]) -> None:`
+- Line 558: `"""Apply raw changes to an open ID3 tags object."""`
+- Line 563: `if fn in _ID3_TEXT_FRAMES:`
+- Line 564: `frame_id = _ID3_TEXT_FRAMES[fn]`
+- Line 572: `elif fn in _ID3_URL_FRAMES:`
+- Line 573: `frame_id = _ID3_URL_FRAMES[fn]`
+- Line 611: `# GEOB: always delete (binary content can't be meaningfully cleaned)`
+- Line 655: `def _write_vorbis_raw_changes(audio, raw_changes: List[FieldChange]) -> None:`
+- Line 683: `def _write_m4a_raw_changes(audio, raw_changes: List[FieldChange]) -> None:`
+- Line 684: `from mutagen.mp4 import MP4FreeForm`
+- Line 704: `def _write_ape_tags(path: Path, ape_changes: List[FieldChange], dry_run: bool) -> bool:`
+- Line 705: `"""Write APEv2 changes back to the file."""`
+- Line 709: `from mutagen.apev2 import APEv2`
+- Line 720: `ape.save(str(path))`
+- Line 723: `log.warning("Could not write APE tags to %s: %s", path, exc)`
+- Line 728: `# Tag writing — ID3v1 strip + raw frame write`
+- Line 731: `def _strip_mp3_id3v1(path: Path) -> None:`
+- Line 732: `"""Remove the ID3v1 block (128 bytes at EOF). Data is preserved in ID3v2."""`
+- Line 734: `from mutagen.id3 import ID3`
+- Line 735: `tags_obj = ID3(str(path))`
+- Line 736: `tags_obj.save(str(path), v2_version=config.ID3_VERSION, v1=0)`
+- Line 738: `log.debug("Could not strip ID3v1 from %s: %s", path, exc)`
+- Line 741: `def _write_raw_frames(path: Path, raw_changes: List[FieldChange], dry_run: bool) -> bool:`
+- Line 742: `"""Write raw ID3 frame changes back to the audio file."""`
+- Line 747: `from mutagen import File as MFile`
+- Line 752: `_write_id3_raw_changes(audio.tags, raw_changes)`
+- Line 753: `audio.save(v2_version=config.ID3_VERSION, v1=0)  # v1=0: remove ID3v1 block`
+- Line 755: `_write_vorbis_raw_changes(audio, raw_changes)`
+- Line 756: `audio.save()`
+- Line 758: `_write_m4a_raw_changes(audio, raw_changes)`
+- Line 759: `audio.save()`
+- Line 762: `log.warning("Could not write raw frames to %s: %s", path, exc)`
+- Line 766: `def _write_tags(path: Path, changes: List[FieldChange], dry_run: bool) -> bool:`
+- Line 768: `Dispatch all field changes to the appropriate writer:`
+- Line 770: `catalog      → _write_catalog_number()`
+- Line 771: `raw ID3/Vorbis/M4A frames → _write_raw_frames()`
+- Line 772: `APEv2 keys   → _write_ape_tags()`
+- Line 773: `ID3v1 block  → _strip_mp3_id3v1() (always for MP3, clears ID3v1 comment junk)`
+- Line 787: `from mutagen import File as MFile`
+- Line 804: `audio.save()`
+- Line 807: `_write_catalog_number(path, cat_change.cleaned)`
+- Line 810: `_write_raw_frames(path, raw_changes, dry_run=False)`
+- Line 813: `_write_ape_tags(path, ape_changes, dry_run=False)`
+- Line 815: `# Strip ID3v1 from any MP3 we touch.`
+- Line 816: `# If _write_raw_frames ran, it already stripped ID3v1 via v1=0.`
+- Line 817: `# Otherwise the easy-tag save left ID3v1 intact — strip it now.`
+- Line 819: `_strip_mp3_id3v1(path)`
+- Line 823: `log.warning("Could not write tags to %s: %s", path, exc)`
+- Line 868: `tag_family="ID3v2",`
+- Line 871: `# --- Raw ID3 / Vorbis / M4A frames ---`
+- Line 885: `tag_family="ID3v2",`
+- Line 944: `f"No files modified. Run without --dry-run to apply.\n"`
+- Line 1000: `print(f"\nRun without --dry-run to apply these {total_fields} change(s).")`
+- Line 1004: `# Apply mode`
+- Line 1007: `def _apply_changes(results: List[TrackResult]) -> Tuple[int, int]:`
+- Line 1008: `"""Write cleaned tags back to disk. Returns (files_written, fields_cleaned)."""`
+- Line 1021: `ok = _write_tags(path, result.changes, dry_run=False)`
+- Line 1038: `log.warning("Failed to write tags: %s", path)`
+- Line 1049: `Scan all paths and optionally apply metadata cleanup.`
+- Line 1054: `mode = "DRY-RUN" if dry_run else "APPLY"`
+- Line 1076: `files_written, fields_cleaned = _apply_changes(results)`
+
+## `modules/metadata_sanitize.py`
+- Line 11: `Preview is the default — no writes without --apply.`
+- Line 219: `from mutagen import File as MFile`
+- Line 243: `from mutagen.id3 import ID3`
+- Line 244: `id3 = ID3(str(path))`
+- Line 245: `frame = id3.get("TSRC")`
+- Line 248: `from mutagen.flac import FLAC`
+- Line 253: `from mutagen import File as MFile`
+- Line 261: `raw = v.decode("utf-8", errors="replace") if isinstance(v, bytes) else str(v)`
+- Line 264: `# AIFF stores ID3 inside the container — use the AIFF class, not bare ID3()`
+- Line 265: `from mutagen.aiff import AIFF`
+- Line 277: `def _apply_sanitized(path: Path, changes: List[SanitizeChange]) -> Tuple[bool, set]:`
+- Line 279: `Write sanitized changes back to the file.`
+- Line 281: `names whose writes did not succeed (empty = all applied).`
+- Line 288: `from mutagen import File as MFile`
+- Line 301: `audio.save()`
+- Line 303: `log.error("Easy-tag write failed for %s: %s", path.name, exc)`
+- Line 314: `"""Delete ISRC tag from file (format-specific). Returns True on success."""`
+- Line 318: `from mutagen.id3 import ID3`
+- Line 319: `id3 = ID3(str(path))`
+- Line 320: `if "TSRC" in id3:`
+- Line 321: `del id3["TSRC"]`
+- Line 322: `id3.save(str(path))`
+- Line 325: `from mutagen.flac import FLAC`
+- Line 329: `audio.save()`
+- Line 332: `from mutagen import File as MFile`
+- Line 337: `audio.save()`
+- Line 340: `# AIFF stores ID3 inside the container — use the AIFF class, not bare ID3()`
+- Line 341: `from mutagen.aiff import AIFF`
+- Line 345: `audio.save()`
+- Line 399: `normalized = value.strip().upper().replace("-", "").replace(" ", "")`
+- Line 662: `def _write_json_log(`
+- Line 685: `log.error("Could not write JSON log to %s: %s", output_path, exc)`
+- Line 695: `apply_mode = getattr(args, "apply", False)`
+- Line 720: `_rl.set_counter("applied", apply_mode)`
+- Line 722: `mode_label = "APPLY" if apply_mode else "PREVIEW"`
+- Line 815: `if apply_mode:`
+- Line 817: `ok, failed_fields = _apply_sanitized(path, result.changes)`
+- Line 832: `print(f"    [ERROR] failed to write {path.name}", file=sys.stderr)`
+- Line 834: `_rl.record_outcome("errors", str(path), "write_failed", "")`
+- Line 836: `_preason = "write_failed"`
+- Line 840: `# _pstate is None when changes exist but apply_mode is False (preview pending)`
+- Line 859: `if not apply_mode and changed_count:`
+- Line 861: `print("Dry-run mode — no files modified. Pass --apply to write changes.")`
+- Line 871: `_write_json_log(output_json, all_results, _summary)`
+- Line 893: `# --- JSON format from _write_json_log ---`
+- Line 945: `def _write_title_tag(path: Path, title: str) -> bool:`
+- Line 947: `from mutagen import File as MFile`
+- Line 952: `audio.save()`
+- Line 955: `log.error("Failed to write title to %s: %s", path.name, exc)`
+- Line 967: `preview = not getattr(args, "apply", False)`
+- Line 979: `mode_label = "PREVIEW" if preview else "APPLY"`
+- Line 1026: `ok = _write_title_tag(Path(filepath), before)`
+- Line 1035: `print(f"    [ERROR] failed to write {filepath}", file=sys.stderr)`
+- Line 1045: `print("Dry-run mode — pass --apply to write reverted titles.")`
+- Line 1092: `apply_mode = getattr(args, "apply", False)`
+- Line 1105: `mode_label = "APPLY" if apply_mode else "PREVIEW"`
+- Line 1155: `action = "RECOVER" if apply_mode else "WOULD_RECOVER"`
+- Line 1163: `if apply_mode:`
+- Line 1164: `ok = _write_title_tag(path, filename_title)`
+- Line 1173: `print(f"    [ERROR] failed to write {path}", file=sys.stderr)`
+- Line 1177: `if apply_mode:`
+- Line 1182: `if not apply_mode and n_candidates:`
+- Line 1184: `print("Dry-run mode — pass --apply to write recovered titles.")`
+
+## `modules/organizer.py`
+- Line 2: `File organizer — renames and moves files into the sorted library structure.`
+- Line 239: `Comment requires non-easy mutagen access for ID3 COMM frames.`
+- Line 243: `from mutagen import File as MFile`
+- Line 251: `result["comment"] = get("comment")  # works for Vorbis; may be empty for ID3`
+- Line 253: `# If comment is still empty, try non-easy access for ID3 COMM frames`
+- Line 452: `"""If dest already exists, append a counter to avoid overwrites."""`
+- Line 474: `from mutagen import File as MFile`
+- Line 503: `"--nowrite",   # we write tags ourselves after analysis`
+- Line 540: `1. Read existing ID3/Vorbis tags.`
+- Line 558: `# Save the pure 'artist' tag separately — used as label-detection fallback.`
+- Line 611: `'REJECTED ARTIST: %r → replaced with Unknown Artist [%s]',`
+- Line 615: `f"REJECTED ARTIST: {effective_artist!r} → replaced with Unknown Artist"`
+- Line 629: `# on the file's ID3 tags — this pass only affects path construction.`
+- Line 644: `'REJECTED ARTIST: %r → replaced with Unknown Artist'`
+- Line 649: `f"REJECTED ARTIST: {_dirty_artist!r} → replaced with Unknown Artist"`
+- Line 783: `shutil.move(str(path), str(dest))`
+- Line 799: `conn.execute("DELETE FROM tracks WHERE filepath=?", (old_path_str,))`
+- Line 801: `db.save_track_history(`
+- Line 846: `shutil.move(str(path), str(dest))`
+- Line 862: `beets moves + renames files so we can't track old→new path directly.`
+
+## `modules/parser.py`
+- Line 46: `Replace all Unicode dash variants with ASCII hyphen-minus and`
+- Line 58: `name = name.replace(ch, "-")`
+
+## `modules/playlists.py`
+- Line 2: `Playlist generator — writes M3U playlists and a Rekordbox XML import file.`
+- Line 7: `- Genre playlists under Genre/<GenreName>.m3u8`
+- Line 101: `- Replaces hyphens/underscores with spaces so "Afro-House" == "Afro House"`
+- Line 270: `return rel.replace("\\", "/")`
+- Line 273: `return str(track_path).replace("\\", "/")`
+- Line 279: `def _write_m3u(playlist_path: Path, tracks: List[sqlite3.Row], dry_run: bool) -> int:`
+- Line 280: `"""Write a single .m3u8 file. Returns number of tracks written."""`
+- Line 284: `log.info("DRY-RUN: would write %s (%d tracks)", playlist_path.name, len(tracks))`
+- Line 289: `f.write("#EXTM3U\n")`
+- Line 295: `f.write(f"#EXTINF:{dur},{artist} - {title}\n")`
+- Line 296: `f.write(f"{rel}\n")`
+- Line 331: `n = _write_m3u(playlist_path, tracks, dry_run)`
+- Line 337: `_write_m3u(master_path, normal_tracks, dry_run)`
+- Line 349: `Writes to GENRE_M3U_DIR (<M3U_DIR>/Genre/).`
+- Line 385: `n = _write_m3u(playlist_path, tracks, dry_run)`
+- Line 400: `Writes to ENERGY_M3U_DIR (<M3U_DIR>/Energy/).`
+- Line 430: `n = _write_m3u(playlist_path, tracks, dry_run)`
+- Line 446: `Writes to COMBINED_M3U_DIR (<M3U_DIR>/Combined/).`
+- Line 483: `n = _write_m3u(playlist_path, tracks, dry_run)`
+- Line 499: `Writes to KEY_M3U_DIR (<M3U_DIR>/Key/).`
+- Line 534: `n = _write_m3u(playlist_path, tracks, dry_run)`
+- Line 552: `Writes to ROUTE_M3U_DIR (<M3U_DIR>/Route/).`
+- Line 592: `n = _write_m3u(playlist_path, tracks, dry_run)`
+- Line 647: `log.info("DRY-RUN: would write Rekordbox XML with %d tracks", len(all_tracks))`
+- Line 871: `f.write(xml_content)`
+- Line 903: `from mutagen import File as MFile`
+
+## `modules/qc.py`
+- Line 105: `shutil.move(str(path), str(dest))`
+
+## `modules/rekordbox_export.py`
+- Line 366: `# Track resolution — validate, apply fallbacks, return None if unfixable`
+- Line 724: `def _write_invalid_log(`
+- Line 730: `"""Write the invalid-tracks exclusion log to disk, grouped by category."""`
+- Line 773: `path.write_text("\n".join(lines), encoding="utf-8")`
+- Line 852: `def _write_rb_m3u(playlist_path: Path, tracks: list, dry_run: bool) -> int:`
+- Line 853: `"""Write a single M3U8 playlist with Windows-absolute paths."""`
+- Line 857: `log.info("[DRY-RUN] Would write %s (%d tracks)", playlist_path.name, len(tracks))`
+- Line 862: `fh.write("#EXTM3U\n")`
+- Line 868: `fh.write(f"#EXTINF:{dur},{artist} - {title}\n")`
+- Line 869: `fh.write(f"{win}\n")`
+- Line 905: `n = _write_rb_m3u(genre_dir / f"{safe}.m3u8", gtracks, dry_run)`
+- Line 922: `n = _write_rb_m3u(energy_dir / f"{level}.m3u8", etracks, dry_run)`
+- Line 942: `n = _write_rb_m3u(combined_dir / f"{safe}.m3u8", ctracks, dry_run)`
+- Line 959: `n = _write_rb_m3u(key_dir / f"{kname}.m3u8", ktracks, dry_run)`
+- Line 981: `n = _write_rb_m3u(route_dir / f"{safe}.m3u8", rtracks, dry_run)`
+- Line 1011: `log.info("[DRY-RUN] Would write Rekordbox XML with %d tracks → %s",`
+- Line 1179: `fh.write(xml)`
+- Line 1258: `# --- Resolve: validate, apply fallbacks, filter ---`
+- Line 1280: `# --- Write invalid-tracks log ---`
+- Line 1282: `_write_invalid_log(invalid_tracks, invalid_log_path, total_scanned, dry_run)`
+
+## `modules/reporter.py`
+- Line 35: `Write a full report for this pipeline run. Returns the report path.`
+- Line 95: `w("  ACTION: Check /music/duplicates/ and delete files you don't want.")`
+- Line 106: `w("  ACTION: Tag these manually in kid3-cli or beets, then re-run pipeline.")`
+- Line 136: `outpath.write_text(report_text, encoding="utf-8")`
+- Line 143: `Write (overwrite) a human-friendly README.md summarising the library state.`
+- Line 250: `w(f"- **{len(dupes)} duplicate(s)** in `{config.DUPLICATES}/` — review and delete unwanted copies")`
+- Line 282: `outpath.write_text("\n".join(lines), encoding="utf-8")`
+
+## `modules/run_logger.py`
+- Line 12: `success    — changes were applied / file was renamed`
+- Line 43: `# filename-normalize only — after a successful rename:`
+- Line 44: `proc.rename_path(old_path, new_path)`
+- Line 115: `"""Delete all processed-state records for a stage (implements --reset-stage)."""`
+- Line 122: `def rename_path(old_path: Path, new_path: Path) -> None:`
+- Line 124: `Update all processed-state records when a file is renamed.`
+- Line 125: `Call this after every successful rename in filename-normalize so that`
+- Line 130: `db.rename_processed_path(_norm(old_path), _norm(new_path))`
+
+## `modules/sanitizer.py`
+- Line 28: `# Fields processed by the sanitizer (maps our key → mutagen easy tag name)`
+- Line 29: `# organization = TPUB (publisher/label) in ID3; also cleaned to catch URL watermarks`
+- Line 34: `# Each entry is either a compiled regex or (regex, replacement) tuple.`
+- Line 38: `# URL-like strings where :// has been replaced with underscores — e.g.`
+- Line 186: `for pattern, replacement in _PROMO_PHRASES:`
+- Line 187: `result = pattern.sub(replacement, result)`
+- Line 243: `"""Read sanitizable tag fields from a file using mutagen easy tags."""`
+- Line 245: `from mutagen import File as MFile`
+- Line 263: `def _write_tags(path, fields: Dict[str, str], dry_run: bool) -> bool:`
+- Line 264: `"""Write sanitized fields back to the file using mutagen easy tags."""`
+- Line 268: `from mutagen import File as MFile`
+- Line 277: `# Explicit empty means the label was junk — delete the tag`
+- Line 284: `audio.save()`
+- Line 287: `log.warning("Could not write sanitized tags to %s: %s", path, exc)`
+- Line 322: `# Write back changed fields to the file.`
+- Line 325: `write_fields = {k: v for k, v in sanitized.items() if v}`
+- Line 330: `write_fields['organization'] = ''`
+- Line 331: `_write_tags(path, write_fields, dry_run)`
+
+## `modules/set_builder.py`
+- Line 348: `return pool[0]  # first track — no transition constraints apply`
+- Line 584: `def _write_m3u(tracks: List[SetTrack], path: Path, dry_run: bool) -> None:`
+- Line 586: `log.info("[DRY-RUN] Would write M3U: %s (%d tracks)", path, len(tracks))`
+- Line 594: `fh.write("#EXTM3U\n")`
+- Line 597: `fh.write(f"#EXTINF:{dur_i},{t.artist} - {t.title}\n")`
+- Line 598: `fh.write(f"#EXT-X-SET-PHASE:{t.phase}\n")`
+- Line 599: `fh.write(f"{t.filepath}\n")`
+- Line 603: `def _write_csv(tracks: List[SetTrack], path: Path, dry_run: bool) -> None:`
+- Line 613: `writer = csv.DictWriter(fh, fieldnames=fieldnames)`
+- Line 614: `writer.writeheader()`
+- Line 616: `writer.writerow({`
+- Line 670: `Build a set and write all outputs.`
+- Line 727: `_write_m3u(tracks, m3u_path, dry_run)`
+- Line 728: `_write_csv(tracks, csv_path, dry_run)`
+- Line 748: `db.save_set_playlist(name, db_tracks, cfg_json, total_sec)`
+- Line 749: `log.info("Set saved to DB: %s", name)`
+
+## `modules/tag_normalize.py`
+- Line 4: `Normalize ID3 tags on MP3 files for Rekordbox compatibility:`
+- Line 5: `• Convert ID3v2.4 → ID3v2.3  (Rekordbox reads v2.3 correctly on all platforms)`
+- Line 6: `• Remove ID3v1 block completely  (ID3v1 is 128 bytes at end-of-file; never needed)`
+- Line 11: `python pipeline.py tag-normalize --dry-run      # preview, no writes`
+- Line 12: `python pipeline.py tag-normalize                # apply to whole sorted library`
+- Line 16: `[ID3V23_NORMALIZED]   — file saved as ID3v2.3 (may combine with tags below)`
+- Line 17: `[ID3V24_DOWNGRADED]   — was ID3v2.4, converted to ID3v2.3`
+- Line 18: `[ID3V1_REMOVED]       — ID3v1 128-byte block stripped from end-of-file`
+- Line 21: `• Never rewrites a file unless something actually needs fixing`
+- Line 23: `• Preserve every frame that mutagen can carry across version conversion`
+- Line 24: `• v1=0 on save means mutagen will NOT write ID3v1 (existing block is gone)`
+- Line 44: `was_v24:    bool           # file had ID3v2.4 tags`
+- Line 45: `had_v1:     bool           # file had ID3v1 block`
+- Line 54: `def _has_id3v1(path: Path) -> bool:`
+- Line 56: `Return True if the file has an ID3v1 block.`
+- Line 58: `ID3v1 is exactly 128 bytes at end-of-file, starting with the ASCII`
+- Line 60: `32-byte footer can follow ID3v1, so we also check 160 bytes from the end.`
+- Line 81: `def _get_id3_version(path: Path) -> Optional[Tuple[int, int]]:`
+- Line 83: `Return (major, minor) of the ID3v2 header, e.g. (2, 3) or (2, 4).`
+- Line 84: `Returns None if the file has no ID3v2 tags or cannot be read.`
+- Line 87: `from mutagen.id3 import ID3`
+- Line 88: `tags = ID3(str(path))`
+- Line 100: `Inspect one MP3 and normalize its ID3 tags.`
+- Line 103: `1. Load ID3v2 tags with mutagen — detect version (2.3 vs 2.4).`
+- Line 104: `2. Check for ID3v1 block using raw file seek.`
+- Line 105: `3. If either condition is non-ideal: save with v2_version=3, v1=0.`
+- Line 106: `mutagen handles frame-level conversion automatically.`
+- Line 116: `from mutagen.id3 import ID3`
+- Line 117: `tags = ID3(str(path))`
+- Line 126: `had_v1  = _has_id3v1(path)`
+- Line 142: `# --- Apply: save as ID3v2.3, strip ID3v1 ---`
+- Line 144: `tags.save(str(path), v2_version=config.ID3_VERSION, v1=0)`
+- Line 175: `f"    ID3v2.4 → v2.3   : {len(v24_list)}\n"`
+- Line 176: `f"    ID3v1 to remove  : {len(v1_list)}\n"`
+- Line 178: `f"\nNo files modified. Run without --dry-run to apply.\n"`
+- Line 192: `tags.append("[ID3V24_DOWNGRADED]")`
+- Line 194: `tags.append("[ID3V1_REMOVED]")`
+- Line 195: `tags.append("[ID3V23_NORMALIZED]")`
+- Line 200: `print(f"Run without --dry-run to apply to {len(to_fix)} file(s).")`
+- Line 217: `dry_run: if True, detect but don't write`
+- Line 226: `mode = "DRY-RUN" if dry_run else "APPLY"`
+- Line 253: `action_tags.append("[ID3V24_DOWNGRADED]")`
+- Line 255: `log_action(f"ID3V24_DOWNGRADED: {path}")`
+- Line 259: `action_tags.append("[ID3V1_REMOVED]")`
+- Line 261: `log_action(f"ID3V1_REMOVED: {path}")`
+- Line 263: `action_tags.append("[ID3V23_NORMALIZED]")`
+- Line 265: `log_action(f"ID3V23_NORMALIZED: {path}")`
+
+## `modules/tagger.py`
+- Line 2: `Tag writer — writes the final metadata schema to audio files using mutagen.`
+- Line 4: `Always writes ID3v2.3 (Rekordbox's preferred version).`
+- Line 5: `Handles MP3 (ID3), FLAC (VorbisComment), and M4A (MP4 atoms).`
+- Line 31: `# Lazy imports — mutagen is required but may not be installed`
+- Line 34: `from mutagen.id3 import (`
+- Line 35: `ID3, ID3NoHeaderError, TBPM, TKEY, TCON, COMM, TXXX, TIT1,`
+- Line 38: `from mutagen.flac import FLAC`
+- Line 39: `from mutagen.mp4 import MP4`
+- Line 40: `_MUTAGEN_OK = True`
+- Line 42: `_MUTAGEN_OK = False`
+- Line 43: `log.error("mutagen not installed. Run: pip install mutagen")`
+- Line 53: `def _write_mp3(path: Path, row: dict, dry_run: bool) -> bool:`
+- Line 54: `"""Write ID3v2.3 tags to an MP3 file. Returns True on success."""`
+- Line 57: `audio = ID3(str(path))`
+- Line 58: `except ID3NoHeaderError:`
+- Line 59: `audio = ID3()`
+- Line 68: `# --- Core music tags (only write if non-empty and not already set) ---`
+- Line 78: `# --- BPM (always overwrite — we calculated it) ---`
+- Line 82: `# --- Key: write Camelot in TKEY (displayed verbatim in Rekordbox) ---`
+- Line 109: `# Save as ID3v2.3 — critical for Rekordbox compatibility`
+- Line 110: `audio.save(str(path), v2_version=3)`
+- Line 114: `log.error("Failed to write ID3 tags to %s: %s", path.name, exc)`
+- Line 118: `def _write_flac(path: Path, row: dict, dry_run: bool) -> bool:`
+- Line 119: `"""Write VorbisComment tags to a FLAC file."""`
+- Line 143: `audio.save()`
+- Line 146: `log.error("Failed to write FLAC tags to %s: %s", path.name, exc)`
+- Line 150: `def _write_m4a(path: Path, row: dict, dry_run: bool) -> bool:`
+- Line 151: `"""Write MP4/AAC atoms (M4A). Rekordbox reads these on import."""`
+- Line 168: `audio.save()`
+- Line 171: `log.error("Failed to write M4A tags to %s: %s", path.name, exc)`
+- Line 180: `Write final metadata tags to every file in `files`.`
+- Line 183: `if not _MUTAGEN_OK:`
+- Line 184: `log.error("Skipping tag writing — mutagen not available")`
+- Line 196: `log.warning("No DB record for %s — skipping tag write", path.name)`
+- Line 203: `ok = _write_mp3(path, row, dry_run)`
+- Line 205: `ok = _write_flac(path, row, dry_run)`
+- Line 207: `ok = _write_m4a(path, row, dry_run)`
+- Line 209: `log.debug("No tag writer for %s — skipping", path.suffix)`
+- Line 221: `db.mark_status(str(path), "error", "tag write failed")`
+- Line 222: `log_action(f"ERROR: tag write failed [{path.name}]")`
+
+## `modules/textlog.py`
+- Line 7: `Thread-safe: a module-level lock serialises writes from any number of workers`
+- Line 40: `so pipeline execution is never blocked by a log write failure.`
+- Line 50: `fh.write(entry)`
+- Line 52: `log.warning("textlog: could not write processing log: %s", exc)`
+- Line 56: `"""Write a visible separator line between runs — makes the log easy to scan."""`
+
+## `pipeline.py`
+- Line 17: `7. Tag writing (mutagen)`
+- Line 86: `# Also write to file`
+- Line 347: `# --- Step 7: Write tags ---`
+- Line 364: `# The toolkit will not generate or overwrite cues unless explicitly forced.`
+- Line 489: `file's 'organization' easy-tag (mutagen → TPUB for ID3, ORGANIZATION`
+- Line 492: `from mutagen import File as MFile`
+- Line 521: `enrich_store_from_tracks(), then overwrites labels.json / labels.csv /`
+- Line 615: `--apply     apply safe merges; uncertain cases go to report only`
+- Line 627: `do_apply = getattr(args, "apply", False)`
+- Line 629: `if do_apply:`
+- Line 630: `log_action("ARTIST-MERGE APPLY START")`
+- Line 631: `artist_merge.run_apply(sorted_root, report_dir)`
+- Line 632: `log_action("ARTIST-MERGE APPLY DONE")`
+- Line 652: `--apply     apply all recoverable renames/merges; review cases go to report only`
+- Line 664: `do_apply = getattr(args, "apply", False)`
+- Line 666: `if do_apply:`
+- Line 667: `log_action("FOLDER-CLEAN APPLY START")`
+- Line 668: `rc = artist_folder_clean.run_apply(sorted_root, report_dir)`
+- Line 669: `log_action("FOLDER-CLEAN APPLY DONE")`
+- Line 683: `Detect, normalize, and (optionally) write back label metadata.`
+- Line 686: `default / --dry-run   scan + report, no file writes`
+- Line 687: `--write-tags          scan + report + write high-confidence labels`
+- Line 694: `scan_tracks, write_label_tag, WRITE_THRESHOLD,`
+- Line 732: `do_write    = getattr(args, "write_tags", False) and not getattr(args, "dry_run", False)`
+- Line 737: `log.info("Confidence threshold : %.2f   write-back: %s   review-only: %s",`
+- Line 738: `threshold, do_write, review_only)`
+- Line 742: `results = scan_tracks(paths, write_threshold=threshold, alias_registry=alias_registry)`
+- Line 744: `# --- Write-back ---`
+- Line 746: `if do_write:`
+- Line 749: `if write_label_tag(Path(r.filepath), r.cleaned_label):`
+- Line 827: `do_apply = getattr(args, "apply", False)`
+- Line 828: `dry_run  = not do_apply`
+- Line 858: `Preview by default; use --apply to write stale status to the DB.`
+- Line 859: `Untracked files are always reported only (never auto-added or deleted).`
+- Line 865: `do_apply = getattr(args, "apply", False)`
+- Line 877: `print(f"\n=== orphan-scan {'APPLY' if do_apply else 'PREVIEW'} ===\n")`
+- Line 886: `if do_apply:`
+- Line 894: `print(f"\n  Run with --apply to mark {len(stale_rows)} row(s) as stale.")`
+- Line 940: `f"ORPHAN-SCAN {'APPLY' if do_apply else 'PREVIEW'}: "`
+- Line 959: `(no flag)     write all playlist files and rekordbox_library.xml`
+- Line 1024: `in the database.  Optionally writes .cues.json sidecars per track.`
+- Line 1027: `--dry-run   analyse and print cues, no DB writes or sidecars`
+- Line 1064: `# Apply track filter and limit to the candidate list up front so that`
+- Line 1223: `out_path = harmonic.write_suggestions_json(`
+- Line 1242: `those tracks only, and write results back to the DB and audio file tags.`
+- Line 1345: `optionally write cleaned values back.`
+- Line 1348: `--dry-run   scan + preview, no file writes (default when neither flag given)`
+- Line 1349: `(no flag)   scan + apply all changes`
+- Line 1380: `log_action(f"METADATA-CLEAN {'DRY-RUN' if dry_run else 'APPLY'}: {len(paths)} track(s)")`
+- Line 1398: `"""Print a brief terminal summary after applying metadata-clean."""`
+- Line 1416: `Scan the sorted library (or a custom path) for MP3 files with ID3v2.4 tags`
+- Line 1417: `or a trailing ID3v1 block, and normalise them to ID3v2.3 / no ID3v1.`
+- Line 1463: `Rename audio files to {artist} - {title} ({version}).ext using embedded tags.`
+- Line 1464: `Preview by default; use --apply to commit renames.`
+- Line 1478: `apply=getattr(args, "apply", False),`
+- Line 1488: `print(f"  Rename candidates        : {stats['candidates']}")`
+- Line 1489: `print(f"  Renamed                  : {stats['renamed']}")`
+- Line 1495: `print(f"  Collision renames        : {stats['collisions']}")`
+- Line 1498: `if not getattr(args, "apply", False) and stats["candidates"] > 0:`
+- Line 1499: `print(f"\n  Run with --apply to rename {stats['candidates']} file(s).")`
+- Line 1500: `if not getattr(args, "apply", False) and stats["artist_review_count"] > 0:`
+- Line 1501: `print(f"  Run with --move-artist-review --apply to quarantine {stats['artist_review_count']} review file(s).")`
+- Line 1512: `Preview by default; use --apply to commit moves.`
+- Line 1529: `apply=getattr(args, "apply", False),`
+- Line 1546: `if not getattr(args, "apply", False) and stats["candidates"] > 0:`
+- Line 1547: `print(f"\n  Run with --apply to flatten {stats['candidates']} file(s).")`
+- Line 1559: `print(f"  Collision renames        : {stats['collisions']}")`
+- Line 1561: `if not getattr(args, "apply", False) and stats["candidates"] > 0:`
+- Line 1562: `print(f"\n  Run with --apply to move {stats['candidates']} file(s).")`
+- Line 1574: `Rows are marked, never deleted, so you can always review what was pruned.`
+- Line 1587: `mode    = "DRY-RUN" if dry_run else "APPLY"`
+- Line 1598: `print( "  Run without --dry-run to apply.")`
+- Line 1601: `print( "  They are NOT deleted — query the DB to review them:")`
+- Line 1620: `Optional actions: --move-low-quality DIR, --write-tags.`
+- Line 1660: `write_tags     = getattr(args, "write_tags", False)`
+- Line 1664: `"audit-quality: path=%s  dry_run=%s  move_low=%s  write_tags=%s  "`
+- Line 1666: `scan_root, dry_run, move_low_dir or "off", write_tags,`
+- Line 1671: `f"path={scan_root}  move_low={move_low_dir or 'off'}  write_tags={write_tags}"`
+- Line 1681: `write_tags     = write_tags,`
+- Line 1718: `On success: original .m4a is moved to --archive (never deleted outright).`
+- Line 1756: `overwrite = getattr(args, "overwrite",             False)`
+- Line 1766: `"convert-audio: src=%s  dst=%s  archive=%s  workers=%d  overwrite=%s  "`
+- Line 1768: `src_path, dst_path, archive_path, workers, overwrite, tolerance, dry_run,`
+- Line 1780: `overwrite     = overwrite,`
+- Line 1851: `dest.write_text(content, encoding="utf-8")`
+- Line 1951: `"  python pipeline.py artist-folder-clean --apply   # fix recoverable folders\n\n"`
+- Line 1954: `"  python pipeline.py artist-merge --apply          # apply safe merges\n\n"`
+- Line 1961: `"  python pipeline.py metadata-clean                # apply changes to library\n\n"`
+- Line 1963: `"  python pipeline.py label-clean                   # scan + report, no writes\n"`
+- Line 1964: `"  python pipeline.py label-clean --write-tags      # write high-confidence labels\n"`
+- Line 1966: `"  python pipeline.py label-clean --confidence-threshold 0.75  # broader writes\n\n"`
+- Line 1974: `"  python pipeline.py playlists                        # write M3U + XML\n"`
+- Line 1978: `"  python pipeline.py cue-suggest --dry-run            # analyse, no writes\n"`
+- Line 1993: `"  python3 pipeline.py audit-quality --write-tags           # write QUALITY tag\n"`
+- Line 2047: `"Override the music root directory. Replaces DJ_MUSIC_ROOT / config defaults. "`
+- Line 2104: `"  camelot_prefix  e.g. '1A - Afrikan Roots'         → rename/merge\n"`
+- Line 2109: `"  rename  — cleaned name is valid, target folder does not exist\n"`
+- Line 2114: `"  python pipeline.py artist-folder-clean --apply\n"`
+- Line 2122: `"--apply", action="store_true",`
+- Line 2124: `"Apply all recoverable renames and merges. "`
+- Line 2143: `help="Detect, normalize, and optionally write back label metadata (Phase 1: local only)",`
+- Line 2153: `"Write-back (--write-tags) only applies when confidence >= threshold (default 0.85).\n"`
+- Line 2162: `"--write-tags", action="store_true",`
+- Line 2164: `f"Write high-confidence labels (>= {config.LABEL_CLEAN_THRESHOLD}) "`
+- Line 2175: `help=f"Minimum confidence for write-back. Default: {config.LABEL_CLEAN_THRESHOLD}",`
+- Line 2206: `"automatically with --apply.  Uncertain merges (primary artist differs)\n"`
+- Line 2210: `"  python pipeline.py artist-merge --apply     # apply safe merges\n"`
+- Line 2218: `"--apply", action="store_true",`
+- Line 2219: `help="Apply safe merges. Uncertain merges go to the review report.",`
+- Line 2239: `"Scan every processed track for junk metadata and optionally write\n"`
+- Line 2255: `"  python pipeline.py metadata-clean --dry-run   # preview, no writes\n"`
+- Line 2256: `"  python pipeline.py metadata-clean             # apply changes\n"`
+- Line 2278: `help="Standardize MP3 ID3 tags for Rekordbox (ID3v2.4→v2.3, remove ID3v1)",`
+- Line 2281: `"Scan MP3 files and normalize their ID3 tag format for Rekordbox compatibility.\n\n"`
+- Line 2283: `"  ID3v2.4 → ID3v2.3  — Rekordbox reads v2.3 correctly on all platforms\n"`
+- Line 2284: `"  ID3v1 removed      — 128-byte end-of-file block, never needed\n\n"`
+- Line 2286: `"  [ID3V24_DOWNGRADED]   — was ID3v2.4, converted to v2.3\n"`
+- Line 2287: `"  [ID3V1_REMOVED]       — ID3v1 block stripped\n"`
+- Line 2288: `"  [ID3V23_NORMALIZED]   — file saved as ID3v2.3\n\n"`
+- Line 2312: `help="Rename audio files to {artist} - {title} ({version}).ext using embedded tags",`
+- Line 2315: `"Rename audio files using trusted embedded tags.\n\n"`
+- Line 2324: `"  Preview by default — no files renamed without --apply.\n"`
+- Line 2325: `"  No overwrite — collisions get a safe suffix: ' (1)', ' (2)', ...\n"`
+- Line 2330: `"  python3 pipeline.py filename-normalize --input ~/Music/inbox --apply\n"`
+- Line 2338: `"--apply", action="store_true",`
+- Line 2339: `help="Commit renames. Without this flag, preview only.",`
+- Line 2359: `help="Move unsafe-artist files to .BIN/ARTIST_REVIEW/ (requires --apply).",`
+- Line 2378: `"  Preview by default — no files moved without --apply.\n"`
+- Line 2379: `"  No overwrite — collisions get a safe suffix: ' (1)', ' (2)', ...\n"`
+- Line 2384: `"  python3 pipeline.py library-organize --input /mnt/music_ssd/KKDJ/sorted --apply\n"`
+- Line 2392: `"--apply", action="store_true",`
+- Line 2393: `help="Commit moves. Without this flag, preview only.",`
+- Line 2423: `".BIN/CHKARTISTNAMES/ for manual review. Requires --apply to execute. "`
+- Line 2424: `"Without --apply, shows WOULD MOVE TO CHKARTISTNAMES preview."`
+- Line 2436: `"Stale rows are marked status='stale' — they are NEVER deleted.\n"`
+- Line 2497: `"Relative folder structure from --src is preserved. Files are MOVED, never deleted."`
+- Line 2505: `"--overwrite", action="store_true",`
+- Line 2518: `help="Probe sources and show what would be converted — write no files",`
+- Line 2536: `"them to a quarantine folder (never deleted outright).\n\n"`
+- Line 2548: `"  • Files are MOVED, never deleted — always recoverable\n"`
+- Line 2553: `"  python pipeline.py dedupe --apply           # quarantine duplicates\n"`
+- Line 2555: `"  python pipeline.py dedupe --apply --quarantine-dir /music/review/\n"`
+- Line 2559: `"--apply", action="store_true",`
+- Line 2591: `"Preview by default. Use --apply to mark stale rows in the DB.\n"`
+- Line 2592: `"Untracked files are always reported only — never auto-deleted.\n\n"`
+- Line 2595: `"  python pipeline.py orphan-scan --apply         # write stale status\n"`
+- Line 2600: `"--apply", action="store_true",`
+- Line 2736: `"the toolkit XML will overwrite MIK cue data on next Rekordbox import. "`
+- Line 2801: `help="Detect BPM and key for tracks missing that data — writes to DB and audio tags",`
+- Line 2806: `"and write the results back to the database and audio file tags.\n\n"`
+- Line 2807: `"Safe to run multiple times — will not overwrite valid existing values.\n\n"`
+- Line 2821: `help="Run detection but do not write to DB or audio file tags",`
+- Line 2888: `"  --write-tags             Write QUALITY tag to each file\n\n"`
+- Line 2890: `"  MP3  : TXXX:QUALITY  (ID3v2.3 custom text frame)\n"`
+- Line 2899: `"  python3 pipeline.py audit-quality --write-tags\n"`
+- Line 2929: `"--write-tags", action="store_true",`
+- Line 2930: `dest="write_tags",`
+- Line 2932: `"Write a QUALITY tag (LOSSLESS/HIGH/MEDIUM/LOW) to each file. "`
+- Line 2994: `help="Analyse and print cue points — make no DB writes",`
+- Line 3021: `"Comma-separated list of master output formats to write: json, csv. "`
+- Line 3071: `help="Preview the set — write no files",`
+- Line 3216: `help="Write suggestions to a JSON file in HARMONIC_SUGGEST_OUTPUT_DIR",`
+- Line 3220: `help="Print suggestions only — do not write JSON output",`
+- Line 3248: `help="Preview generated content to stdout — write no files",`
+- Line 3253: `"Write generated files to this directory instead of the project root. "`
+- Line 3273: `"and pre-commit hooks).\n\n"`
+- Line 3301: `"  • Preview is the default — no files modified without --apply\n"`
+- Line 3309: `"  python3 pipeline.py metadata-sanitize --input /mnt/music_ssd/inbox --apply\n"`
+- Line 3310: `"  python3 pipeline.py metadata-sanitize --input /mnt/music_ssd/inbox --apply --output-json sanitize_log.json\n"`
+- Line 3322: `"--apply", action="store_true",`
+- Line 3323: `help="Write changes to audio file tags. Without this flag, changes are only previewed.",`
+- Line 3327: `help="Save full change log to this JSON file.",`
+- Line 3358: `"  • Preview is the default — no files modified without --apply\n"`
+- Line 3367: `"  python3 pipeline.py metadata-sanitize-rollback --jsonl sanitize_log.json --only-suspicious --apply\n"`
+- Line 3383: `"--apply", action="store_true",`
+- Line 3384: `help="Write reverted titles to audio file tags.",`
+- Line 3409: `"  • Preview is the default — no files modified without --apply\n"`
+- Line 3410: `"  • Only writes the title tag — no filename renames\n\n"`
+- Line 3414: `"  python3 pipeline.py title-number-recover --input /mnt/music_ssd/KKDJ --apply\n"`
+- Line 3422: `"--apply", action="store_true",`
+- Line 3423: `help="Write recovered titles to audio file tags. Without this flag, changes are only previewed.",`
+- Line 3447: `"  HIGH (≥ 0.85) both sides are known artists → eligible with --apply\n"`
+- Line 3451: `"Quarantine   : .BIN/CHKARTISTNAMES/ (with --move-artist-review --apply)\n\n"`
+- Line 3456: `"  python3 pipeline.py artist-repair --input /mnt/music_ssd/KKDJ/sorted --apply\n"`
+- Line 3458: `"--apply --move-artist-review\n"`
+- Line 3466: `"--apply", action="store_true",`
+- Line 3468: `"Write HIGH-confidence repairs to artist tags. "`
+- Line 3476: `"Requires --apply to execute; preview shows WOULD MOVE."`
+- Line 3503: `help="Review, approve, reject, or apply queued artist repairs",`
+- Line 3512: `"  4. Use --apply-approved to write only approved repairs to audio file tags.\n\n"`
+- Line 3515: `"  • --apply-approved is the only flag that touches audio file tags.\n"`
+- Line 3523: `"  python3 pipeline.py artist-repair-review --apply-approved\n"`
+- Line 3524: `"  python3 pipeline.py artist-repair-review --approve 2 --apply-approved\n"`
+- Line 3540: `"--apply-approved", action="store_true", dest="apply_approved",`
+- Line 3541: `help="Write all approved (unapplied) repairs to audio file tags.",`
+- Line 3553: `"as a diff preview and only written when --apply is explicitly passed.\n\n"`
+- Line 3555: `"  • Preview is the default — no writes without --apply\n"`
+- Line 3556: `"  • Never rewrites the title field\n"`
+- Line 3564: `"  python3 pipeline.py artist-intelligence --input /mnt/music_ssd/inbox --apply\n"`
+- Line 3578: `help="Parse and show diffs — write no files",`
+- Line 3581: `"--apply", action="store_true",`
+- Line 3582: `help="Write high-confidence changes to audio file tags. Cannot be combined with --dry-run.",`
+- Line 3587: `help="Minimum confidence (0.0–1.0) required to apply a change. Default: 0.90",`
+- Line 3591: `help="Save the full diff preview to this JSON file.",`
+- Line 3619: `"and only written when --apply is explicitly passed.\n\n"`
+- Line 3621: `"  • Default mode is preview — no file changes without --apply\n"`
+- Line 3622: `"  • Only writes: artist, title (+ version), label\n"`
+- Line 3632: `"  python3 pipeline.py ai-normalize --input ~/Music/inbox --apply --min-confidence 0.85\n"`
+- Line 3663: `help="Run AI inference and show diffs — write no files",`
+- Line 3666: `"--apply", action="store_true",`
+- Line 3668: `"Write high-confidence changes to audio file tags. "`
+- Line 3677: `"Minimum model confidence (0.0–1.0) required to apply a change. "`
+- Line 3686: `"Save the full diff preview to this JSON file. "`
+- Line 3687: `"Useful for reviewing proposals before running --apply."`
+- Line 3701: `"Respects --apply: without it both steps preview only, no files are written."`
+- Line 3724: `"of high-quality examples, and write data/intelligence/fewshot_examples.jsonl.\n\n"`
+- Line 3751: `"  • Default mode is preview — no file changes without --apply\n"`
+- Line 3764: `"      --apply --min-confidence 0.80\n"`
+- Line 3775: `help="Run API lookups and show diffs — write no files",`
+- Line 3778: `"--apply", action="store_true",`
+- Line 3779: `help="Write high-confidence changes to audio file tags. Cannot combine with --dry-run.",`
+- Line 3790: `f"Minimum confidence (0.0–1.0) required to apply a change. "`
+- Line 3810: `help="Save full results to this JSON file for offline review",`
+- Line 3828: `"filename artifacts). Use --apply to write changes; default is preview. "`
+- Line 3830: `"--input ~/Music/inbox --clean-junk-only --apply"`
+- Line 3844: `"Use with --apply to combine enrichment writes with cleanup in one pass."`
+- Line 3868: `"apply or discard them without re-running the full enrichment.\n\n"`
+- Line 3871: `"  a / apply  — write proposed changes to the audio file, remove entry\n"`
+- Line 3873: `"  d / delete — alias for skip\n"`
+- Line 4016: `apply=getattr(args, "apply", False),`
+- Line 4052: `"No examples written. Run 'ai-normalize --apply' first to accumulate "`
+
+## `scripts/generate-docs.py`
+- Line 40: `"python3 pipeline.py metadata-sanitize --input ~/Music/inbox --apply"`
+- Line 48: `{"flag": "--apply",     "description": "Write changes to files. Without this flag, preview only."},`
+- Line 53: `"python3 pipeline.py metadata-sanitize --input ~/Music/inbox --apply",`
+- Line 56: `"# Preview (no writes)",`
+- Line 59: `"# Apply",`
+- Line 60: `"python3 pipeline.py metadata-sanitize --input ~/Music/inbox --apply",`
+- Line 68: `"--apply to write. BPM, key, and cues are never touched."`
+- Line 77: `"python3 pipeline.py ai-normalize --input ~/Music/inbox --pre-sanitize --apply"`
+- Line 85: `{"flag": "--apply",               "description": "Write accepted proposals to files."},`
+- Line 93: `"python3 pipeline.py ai-normalize --input ~/Music/inbox --apply",`
+- Line 94: `"python3 pipeline.py ai-normalize --input ~/Music/inbox --pre-sanitize --apply",`
+- Line 95: `"python3 pipeline.py ai-normalize --input ~/Music/inbox --min-confidence 0.80 --apply",`
+- Line 101: `"# Apply",`
+- Line 102: `"python3 pipeline.py ai-normalize --input ~/Music/inbox --pre-sanitize --apply",`
+- Line 119: `"python3 pipeline.py artist-intelligence --input ~/Music/inbox --apply"`
+- Line 124: `{"flag": "--apply",     "description": "Write normalized artist tags to files."},`
+- Line 129: `"python3 pipeline.py artist-intelligence --input ~/Music/inbox --apply",`
+- Line 132: `"python3 pipeline.py artist-intelligence --input ~/Music/inbox --apply",`
+- Line 139: `"with confidence scoring. Preview by default; --apply to write. "`
+- Line 144: `"Routes each result to APPLY, REVIEW, or SKIP based on confidence and safety rules",`
+- Line 145: `"Artist field is never proposed; version mismatches block auto-apply",`
+- Line 149: `"python3 pipeline.py metadata-enrich-online --input ~/Music/inbox --apply --move-ignored"`
+- Line 153: `"  APPLY   conf >= 0.80; all safety rules pass -> written with --apply\n"`
+- Line 161: `{"flag": "--apply",               "description": "Write APPLY-state changes to files."},`
+- Line 162: `{"flag": "--min-confidence 0.80", "description": "Minimum confidence to apply. Default: 0.80."},`
+- Line 168: `"python3 pipeline.py metadata-enrich-online --input ~/Music/inbox --apply",`
+- Line 169: `"python3 pipeline.py metadata-enrich-online --input ~/Music/inbox --apply --move-ignored",`
+- Line 176: `"# Apply (with IGNORED quarantine for unresolvable files)",`
+- Line 177: `"python3 pipeline.py metadata-enrich-online --input ~/Music/inbox --apply --move-ignored",`
+- Line 196: `"Actions: a=apply  s=skip  d=delete  n=next  q=quit"`
+- Line 221: `("APPLY",  "conf ≥ 0.80, all safety rules pass", "Written with `--apply`"),`
+- Line 232: `"Preview by default on every command — nothing writes without `--apply`",`
+- Line 310: `anchor = cmd["name"].lower().replace(" ", "-")`
+- Line 345: `"Preview by default — nothing writes without `--apply`.",`
+- Line 618: `Preview by default. Nothing writes without <code>--apply</code>.`
+- Line 698: `Replace content between README_START / README_END markers.`
+- Line 762: `help="Print generated content to stdout — write no files.",`
+- Line 766: `help="Write output here instead of the project root (default: parent of scripts/).",`
+- Line 815: `dest.write_text(content, encoding="utf-8")`
+
+## `scripts/rollback.py`
+- Line 23: `- Rollback NEVER deletes files. It only overwrites tags or moves files.`
+- Line 45: `Write original_meta tag values back to the file using mutagen easy tags.`
+- Line 49: `from mutagen import File as MFile`
+- Line 52: `print(f"  [!] Cannot open {filepath} with mutagen")`
+- Line 67: `audio.save()`
+- Line 80: `Does not overwrite if original_path already exists.`
+- Line 99: `shutil.move(str(src), str(dest))`
+- Line 116: `created = row["created_at"][:19].replace("T", " ")`
+
+## `tests/create_dedupe_test_fixture.py`
+- Line 115: `shutil.copy2(src, dst)`
+- Line 348: `print("  # 2. Apply quarantine to a scoped destination:")`
+- Line 349: `print(f"  python pipeline.py dedupe --path {INBOX} --apply \\")`
+
+## `tests/create_sanitize_fixtures.py`
+- Line 8: `mutagen  — writes metadata (already a project dependency)`
+- Line 26: `#   _id3_tsrc            — string; written as raw TSRC frame (AIFF)`
+- Line 134: `# TC-21: AIFF with ISRC in ID3 TSRC frame — handled separately below`
+- Line 135: `("tc21_aiff_isrc_id3.aiff", {`
+- Line 138: `"_id3_tsrc": "GBDOM1000001X",  # invalid — letter at position 12`
+- Line 182: `# Tag writers`
+- Line 188: `def _write_easy_tags(path: Path, tags: dict) -> None:`
+- Line 189: `from mutagen import File as MFile`
+- Line 192: `raise RuntimeError(f"mutagen could not open {path}")`
+- Line 204: `audio.save()`
+- Line 207: `def _write_mp3_isrc(path: Path, value: str) -> None:`
+- Line 208: `"""MP3: write ISRC as TSRC frame (not exposed via easy mode)."""`
+- Line 209: `from mutagen.id3 import ID3, TSRC`
+- Line 210: `id3 = ID3(str(path))`
+- Line 211: `id3["TSRC"] = TSRC(encoding=3, text=[value])`
+- Line 212: `id3.save(str(path))`
+- Line 215: `def _write_flac_multi_artist(path: Path, artists: list) -> None:`
+- Line 216: `"""FLAC: write artist as a genuine multi-value Vorbis comment list."""`
+- Line 217: `from mutagen.flac import FLAC`
+- Line 222: `audio.save()`
+- Line 225: `def _write_aiff_id3_tsrc(path: Path, value: str) -> None:`
+- Line 226: `"""AIFF: write ISRC as a TSRC frame inside the AIFF container via mutagen.aiff.AIFF."""`
+- Line 227: `from mutagen.aiff import AIFF`
+- Line 228: `from mutagen.id3 import TSRC`
+- Line 233: `audio.save()`
+- Line 254: `_write_easy_tags(path, easy_tags)`
+- Line 258: `_write_mp3_isrc(path, easy_tags["isrc"])`
+- Line 262: `_write_flac_multi_artist(path, tags["_multi_value_artist"])`
+- Line 264: `# AIFF TSRC via ID3`
+- Line 265: `if "_id3_tsrc" in tags:`
+- Line 266: `_write_aiff_id3_tsrc(path, tags["_id3_tsrc"])`
+
+## `tests/test_artist_intelligence.py`
+- Line 187: `store_path.write_text(`
+- Line 234: `store_path.write_text("{}", encoding="utf-8")`
+
+## `tests/test_artist_repair.py`
+- Line 33: `_save_queue,`
+- Line 251: `assert c.apply_blocked is True`
+- Line 259: `assert c.apply_blocked is True`
+- Line 267: `assert c.apply_blocked is True`
+- Line 275: `assert c.apply_blocked is False`
+- Line 282: `assert candidates[0].apply_blocked is False`
+- Line 363: `assert c[0].apply_blocked is True`
+- Line 369: `assert c[0].apply_blocked is True`
+- Line 375: `assert c[0].apply_blocked is False`
+- Line 435: `def test_roundtrip_save_load(self, tmp_path):`
+- Line 438: `_save_queue(q, entries)`
+- Line 455: `_save_queue(q, entries)`
+- Line 465: `_save_queue(q, entries)`
+- Line 539: `# apply-approved logic`
+- Line 542: `class TestApplyApprovedLogic:`
+- Line 543: `"""Tests for the eligibility filtering logic used by --apply-approved."""`
+- Line 566: `def test_apply_marks_entry_applied(self):`
+- Line 568: `# Simulate successful write: mark applied`
+- Line 573: `# The apply loop skips entries where current tag ≠ original`
+
+## `tests/test_audit_quality.py`
+- Line 24: `_write_quality_tag,`
+- Line 149: `self.track.write_bytes(b"fake mp3 data")`
+- Line 184: `outside.write_bytes(b"data")`
+- Line 213: `p.write_bytes(b"fake audio data")`
+- Line 239: `report_formats=[],  # no file writes`
+- Line 303: `def test_write_tags_off_by_default(self, mock_probe):`
+- Line 304: `"""With write_tags=False (default), no tag-writing should occur."""`
+- Line 306: `with patch("modules.audit_quality._write_quality_tag") as mock_tag:`
+- Line 310: `write_tags=False,`
+- Line 317: `def test_write_tags_called_when_enabled(self, mock_probe):`
+- Line 318: `"""With write_tags=True, _write_quality_tag is called for known-tier files."""`
+- Line 320: `with patch("modules.audit_quality._write_quality_tag", return_value=True) as mock_tag:`
+- Line 324: `write_tags=True,`
+
+## `tools/static_analysis/generate_repo_inventory.py`
+- Line 27: `def write(name: str, content: str):`
+- Line 29: `(OUT / name).write_text(content, encoding="utf-8")`
+- Line 40: `write("repo_file_index.md", "\n".join(lines) + "\n")`
+- Line 78: `write("python_symbol_index.md", "\n".join(lines) + "\n")`
+- Line 115: `write("cli_command_index.md", "\n".join(lines) + "\n")`
+- Line 119: `"shutil.move",`
+- Line 120: `"shutil.copy",`
+- Line 121: `"os.remove",`
+- Line 122: `"unlink",`
+- Line 123: `"rename",`
+- Line 124: `"replace",`
+- Line 125: `"save",`
+- Line 126: `"delete",`
+- Line 127: `"write",`
+- Line 128: `"mutagen",`
+- Line 129: `"easyid3",`
+- Line 130: `"id3",`
+- Line 131: `"--apply",`
+- Line 132: `"apply",`
+- Line 133: `"commit",`
+- Line 156: `write("dangerous_operations_index.md", "\n".join(lines) + "\n")`
+- Line 189: `write("logging_index.md", "\n".join(lines) + "\n")`
+- Line 198: `"DELETE FROM",`
+- Line 221: `write("schema_sql_index.md", "\n".join(lines) + "\n")`
+- Line 249: `write("sqlite_schema_dump.md", "\n".join(lines) + "\n")`
+- Line 266: `"apply",`
+- Line 291: `write("safety_logic_index.md", "\n".join(lines) + "\n")`
+- Line 312: `write("STATIC_ANALYSIS_SUMMARY.md", "\n".join(lines) + "\n")`
+
+## `utils/llm_client.py`
+- Line 22: `from utils.prompt_logger import save as _log`
+- Line 48: `Automatically saves a log file via utils.prompt_logger for every call,`
+
+## `utils/prompt_logger.py`
+- Line 4: `Every call to save() writes a new file to ./last-prompts/ at the project root.`
+- Line 34: `def save(`
+- Line 42: `Write a prompt/response log file to ./last-prompts/.`
+- Line 109: `log_path.write_text("\n".join(sections) + "\n", encoding="utf-8")`
+- Line 110: `print(f"[prompt_logger] saved → {log_path}")`
+- Line 143: `f.write(_json_module.dumps(entry, ensure_ascii=False) + "\n")`
+- Line 234: `f.write("\n")`
+- Line 254: `"""Write a rich per-file event directly to the JSONL file."""`
+- Line 264: `f.write(_json_module.dumps(entry, ensure_ascii=False) + "\n")`
+- Line 275: `Flushes pages, writes _summary.json, detaches handlers, prints paths.`
+- Line 342: `f.write("\n")`
+
