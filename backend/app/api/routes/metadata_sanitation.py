@@ -92,8 +92,10 @@ class MetadataSanitationGenerateResponse(BaseModel):
     generated: bool
     replaced: bool
     no_op_reason: Optional[str] = None
+    recommended_route: Optional[str] = None
     queue_path: str
     proposal: Optional[dict[str, Any]] = None
+    track: Optional[dict[str, Any]] = None
 
 
 @router.get("/metadata-sanitation/queue", response_model=MetadataSanitationQueueResponse)

@@ -23,6 +23,7 @@ from .api.routes import health as health_router
 from .api.routes import insights as insights_router
 from .api.routes import jobs as jobs_router
 from .api.routes import library as library_router
+from .api.routes import manual_metadata as manual_metadata_router
 from .api.routes import metadata_repair as metadata_repair_router
 from .api.routes import metadata_sanitation as metadata_sanitation_router
 from .api.routes import playlists as playlists_router
@@ -119,6 +120,7 @@ app.include_router(tracks_router.router,     prefix=API_PREFIX)
 app.include_router(insights_router.router,    prefix=API_PREFIX)
 app.include_router(analysis_router.router,   prefix=API_PREFIX)
 app.include_router(playlists_router.router,  prefix=API_PREFIX)
+app.include_router(manual_metadata_router.router, prefix=API_PREFIX)
 app.include_router(metadata_repair_router.router, prefix=API_PREFIX)
 app.include_router(metadata_sanitation_router.router, prefix=API_PREFIX)
 app.include_router(reconciliation_router.router, prefix=API_PREFIX)

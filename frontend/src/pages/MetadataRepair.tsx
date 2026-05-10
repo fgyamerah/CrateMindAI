@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Check, Clock3, Loader2, Pencil, RefreshCw, ShieldAlert, X, Wrench } from 'lucide-react'
+import { Check, Clock3, Edit3, Loader2, Pencil, RefreshCw, ShieldAlert, X, Wrench } from 'lucide-react'
 import { ApiError } from '../api/client'
+import ManualMetadataEditor from '../components/ManualMetadataEditor'
+import type { ManualMetadataApplyResponse } from '../api/manualMetadata'
 import {
   approveMetadataRepairField,
   approveMetadataRepair,
@@ -43,6 +45,14 @@ interface ConfirmAction {
   kind: BulkAction
   label: string
   ids: number[]
+}
+
+interface ManualEditTarget {
+  track_id: number
+  artist: string | null
+  title: string | null
+  filename?: string | null
+  filepath?: string | null
 }
 
 const STORAGE_KEY = 'metadata-repair.ui.v2'
@@ -426,6 +436,7 @@ export default function MetadataRepair() {
   const [applyBusy, setApplyBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(noticeFromRoute)
+  const [manualEditTarget, setManualEditTarget] = useState<ManualEditTarget | null>(null)
   const [scrollTop, setScrollTop] = useState(0)
   const [viewportHeight, setViewportHeight] = useState(560)
   const scrollRef = useRef<HTMLDivElement | null>(null)
@@ -842,6 +853,12 @@ export default function MetadataRepair() {
     }
   }
 
+  async function handleManualMetadataApplied(result: ManualMetadataApplyResponse) {
+    setSuccess(`Applied manual metadata edit: ${result.applied_fields.join(', ') || 'no changes'}`)
+    setApplyPreview(null)
+    await loadQueue()
+  }
+
   function toggleSelectAllVisible() {
     setSelectedIds((current) => {
       const currentSet = new Set(current)
@@ -1154,6 +1171,21 @@ export default function MetadataRepair() {
             {selected ? (
               <div className="metadata-repair-detail">
                 <div className="metadata-repair-inspector-actions">
+                  <button
+                    className="btn btn--ghost btn--sm"
+                    type="button"
+                    disabled={rowBusyId === selected.track_id || bulkBusy || applyBusy}
+                    onClick={() => setManualEditTarget({
+                      track_id: selected.track_id,
+                      artist: selected.current.artist,
+                      title: selected.current.title,
+                      filename: selected.filename,
+                      filepath: selected.filepath,
+                    })}
+                  >
+                    <Edit3 size={13} />
+                    Manual Edit
+                  </button>
                   <ReviewButton
                     label="Approve selected"
                     icon={<Check size={14} />}
@@ -1267,6 +1299,13 @@ export default function MetadataRepair() {
             </div>
           </div>
         </div>
+      )}
+      {manualEditTarget && (
+        <ManualMetadataEditor
+          target={manualEditTarget}
+          onClose={() => setManualEditTarget(null)}
+          onApplied={handleManualMetadataApplied}
+        />
       )}
     </div>
   )

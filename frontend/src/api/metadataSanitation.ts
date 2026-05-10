@@ -19,8 +19,16 @@ export interface MetadataSanitationGenerateResponse {
   generated: boolean
   replaced: boolean
   no_op_reason: string | null
+  recommended_route?: string | null
   queue_path: string
   proposal: Record<string, unknown> | null
+  track?: {
+    artist: string | null
+    title: string | null
+    filepath: string
+    filename: string
+    issues: string[]
+  } | null
 }
 
 function queryString(filters: MetadataSanitationQueueFilters): string {

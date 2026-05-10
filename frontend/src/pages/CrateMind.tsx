@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Check,
   Database,
+  Edit3,
   Folder,
   Download,
   ListFilter,
@@ -28,8 +29,10 @@ import {
 } from '../api/insights'
 import { fetchLibraryFolders, fetchLibraryOverview } from '../api/library'
 import type { LibraryFolderStat, LibraryOverview } from '../api/library'
+import ManualMetadataEditor from '../components/ManualMetadataEditor'
 import { generateMetadataRepairTrack } from '../api/metadataRepair'
 import { generateMetadataSanitationTrack } from '../api/metadataSanitation'
+import type { ManualMetadataApplyResponse } from '../api/manualMetadata'
 import { fetchTrack, fetchTrackIssues, fetchTrackPage } from '../api/tracks'
 import type {
   ParseConfidence,
@@ -365,10 +368,12 @@ function Inspector({
   track,
   loading,
   queueItem,
+  onManualEdit,
 }: {
   track: TrackDetail | null
   loading: boolean
   queueItem: EnrichmentQueueItem | null
+  onManualEdit?: (track: TrackDetail) => void
 }) {
   if (loading && !queueItem) {
     return <aside className="crate-inspector"><p className="muted">Loading track detail...</p></aside>
@@ -399,6 +404,12 @@ function Inspector({
           <span className="crate-kicker">Inspector</span>
           <strong>{track.artist || '(no artist)'}</strong>
           <span>{track.title || track.filename}</span>
+          {onManualEdit && (
+            <button className="btn btn--ghost btn--sm crate-inspector-action" type="button" onClick={() => onManualEdit(track)}>
+              <Edit3 size={13} />
+              Manual Edit
+            </button>
+          )}
         </div>
       )}
 
@@ -529,6 +540,7 @@ export default function CrateMind() {
   const [applyBusy, setApplyBusy] = useState(false)
   const [applyError, setApplyError] = useState<string | null>(null)
   const [applyPreview, setApplyPreview] = useState<ApplyApprovedResponse | null>(null)
+  const [manualEditTrack, setManualEditTrack] = useState<TrackDetail | null>(null)
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -662,6 +674,18 @@ export default function CrateMind() {
   function refresh() {
     loadMain()
     loadQueue()
+  }
+
+  async function handleManualMetadataApplied(result: ManualMetadataApplyResponse) {
+    setTrackWarning(`Applied manual metadata edit: ${result.applied_fields.join(', ') || 'no changes'}`)
+    await loadMain()
+    if (activeUi.selectedId) {
+      try {
+        setSelectedDetail(await fetchTrack(activeUi.selectedId))
+      } catch {
+        setSelectedDetail(null)
+      }
+    }
   }
 
   function openIssueRoute(trackId: number, route: IssueRoute, notice?: string) {
@@ -1366,8 +1390,26 @@ export default function CrateMind() {
           </section>
         </main>
 
-        <Inspector track={selectedDetail} loading={detailLoading} queueItem={selectedQueueItem} />
+        <Inspector
+          track={selectedDetail}
+          loading={detailLoading}
+          queueItem={selectedQueueItem}
+          onManualEdit={setManualEditTrack}
+        />
       </div>
+      {manualEditTrack && (
+        <ManualMetadataEditor
+          target={{
+            track_id: manualEditTrack.id,
+            artist: manualEditTrack.artist,
+            title: manualEditTrack.title,
+            filename: manualEditTrack.filename,
+            filepath: manualEditTrack.filesystem_path || manualEditTrack.filepath,
+          }}
+          onClose={() => setManualEditTrack(null)}
+          onApplied={handleManualMetadataApplied}
+        />
+      )}
     </div>
   )
 }

@@ -802,6 +802,89 @@ def test_metadata_sanitation_endpoints_edit_and_apply(client):
     assert all(item["track_id"] != track_id for item in rescan_queue.json()["items"])
 
 
+def test_metadata_sanitation_generate_noop_includes_track_snapshot(client):
+    test_client, _root = client
+
+    response = test_client.post("/api/metadata-sanitation/generate/1")
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload["generated"] is False
+    assert payload["no_op_reason"]
+    assert payload["recommended_route"] == "metadata-sanitation"
+    assert payload["track"]["artist"] == "Alpha"
+    assert payload["track"]["filename"] == "alpha.mp3"
+    assert isinstance(payload["track"]["issues"], list)
+
+
+def test_manual_metadata_preview_validation_and_normalization(client):
+    test_client, _root = client
+
+    response = test_client.post(
+        "/api/manual-metadata/preview",
+        json={"track_id": 1, "artist": "  Alpha   Prime  ", "title": " First  Track "},
+    )
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload["current"] == {"artist": "Alpha", "title": "First"}
+    assert payload["proposed"] == {"artist": "Alpha Prime", "title": "First Track"}
+    assert payload["changed_fields"] == ["artist", "title"]
+    assert payload["no_op"] is False
+    assert "artist whitespace normalized" in payload["validation_warnings"]
+    assert "title whitespace normalized" in payload["validation_warnings"]
+
+    empty = test_client.post(
+        "/api/manual-metadata/preview",
+        json={"track_id": 1, "artist": " ", "title": "First"},
+    )
+    assert empty.status_code == 400
+
+
+def test_manual_metadata_apply_changed_fields_noop_and_audit(client):
+    test_client, root = client
+
+    response = test_client.post(
+        "/api/manual-metadata/apply",
+        json={"track_id": 1, "artist": "Alpha", "title": "First Repaired"},
+    )
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload["applied_fields"] == ["title"]
+    assert payload["before"] == {"artist": "Alpha", "title": "First"}
+    assert payload["after"] == {"artist": "Alpha", "title": "First Repaired"}
+    assert payload["audit_path"]
+
+    conn = sqlite3.connect(root / "logs" / "processed.db")
+    conn.row_factory = sqlite3.Row
+    row = conn.execute("SELECT * FROM tracks WHERE id = 1").fetchone()
+    conn.close()
+    assert row["artist"] == "Alpha"
+    assert row["title"] == "First Repaired"
+    assert row["bpm"] == 120.0
+    assert row["key_musical"] == "8A"
+
+    audit_path = Path(payload["audit_path"])
+    audit_entries = [json.loads(line) for line in audit_path.read_text(encoding="utf-8").splitlines()]
+    assert audit_entries[-1]["track_id"] == 1
+    assert audit_entries[-1]["changed_fields"] == ["title"]
+    assert audit_entries[-1]["before"]["title"] == "First"
+    assert audit_entries[-1]["after"]["title"] == "First Repaired"
+
+    before_audit = audit_path.read_text(encoding="utf-8")
+    no_op = test_client.post(
+        "/api/manual-metadata/apply",
+        json={"track_id": 1, "artist": "Alpha", "title": "First Repaired"},
+    )
+    no_op_payload = no_op.json()
+    assert no_op.status_code == 200
+    assert no_op_payload["no_op"] is True
+    assert no_op_payload["applied_fields"] == []
+    assert no_op_payload["audit_path"] is None
+    assert audit_path.read_text(encoding="utf-8") == before_audit
+
+
 def test_latest_audit_endpoint_returns_latest_report(client):
     test_client, root = client
 

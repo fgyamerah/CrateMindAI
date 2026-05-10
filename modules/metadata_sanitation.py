@@ -478,11 +478,34 @@ def _track_row(db_path: Path, track_id: int) -> sqlite3.Row | None:
         ).fetchone()
 
 
+def _track_snapshot(row: sqlite3.Row | None) -> dict[str, Any] | None:
+    if row is None:
+        return None
+    issues = []
+    current_artist = _clean_text(row["artist"])
+    current_title = _clean_text(row["title"])
+    parse_confidence = _clean_text(row["parse_confidence"])
+    if not current_artist:
+        issues.append("missing_artist")
+    if not current_title:
+        issues.append("missing_title")
+    if parse_confidence.upper() in {"MEDIUM", "LOW"}:
+        issues.append("weak_filename_parse")
+    return {
+        "artist": row["artist"],
+        "title": row["title"],
+        "filepath": row["filepath"],
+        "filename": row["filename"],
+        "issues": issues,
+    }
+
+
 def generate_track_proposal(root: str | Path, track_id: int) -> dict[str, Any]:
     p = paths_for_root(root)
     row = _track_row(p.db_path, track_id)
     if row is None:
         raise LookupError(f"track {track_id} not found in pipeline database")
+    snapshot = _track_snapshot(row)
 
     proposal = build_proposal_for_track(row)
     queue_items = _raw_queue_items(p.queue_path)
@@ -499,6 +522,8 @@ def generate_track_proposal(root: str | Path, track_id: int) -> dict[str, Any]:
                 "no_op_reason": "proposal already exists",
                 "queue_path": str(p.queue_path),
                 "proposal": existing,
+                "recommended_route": "metadata-sanitation",
+                "track": snapshot,
             }
         return {
             "root": str(p.root),
@@ -508,6 +533,8 @@ def generate_track_proposal(root: str | Path, track_id: int) -> dict[str, Any]:
             "no_op_reason": "no deterministic sanitation proposal available",
             "queue_path": str(p.queue_path),
             "proposal": None,
+            "recommended_route": "metadata-sanitation",
+            "track": snapshot,
         }
 
     if existing is not None and existing == proposal:
@@ -519,6 +546,8 @@ def generate_track_proposal(root: str | Path, track_id: int) -> dict[str, Any]:
             "no_op_reason": "proposal already exists",
             "queue_path": str(p.queue_path),
             "proposal": existing,
+            "recommended_route": "metadata-sanitation",
+            "track": snapshot,
         }
 
     if existing_index is None:
@@ -534,6 +563,8 @@ def generate_track_proposal(root: str | Path, track_id: int) -> dict[str, Any]:
         "no_op_reason": None,
         "queue_path": str(p.queue_path),
         "proposal": proposal,
+        "recommended_route": "metadata-sanitation",
+        "track": snapshot,
     }
 
 
