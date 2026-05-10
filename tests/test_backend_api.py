@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 import backend.app.main as backend_main
 from backend.app.core.library_root import assert_path_under_root
+from modules import metadata_repair, metadata_sanitation
 
 
 def _create_tracks_db(root: Path) -> Path:
@@ -487,6 +488,320 @@ def test_enrichment_review_is_safe_without_db(tmp_path, monkeypatch):
         assert action_response.status_code == 404
 
 
+def test_metadata_repair_endpoints_review_and_apply(client):
+    test_client, root = client
+    conn = sqlite3.connect(root / "logs" / "processed.db")
+    conn.execute(
+        """
+        INSERT INTO tracks (
+            filepath, filename, artist, title, genre, bpm, key_musical, key_camelot,
+            duration_sec, bitrate_kbps, filesize_bytes, status, error_msg, processed_at,
+            pipeline_ver, quality_tier, parse_confidence
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            str(root / "library" / "repair" / "Endpoint Artist - Endpoint Title.mp3"),
+            "Endpoint Artist - Endpoint Title.mp3",
+            None,
+            "Old Endpoint Title",
+            "House",
+            128.0,
+            "6A",
+            "06A",
+            300.0,
+            320,
+            9999,
+            "ok",
+            None,
+            "2026-05-06T12:00:00Z",
+            "1.4.0",
+            "HIGH",
+            "HIGH",
+        ),
+    )
+    track_id = conn.execute(
+        "SELECT id FROM tracks WHERE filename = ?",
+        ("Endpoint Artist - Endpoint Title.mp3",),
+    ).fetchone()[0]
+    conn.commit()
+    conn.close()
+    metadata_repair.scan(root)
+
+    queue_response = test_client.get("/api/metadata-repair/queue")
+    assert queue_response.status_code == 200
+    queue_payload = queue_response.json()
+    assert queue_payload["total"] >= 1
+    assert any(item["track_id"] == track_id for item in queue_payload["items"])
+
+    summary_response = test_client.get("/api/metadata-repair/summary")
+    assert summary_response.status_code == 200
+    assert summary_response.json()["queue_total"] == queue_payload["total"]
+
+    edit_artist = test_client.patch(
+        f"/api/metadata-repair/{track_id}/field/artist/proposal",
+        json={"proposed": "Edited Endpoint Artist"},
+    )
+    assert edit_artist.status_code == 200
+    edit_payload = edit_artist.json()
+    assert edit_payload["field"] == "artist"
+    assert edit_payload["proposed"] == "Edited Endpoint Artist"
+    state_field = edit_payload["state"]["items"][str(track_id)]["fields"]["artist"]
+    assert state_field["proposed"] == "Edited Endpoint Artist"
+    assert state_field["original_proposed"] == "Endpoint Artist"
+    assert state_field["edited"] is True
+
+    empty_edit = test_client.patch(
+        f"/api/metadata-repair/{track_id}/field/title/proposal",
+        json={"proposed": "   "},
+    )
+    assert empty_edit.status_code == 400
+
+    approve_artist = test_client.post(f"/api/metadata-repair/{track_id}/field/artist/approve")
+    assert approve_artist.status_code == 200
+    assert approve_artist.json()["field"] == "artist"
+    assert approve_artist.json()["review_status"] == "approved"
+
+    reject_title = test_client.post(f"/api/metadata-repair/{track_id}/field/title/reject")
+    assert reject_title.status_code == 200
+    assert reject_title.json()["field"] == "title"
+    assert reject_title.json()["review_status"] == "rejected"
+
+    dry_run = test_client.post("/api/metadata-repair/apply-approved/dry-run")
+    assert dry_run.status_code == 200
+    assert dry_run.json()["proposed_count"] == 1
+    assert dry_run.json()["applied_count"] == 0
+
+    missing_confirm = test_client.post("/api/metadata-repair/apply-approved/apply")
+    assert missing_confirm.status_code == 400
+
+    apply_response = test_client.post("/api/metadata-repair/apply-approved/apply", params={"confirm": True})
+    assert apply_response.status_code == 200
+    assert apply_response.json()["applied_count"] == 1
+
+    conn = sqlite3.connect(root / "logs" / "processed.db")
+    conn.row_factory = sqlite3.Row
+    row = conn.execute("SELECT * FROM tracks WHERE id = ?", (track_id,)).fetchone()
+    conn.close()
+    assert row["artist"] == "Edited Endpoint Artist"
+    assert row["title"] == "Old Endpoint Title"
+    assert row["bpm"] == 128.0
+    assert row["key_musical"] == "6A"
+    assert row["key_camelot"] == "06A"
+
+
+def test_metadata_issue_routing_and_generate_endpoints(client):
+    test_client, root = client
+    conn = sqlite3.connect(root / "logs" / "processed.db")
+    conn.row_factory = sqlite3.Row
+    conn.execute(
+        """
+        INSERT INTO tracks (
+            filepath, filename, artist, title, genre, bpm, key_musical, key_camelot,
+            duration_sec, bitrate_kbps, filesize_bytes, status, error_msg, processed_at,
+            pipeline_ver, quality_tier, parse_confidence
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            str(root / "library" / "issues" / "19. Anza, Chumee - Sing It Back (Extended Mix) (fordjonly.com).mp3"),
+            "19. Anza, Chumee - Sing It Back (Extended Mix) (fordjonly.com).mp3",
+            None,
+            None,
+            "House",
+            122.0,
+            "7A",
+            "07A",
+            300.0,
+            320,
+            9999,
+            "ok",
+            None,
+            "2026-05-06T12:00:00Z",
+            "1.4.0",
+            "LOW",
+            "LOW",
+        ),
+    )
+    repair_track_id = conn.execute(
+        "SELECT id FROM tracks WHERE filename = ?",
+        ("19. Anza, Chumee - Sing It Back (Extended Mix) (fordjonly.com).mp3",),
+    ).fetchone()[0]
+    conn.execute(
+        """
+        INSERT INTO tracks (
+            filepath, filename, artist, title, genre, bpm, key_musical, key_camelot,
+            duration_sec, bitrate_kbps, filesize_bytes, status, error_msg, processed_at,
+            pipeline_ver, quality_tier, parse_confidence
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            str(root / "library" / "issues" / "suspicious-title.mp3"),
+            "suspicious-title.mp3",
+            "Route Artist",
+            "TrackName fordjonly.com",
+            "House",
+            124.0,
+            "8A",
+            "08A",
+            300.0,
+            320,
+            9999,
+            "ok",
+            None,
+            "2026-05-06T13:00:00Z",
+            "1.4.0",
+            "LOW",
+            "LOW",
+        ),
+    )
+    sanitation_track_id = conn.execute(
+        "SELECT id FROM tracks WHERE filename = ?",
+        ("suspicious-title.mp3",),
+    ).fetchone()[0]
+    conn.commit()
+    conn.close()
+
+    repair_rows = test_client.get("/api/tracks", params={"issue": "missing_artist"}).json()["items"]
+    repair_row = next(item for item in repair_rows if item["id"] == repair_track_id)
+    assert repair_row["recommended_action"] == "Repair"
+    assert repair_row["recommended_route"] == "metadata-repair"
+
+    sanitation_rows = test_client.get("/api/tracks", params={"issue": "suspicious_title"}).json()["items"]
+    sanitation_row = next(item for item in sanitation_rows if item["id"] == sanitation_track_id)
+    assert sanitation_row["recommended_action"] == "Sanitize"
+    assert sanitation_row["recommended_route"] == "metadata-sanitation"
+
+    repair_generate = test_client.post(f"/api/metadata-repair/generate/{repair_track_id}")
+    assert repair_generate.status_code == 200
+    repair_payload = repair_generate.json()
+    assert repair_payload["generated"] is True
+    assert repair_payload["proposal"]["proposed"]["artist"] == "Anza, Chumee"
+    assert repair_payload["proposal"]["proposed"]["title"] == "Sing It Back (Extended Mix)"
+
+    repair_duplicate = test_client.post(f"/api/metadata-repair/generate/{repair_track_id}")
+    assert repair_duplicate.status_code == 200
+    assert repair_duplicate.json()["generated"] is False
+    repair_queue = test_client.get("/api/metadata-repair/queue")
+    assert sum(1 for item in repair_queue.json()["items"] if item["track_id"] == repair_track_id) == 1
+
+    sanitation_generate = test_client.post(f"/api/metadata-sanitation/generate/{sanitation_track_id}")
+    assert sanitation_generate.status_code == 200
+    sanitation_payload = sanitation_generate.json()
+    assert sanitation_payload["generated"] is True
+    assert sanitation_payload["proposal"]["proposed"]["title"] == "TrackName"
+
+    sanitation_duplicate = test_client.post(f"/api/metadata-sanitation/generate/{sanitation_track_id}")
+    assert sanitation_duplicate.status_code == 200
+    assert sanitation_duplicate.json()["generated"] is False
+    sanitation_queue = test_client.get("/api/metadata-sanitation/queue")
+    assert sum(1 for item in sanitation_queue.json()["items"] if item["track_id"] == sanitation_track_id) == 1
+
+    quality = test_client.get("/api/library/quality").json()
+    assert quality["metadata_repair"]["queue_total"] >= 1
+    assert quality["metadata_sanitation"]["queue_total"] >= 1
+
+
+def test_metadata_sanitation_endpoints_edit_and_apply(client):
+    test_client, root = client
+    conn = sqlite3.connect(root / "logs" / "processed.db")
+    conn.execute(
+        """
+        INSERT INTO tracks (
+            filepath, filename, artist, title, genre, bpm, key_musical, key_camelot,
+            duration_sec, bitrate_kbps, filesize_bytes, status, error_msg, processed_at,
+            pipeline_ver, quality_tier, parse_confidence
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            str(root / "library" / "sanitation" / "Saxophone MaciaDownloads.mp3"),
+            "Saxophone MaciaDownloads.mp3",
+            "Endpoint Artist",
+            "Saxophone MaciaDownloads",
+            "House",
+            126.0,
+            "5A",
+            "05A",
+            300.0,
+            320,
+            9999,
+            "ok",
+            None,
+            "2026-05-06T12:00:00Z",
+            "1.4.0",
+            "HIGH",
+            "HIGH",
+        ),
+    )
+    track_id = conn.execute(
+        "SELECT id FROM tracks WHERE filename = ?",
+        ("Saxophone MaciaDownloads.mp3",),
+    ).fetchone()[0]
+    conn.commit()
+    conn.close()
+    metadata_sanitation.scan(root)
+
+    queue_response = test_client.get("/api/metadata-sanitation/queue")
+    assert queue_response.status_code == 200
+    queue_payload = queue_response.json()
+    proposal = next(item for item in queue_payload["items"] if item["track_id"] == track_id)
+    assert proposal["proposed"]["title"] == "Saxophone"
+    assert proposal["risk_flags"] == ["junk_suffix_removed"]
+
+    edit_title = test_client.patch(
+        f"/api/metadata-sanitation/{track_id}/field/title/proposal",
+        json={"proposed": "Edited Saxophone"},
+    )
+    assert edit_title.status_code == 200
+    state_field = edit_title.json()["state"]["items"][str(track_id)]["fields"]["title"]
+    assert state_field["proposed"] == "Edited Saxophone"
+    assert state_field["original_proposed"] == "Saxophone"
+    assert state_field["edited"] is True
+
+    empty_edit = test_client.patch(
+        f"/api/metadata-sanitation/{track_id}/field/title/proposal",
+        json={"proposed": "   "},
+    )
+    assert empty_edit.status_code == 400
+
+    approve_title = test_client.post(f"/api/metadata-sanitation/{track_id}/field/title/approve")
+    assert approve_title.status_code == 200
+    assert approve_title.json()["field"] == "title"
+    assert approve_title.json()["review_status"] == "approved"
+
+    dry_run = test_client.post("/api/metadata-sanitation/apply-approved/dry-run")
+    assert dry_run.status_code == 200
+    assert dry_run.json()["proposed_count"] == 1
+
+    missing_confirm = test_client.post("/api/metadata-sanitation/apply-approved/apply")
+    assert missing_confirm.status_code == 400
+
+    apply_response = test_client.post("/api/metadata-sanitation/apply-approved/apply", params={"confirm": True})
+    assert apply_response.status_code == 200
+    assert apply_response.json()["applied_field_count"] == 1
+
+    active_queue = test_client.get("/api/metadata-sanitation/queue")
+    assert active_queue.status_code == 200
+    assert all(item["track_id"] != track_id for item in active_queue.json()["items"])
+
+    applied_queue = test_client.get("/api/metadata-sanitation/queue", params={"include_applied": True})
+    assert applied_queue.status_code == 200
+    assert any(item["track_id"] == track_id for item in applied_queue.json()["items"])
+
+    conn = sqlite3.connect(root / "logs" / "processed.db")
+    conn.row_factory = sqlite3.Row
+    row = conn.execute("SELECT * FROM tracks WHERE id = ?", (track_id,)).fetchone()
+    conn.close()
+    assert row["artist"] == "Endpoint Artist"
+    assert row["title"] == "Edited Saxophone"
+    assert row["bpm"] == 126.0
+    assert row["key_musical"] == "5A"
+    assert row["key_camelot"] == "05A"
+
+    metadata_sanitation.scan(root)
+    rescan_queue = test_client.get("/api/metadata-sanitation/queue", params={"include_applied": True})
+    assert rescan_queue.status_code == 200
+    assert all(item["track_id"] != track_id for item in rescan_queue.json()["items"])
+
+
 def test_latest_audit_endpoint_returns_latest_report(client):
     test_client, root = client
 
@@ -549,6 +864,53 @@ def test_library_folder_and_overview_endpoints(client):
     assert overview["tracks_missing_title"] == 0
     assert overview["parse_confidence_breakdown"] == {"HIGH": 1, "MEDIUM": 1, "LOW": 2}
     assert overview["genre_top_counts"][0]["count"] == 3
+
+
+def test_library_quality_endpoint_reports_progress_and_actions(client):
+    test_client, root = client
+
+    response = test_client.get("/api/library/quality")
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload["total_tracks"] == 4
+    assert payload["issue_total"] == 5
+    assert payload["issues_by_type"] == {
+        "missing_artist": 0,
+        "missing_title": 0,
+        "suspicious_artist": 1,
+        "suspicious_title": 1,
+        "weak_filename_parse": 3,
+    }
+    assert payload["metadata_repair"]["queue_total"] == 0
+    assert payload["metadata_sanitation"]["queue_total"] == 0
+    assert payload["coverage"] == {
+        "with_artist": 4,
+        "with_title": 4,
+        "with_bpm": 3,
+        "with_camelot": 3,
+        "with_genre": 4,
+    }
+    assert payload["recommended_next_actions"]
+    assert any(action["target"] == "/issues" for action in payload["recommended_next_actions"])
+
+
+def test_library_quality_endpoint_handles_missing_queue_files(tmp_path, monkeypatch):
+    root = tmp_path / "quality_root"
+    root.mkdir(parents=True)
+    monkeypatch.setenv("CRATEMINDAI_LIBRARY_ROOT", str(root))
+    monkeypatch.setattr(backend_main, "init_db", lambda: None)
+    _create_tracks_db(root)
+
+    with TestClient(backend_main.app) as test_client:
+        response = test_client.get("/api/library/quality")
+        payload = response.json()
+
+    assert response.status_code == 200
+    assert payload["metadata_repair"]["queue_total"] == 0
+    assert payload["metadata_sanitation"]["queue_total"] == 0
+    assert payload["metadata_repair"]["pending"] == 0
+    assert payload["metadata_sanitation"]["pending"] == 0
 
 
 def test_missing_db_is_handled_safely(tmp_path, monkeypatch):

@@ -28,6 +28,8 @@ import {
 } from '../api/insights'
 import { fetchLibraryFolders, fetchLibraryOverview } from '../api/library'
 import type { LibraryFolderStat, LibraryOverview } from '../api/library'
+import { generateMetadataRepairTrack } from '../api/metadataRepair'
+import { generateMetadataSanitationTrack } from '../api/metadataSanitation'
 import { fetchTrack, fetchTrackIssues, fetchTrackPage } from '../api/tracks'
 import type {
   ParseConfidence,
@@ -52,38 +54,125 @@ import type {
 type Section = 'library' | 'issues' | 'enrichment' | 'audit' | 'folders'
 type SortKey = 'artist' | 'title' | 'bpm' | 'filename'
 type SortOrder = 'asc' | 'desc'
+type UiSection = 'library' | 'issues' | 'enrichment'
+type IssueRoute = 'metadata-repair' | 'metadata-sanitation'
 
 const LIMIT = 50
 const TRACK_ROW_HEIGHT = 42
 const TRACK_TABLE_HEIGHT = 420
 const TRACK_OVERSCAN = 6
-const UI_STATE_KEY = 'cratemind.ui.v1'
-
-interface PersistedUiState {
-  search?: string
-  offset?: number
-  sort?: SortKey
-  order?: SortOrder
-  issueFilter?: TrackIssue | ''
-  selectedId?: number | null
-  section?: Section
-  queueActionFilter?: 'auto_candidate' | 'review' | 'ignore' | ''
-  queueConfidenceFilter?: 'HIGH' | 'MEDIUM' | 'LOW' | ''
-  queueReviewFilter?: ReviewStatus | 'all'
+const UI_STATE_VERSION = 'v2'
+const UI_STATE_KEYS: Record<UiSection, string> = {
+  library: `cratemind.ui.library.${UI_STATE_VERSION}`,
+  issues: `cratemind.ui.issues.${UI_STATE_VERSION}`,
+  enrichment: `cratemind.ui.enrichment.${UI_STATE_VERSION}`,
 }
 
-function loadUiState(): PersistedUiState {
+interface SectionUiState {
+  searchDraft: string
+  search: string
+  offset: number
+  sort: SortKey
+  order: SortOrder
+  issueFilter: TrackIssue | ''
+  selectedId: number | null
+  queueActionFilter: 'auto_candidate' | 'review' | 'ignore' | ''
+  queueConfidenceFilter: 'HIGH' | 'MEDIUM' | 'LOW' | ''
+  queueReviewFilter: ReviewStatus | 'all'
+}
+
+const DEFAULT_SECTION_STATE: SectionUiState = {
+  searchDraft: '',
+  search: '',
+  offset: 0,
+  sort: 'artist',
+  order: 'asc',
+  issueFilter: '',
+  selectedId: null,
+  queueActionFilter: '',
+  queueConfidenceFilter: '',
+  queueReviewFilter: 'all',
+}
+
+function uiSectionFor(section: Section): UiSection {
+  if (section === 'issues') return 'issues'
+  if (section === 'enrichment') return 'enrichment'
+  return 'library'
+}
+
+function safeString(value: unknown, fallback = ''): string {
+  return typeof value === 'string' ? value : fallback
+}
+
+function safeNumber(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : fallback
+}
+
+function isSortKey(value: unknown): value is SortKey {
+  return value === 'artist' || value === 'title' || value === 'bpm' || value === 'filename'
+}
+
+function isIssueFilter(value: unknown): value is TrackIssue {
+  return (
+    value === 'missing_artist'
+    || value === 'missing_title'
+    || value === 'weak_filename_parse'
+    || value === 'suspicious_artist'
+    || value === 'suspicious_title'
+  )
+}
+
+function isQueueActionFilter(value: unknown): value is SectionUiState['queueActionFilter'] {
+  return value === 'auto_candidate' || value === 'review' || value === 'ignore' || value === ''
+}
+
+function isQueueConfidenceFilter(value: unknown): value is SectionUiState['queueConfidenceFilter'] {
+  return value === 'HIGH' || value === 'MEDIUM' || value === 'LOW' || value === ''
+}
+
+function isQueueReviewFilter(value: unknown): value is ReviewStatus | 'all' {
+  return value === 'pending' || value === 'approved' || value === 'rejected' || value === 'deferred' || value === 'all'
+}
+
+function sanitizeSectionState(raw: unknown, section: UiSection): SectionUiState {
+  const base: SectionUiState = { ...DEFAULT_SECTION_STATE }
+  if (!raw || typeof raw !== 'object') {
+    return base
+  }
+  const input = raw as Record<string, unknown>
+  const searchDraft = safeString(input.searchDraft ?? input.search, '')
+  const search = safeString(input.search, searchDraft)
+  base.searchDraft = searchDraft
+  base.search = search
+  base.offset = safeNumber(input.offset, 0)
+  base.sort = isSortKey(input.sort) ? input.sort : DEFAULT_SECTION_STATE.sort
+  base.order = input.order === 'desc' ? 'desc' : 'asc'
+  base.selectedId = typeof input.selectedId === 'number' && Number.isInteger(input.selectedId) && input.selectedId > 0
+    ? input.selectedId
+    : null
+  if (section === 'issues') {
+    base.issueFilter = isIssueFilter(input.issueFilter) ? input.issueFilter : ''
+  }
+  if (section === 'enrichment') {
+    base.queueActionFilter = isQueueActionFilter(input.queueActionFilter) ? input.queueActionFilter : ''
+    base.queueConfidenceFilter = isQueueConfidenceFilter(input.queueConfidenceFilter) ? input.queueConfidenceFilter : ''
+    base.queueReviewFilter = isQueueReviewFilter(input.queueReviewFilter) ? input.queueReviewFilter : 'all'
+  }
+  return base
+}
+
+function loadSectionState(section: UiSection): SectionUiState {
   try {
-    const raw = window.localStorage.getItem(UI_STATE_KEY)
-    return raw ? JSON.parse(raw) as PersistedUiState : {}
+    const raw = window.localStorage.getItem(UI_STATE_KEYS[section])
+    return sanitizeSectionState(raw ? JSON.parse(raw) : null, section)
   } catch {
-    return {}
+    return { ...DEFAULT_SECTION_STATE }
   }
 }
 
-function persistUiState(next: PersistedUiState) {
+function persistSectionState(section: UiSection, state: SectionUiState) {
   try {
-    window.localStorage.setItem(UI_STATE_KEY, JSON.stringify(next))
+    window.localStorage.setItem(UI_STATE_KEYS[section], JSON.stringify(state))
   } catch {
     // localStorage may be unavailable in restricted browser contexts.
   }
@@ -139,6 +228,19 @@ function shortIssue(issue: string): string {
     needs_review: 'review',
   }
   return map[issue] ?? issue
+}
+
+function issueRouteFor(track: Pick<TrackSummary, 'recommended_route' | 'issues'>): IssueRoute | null {
+  if (track.recommended_route === 'metadata-repair' || track.recommended_route === 'metadata-sanitation') {
+    return track.recommended_route
+  }
+  if (track.issues.includes('suspicious_artist') || track.issues.includes('suspicious_title')) {
+    return 'metadata-sanitation'
+  }
+  if (track.issues.includes('missing_artist') || track.issues.includes('missing_title') || track.issues.includes('weak_filename_parse')) {
+    return 'metadata-repair'
+  }
+  return null
 }
 
 function confidenceClass(value: string | null | undefined): string {
@@ -396,7 +498,13 @@ export default function CrateMind() {
   const location = useLocation()
   const navigate = useNavigate()
   const section = sectionFromPath(location.pathname)
-  const persistedUi = useMemo(loadUiState, [])
+  const activeUiSection = uiSectionFor(section)
+  const [uiBySection, setUiBySection] = useState<Record<UiSection, SectionUiState>>(() => ({
+    library: loadSectionState('library'),
+    issues: loadSectionState('issues'),
+    enrichment: loadSectionState('enrichment'),
+  }))
+  const activeUi = uiBySection[activeUiSection]
 
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [overview, setOverview] = useState<LibraryOverview | null>(null)
@@ -407,79 +515,66 @@ export default function CrateMind() {
   const [reviewSummary, setReviewSummary] = useState<ReviewSummaryResponse | null>(null)
   const [audit, setAudit] = useState<Record<string, unknown> | null>(null)
   const [trackPage, setTrackPage] = useState<TrackPage | null>(null)
-  const [selectedId, setSelectedId] = useState<number | null>(persistedUi.selectedId ?? null)
   const [selectedDetail, setSelectedDetail] = useState<TrackDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [trackWarning, setTrackWarning] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [queueLoading, setQueueLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [queueError, setQueueError] = useState<string | null>(null)
-
-  const [searchDraft, setSearchDraft] = useState(persistedUi.search ?? '')
-  const [search, setSearch] = useState(persistedUi.search ?? '')
-  const [offset, setOffset] = useState(persistedUi.offset ?? 0)
-  const [sort, setSort] = useState<SortKey>(persistedUi.sort ?? 'artist')
-  const [order, setOrder] = useState<SortOrder>(persistedUi.order ?? 'asc')
-  const [issueFilter, setIssueFilter] = useState<TrackIssue | ''>(persistedUi.issueFilter ?? '')
-  const [queueActionFilter, setQueueActionFilter] = useState<'auto_candidate' | 'review' | 'ignore' | ''>(persistedUi.queueActionFilter ?? '')
-  const [queueConfidenceFilter, setQueueConfidenceFilter] = useState<'HIGH' | 'MEDIUM' | 'LOW' | ''>(persistedUi.queueConfidenceFilter ?? '')
-  const [queueReviewFilter, setQueueReviewFilter] = useState<ReviewStatus | 'all'>(persistedUi.queueReviewFilter ?? 'all')
   const [selectedQueueIds, setSelectedQueueIds] = useState<number[]>([])
   const [trackScrollTop, setTrackScrollTop] = useState(0)
   const [actionBusy, setActionBusy] = useState(false)
+  const [issueActionBusyId, setIssueActionBusyId] = useState<number | null>(null)
   const [applyBusy, setApplyBusy] = useState(false)
   const [applyError, setApplyError] = useState<string | null>(null)
   const [applyPreview, setApplyPreview] = useState<ApplyApprovedResponse | null>(null)
 
   useEffect(() => {
     const id = window.setTimeout(() => {
-      setSearch(searchDraft)
-      setOffset(0)
+      setUiBySection((current) => ({
+        ...current,
+        [activeUiSection]: {
+          ...current[activeUiSection],
+          search: activeUi.searchDraft,
+          offset: 0,
+        },
+      }))
     }, 350)
     return () => window.clearTimeout(id)
-  }, [searchDraft])
+  }, [activeUi.searchDraft, activeUiSection])
 
   useEffect(() => {
-    persistUiState({
-      search: searchDraft,
-      offset,
-      sort,
-      order,
-      issueFilter,
-      selectedId,
-      section,
-      queueActionFilter,
-      queueConfidenceFilter,
-      queueReviewFilter,
-    })
-  }, [
-    searchDraft,
-    offset,
-    sort,
-    order,
-    issueFilter,
-    selectedId,
-    section,
-    queueActionFilter,
-    queueConfidenceFilter,
-    queueReviewFilter,
-  ])
+    persistSectionState(activeUiSection, activeUi)
+  }, [activeUi, activeUiSection])
+
+  useEffect(() => {
+    setSelectedQueueIds([])
+    setTrackWarning(null)
+  }, [activeUiSection])
+
+  const setActiveUi = useCallback((updater: (current: SectionUiState) => SectionUiState) => {
+    setUiBySection((current) => ({
+      ...current,
+      [activeUiSection]: updater(current[activeUiSection]),
+    }))
+  }, [activeUiSection])
 
   const params: TrackListParams = useMemo(() => ({
-    search: search || undefined,
-    issue: issueFilter || undefined,
-    sort,
-    order,
+    search: activeUi.search || undefined,
+    issue: activeUi.issueFilter || undefined,
+    sort: activeUi.sort,
+    order: activeUi.order,
     limit: LIMIT,
-    offset,
-  }), [search, issueFilter, sort, order, offset])
+    offset: activeUi.offset,
+  }), [activeUi.search, activeUi.issueFilter, activeUi.sort, activeUi.order, activeUi.offset])
 
   const queueParams = useMemo(() => ({
-    action: queueActionFilter || undefined,
-    confidence: queueConfidenceFilter || undefined,
+    action: activeUi.queueActionFilter || undefined,
+    confidence: activeUi.queueConfidenceFilter || undefined,
     limit: 200,
     offset: 0,
-  }), [queueActionFilter, queueConfidenceFilter])
+  }), [activeUi.queueActionFilter, activeUi.queueConfidenceFilter])
 
   const loadMain = useCallback(async () => {
     setLoading(true)
@@ -512,7 +607,7 @@ export default function CrateMind() {
 
   useEffect(() => {
     setTrackScrollTop(0)
-  }, [search, issueFilter, sort, order, offset])
+  }, [activeUi.search, activeUi.issueFilter, activeUi.sort, activeUi.order, activeUi.offset, activeUiSection])
 
   const loadQueue = useCallback(async () => {
     setQueueLoading(true)
@@ -538,35 +633,81 @@ export default function CrateMind() {
   }, [loadQueue])
 
   useEffect(() => {
-    if (!selectedId) {
+    if (!activeUi.selectedId) {
       setSelectedDetail(null)
       return
     }
+    setTrackWarning(null)
     setDetailLoading(true)
-    fetchTrack(selectedId)
+    fetchTrack(activeUi.selectedId)
       .then(setSelectedDetail)
-      .catch((e: Error) => setError(e.message))
+      .catch((e) => {
+        if (typeof e === 'object' && e !== null && 'status' in e && (e as { status?: number }).status === 404) {
+          setTrackWarning('Selected track no longer exists. Selection was cleared.')
+          setSelectedDetail(null)
+          setUiBySection((current) => ({
+            ...current,
+            [activeUiSection]: {
+              ...current[activeUiSection],
+              selectedId: null,
+            },
+          }))
+          return
+        }
+        setError(e instanceof Error ? e.message : 'Failed to load track detail')
+      })
       .finally(() => setDetailLoading(false))
-  }, [selectedId])
+  }, [activeUi.selectedId, activeUiSection])
 
   function refresh() {
     loadMain()
     loadQueue()
   }
 
-  function handleSort(next: SortKey) {
-    if (sort === next) {
-      setOrder((value) => value === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSort(next)
-      setOrder('asc')
+  function openIssueRoute(trackId: number, route: IssueRoute, notice?: string) {
+    const nextPath = route === 'metadata-sanitation' ? '/metadata-sanitation' : '/metadata-repair'
+    navigate(`${nextPath}?track=${trackId}`, notice ? { state: { notice } } : undefined)
+  }
+
+  async function generateIssueProposal(track: TrackSummary) {
+    const route = issueRouteFor(track)
+    if (!route) return
+    setIssueActionBusyId(track.id)
+    setError(null)
+    try {
+      const result = route === 'metadata-sanitation'
+        ? await generateMetadataSanitationTrack(track.id)
+        : await generateMetadataRepairTrack(track.id)
+      const message = result.generated
+        ? `Generated ${route === 'metadata-sanitation' ? 'sanitation' : 'repair'} proposal for track #${track.id}`
+        : result.no_op_reason || 'Proposal already exists'
+      openIssueRoute(track.id, route, message)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to generate issue proposal')
+    } finally {
+      setIssueActionBusyId(null)
     }
-    setOffset(0)
+  }
+
+  function handleSort(next: SortKey) {
+    setActiveUi((current) => {
+      if (current.sort === next) {
+        return { ...current, order: current.order === 'asc' ? 'desc' : 'asc' }
+      }
+      return { ...current, sort: next, order: 'asc' }
+    })
+    setActiveUi((current) => ({ ...current, offset: 0 }))
   }
 
   function applyIssue(issue: keyof TrackIssueCounts) {
-    setIssueFilter(issue as TrackIssue)
-    setOffset(0)
+    setUiBySection((current) => ({
+      ...current,
+      issues: {
+        ...current.issues,
+        issueFilter: issue as TrackIssue,
+        offset: 0,
+      },
+    }))
     navigate('/issues')
   }
 
@@ -579,8 +720,8 @@ export default function CrateMind() {
   const queueItems = useMemo(() => queue?.items ?? [], [queue])
   const visibleQueueItems = useMemo(() => queueItems.filter((item) => {
     const status = reviewStatusForItem(item)
-    return queueReviewFilter === 'all' || queueReviewFilter === status
-  }), [queueItems, queueReviewFilter, reviewState])
+    return activeUi.queueReviewFilter === 'all' || activeUi.queueReviewFilter === status
+  }), [queueItems, activeUi.queueReviewFilter, reviewState])
   const selectedQueueIdSet = useMemo(() => new Set(selectedQueueIds), [selectedQueueIds])
   const selectedQueueItems = useMemo(() => visibleQueueItems.filter((item) => {
     const id = item.track_id
@@ -598,6 +739,8 @@ export default function CrateMind() {
   const virtualRows = items.slice(virtualStart, virtualEnd)
   const virtualTopPad = virtualStart * TRACK_ROW_HEIGHT
   const virtualBottomPad = Math.max(0, (items.length - virtualEnd) * TRACK_ROW_HEIGHT)
+  const showIssueActions = section === 'issues'
+  const trackColSpan = showIssueActions ? 8 : 7
 
   useEffect(() => {
     setSelectedQueueIds((current) => {
@@ -712,8 +855,8 @@ export default function CrateMind() {
         <label className="crate-search">
           <Search size={14} />
           <input
-            value={searchDraft}
-            onChange={(event) => setSearchDraft(event.target.value)}
+            value={activeUi.searchDraft}
+            onChange={(event) => setActiveUi((current) => ({ ...current, searchDraft: event.target.value }))}
             placeholder="Search artist, title, filename"
             type="search"
           />
@@ -728,6 +871,7 @@ export default function CrateMind() {
       <div className="crate-body">
         <main className="crate-main">
           {error && <div className="error-banner">{error}</div>}
+          {trackWarning && <div className="crate-warning-banner">{trackWarning}</div>}
 
           {section === 'library' && <OverviewCards overview={overview} />}
 
@@ -735,13 +879,13 @@ export default function CrateMind() {
       <section className="crate-panel">
         <div className="crate-panel-head">
           <h2>Issue Counts</h2>
-          {issueFilter && <button className="btn btn--ghost btn--sm" onClick={() => setIssueFilter('')}>Clear filter</button>}
+          {activeUi.issueFilter && <button className="btn btn--ghost btn--sm" onClick={() => setActiveUi((current) => ({ ...current, issueFilter: '', offset: 0 }))}>Clear filter</button>}
         </div>
         <div className="crate-issue-grid">
           {ISSUE_KEYS.map((key) => (
             <button
               key={key}
-              className={`crate-issue-count${issueFilter === key ? ' crate-issue-count--active' : ''}`}
+              className={`crate-issue-count${activeUi.issueFilter === key ? ' crate-issue-count--active' : ''}`}
               onClick={() => applyIssue(key)}
             >
               <span>{ISSUE_LABELS[key as TrackIssue] ?? key}</span>
@@ -891,8 +1035,8 @@ export default function CrateMind() {
                   ] as const).map(([value, label]) => (
                     <button
                       key={value || 'all-actions'}
-                      className={`crate-pill${queueActionFilter === value ? ' crate-pill--active' : ''}`}
-                      onClick={() => setQueueActionFilter(value)}
+                      className={`crate-pill${activeUi.queueActionFilter === value ? ' crate-pill--active' : ''}`}
+                      onClick={() => setActiveUi((current) => ({ ...current, queueActionFilter: value }))}
                     >
                       {label}
                     </button>
@@ -907,8 +1051,8 @@ export default function CrateMind() {
                   ] as const).map(([value, label]) => (
                     <button
                       key={value || 'all-confidence'}
-                      className={`crate-pill${queueConfidenceFilter === value ? ' crate-pill--active' : ''}`}
-                      onClick={() => setQueueConfidenceFilter(value)}
+                      className={`crate-pill${activeUi.queueConfidenceFilter === value ? ' crate-pill--active' : ''}`}
+                      onClick={() => setActiveUi((current) => ({ ...current, queueConfidenceFilter: value }))}
                     >
                       {label}
                     </button>
@@ -924,8 +1068,8 @@ export default function CrateMind() {
                   ] as const).map(([value, label]) => (
                     <button
                       key={value}
-                      className={`crate-pill${queueReviewFilter === value ? ' crate-pill--active' : ''}`}
-                      onClick={() => setQueueReviewFilter(value as ReviewStatus | 'all')}
+                      className={`crate-pill${activeUi.queueReviewFilter === value ? ' crate-pill--active' : ''}`}
+                      onClick={() => setActiveUi((current) => ({ ...current, queueReviewFilter: value as ReviewStatus | 'all' }))}
                     >
                       {label}
                     </button>
@@ -976,21 +1120,24 @@ export default function CrateMind() {
                     )}
                     {visibleQueueItems.map((item, index) => {
                       const reviewStatus = reviewStatusForItem(item)
+                      const trackId = item.track_id
                       const isSelected = item.track_id != null && selectedQueueIds.includes(item.track_id)
                       return (
                         <tr
                           key={queueRowKey(item, index)}
                           className={isSelected ? 'crate-row-selected' : 'crate-row-clickable'}
                           onClick={() => {
-                            toggleQueueSelection(item.track_id)
-                            if (item.track_id != null) setSelectedId(item.track_id)
+                            toggleQueueSelection(trackId)
+                            if (trackId != null) {
+                              setActiveUi((current) => ({ ...current, selectedId: trackId }))
+                            }
                           }}
                         >
                           <td className="crate-check-col">
                             <input
                               type="checkbox"
                               checked={isSelected}
-                              onChange={() => toggleQueueSelection(item.track_id)}
+                              onChange={() => toggleQueueSelection(trackId)}
                               onClick={(event) => event.stopPropagation()}
                             />
                           </td>
@@ -1082,7 +1229,7 @@ export default function CrateMind() {
                 <h2>Tracks</h2>
                 <span className="muted">
                   {loading ? 'Loading...' : `${total.toLocaleString()} matching tracks`}
-                  {issueFilter ? ` / ${ISSUE_LABELS[issueFilter] ?? issueFilter}` : ''}
+                  {activeUi.issueFilter ? ` / ${ISSUE_LABELS[activeUi.issueFilter] ?? activeUi.issueFilter}` : ''}
                 </span>
               </div>
               <div className="crate-table-tools">
@@ -1097,13 +1244,14 @@ export default function CrateMind() {
               <table className="table crate-table">
                 <thead>
                   <tr>
-                    <TrackSortHeader label="Artist" sortKey="artist" sort={sort} order={order} onSort={handleSort} />
-                    <TrackSortHeader label="Title" sortKey="title" sort={sort} order={order} onSort={handleSort} />
-                    <TrackSortHeader label="BPM" sortKey="bpm" sort={sort} order={order} onSort={handleSort} />
+                    <TrackSortHeader label="Artist" sortKey="artist" sort={activeUi.sort} order={activeUi.order} onSort={handleSort} />
+                    <TrackSortHeader label="Title" sortKey="title" sort={activeUi.sort} order={activeUi.order} onSort={handleSort} />
+                    <TrackSortHeader label="BPM" sortKey="bpm" sort={activeUi.sort} order={activeUi.order} onSort={handleSort} />
                     <th>Camelot</th>
                     <th>Genre</th>
                     <th>Parse confidence</th>
                     <th>Issues</th>
+                    {showIssueActions && <th className="crate-issue-actions-col">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -1111,7 +1259,7 @@ export default function CrateMind() {
                     <>
                       {Array.from({ length: 6 }).map((_, idx) => (
                         <tr key={`skeleton-${idx}`} className="crate-row-skeleton">
-                          <td colSpan={7}>
+                          <td colSpan={trackColSpan}>
                             <span />
                           </td>
                         </tr>
@@ -1120,14 +1268,14 @@ export default function CrateMind() {
                   )}
                   {virtualTopPad > 0 && (
                     <tr className="crate-virtual-spacer" aria-hidden="true">
-                      <td colSpan={7} style={{ height: virtualTopPad }} />
+                      <td colSpan={trackColSpan} style={{ height: virtualTopPad }} />
                     </tr>
                   )}
                   {virtualRows.map((track: TrackSummary) => (
                     <tr
                       key={track.id}
-                      className={selectedId === track.id ? 'track-row--selected crate-row-selected' : 'crate-row-clickable'}
-                      onClick={() => setSelectedId(track.id)}
+                      className={activeUi.selectedId === track.id ? 'track-row--selected crate-row-selected' : 'crate-row-clickable'}
+                      onClick={() => setActiveUi((current) => ({ ...current, selectedId: track.id }))}
                     >
                       <td className="td-artist">{displayValue(track.artist, '—')}</td>
                       <td className="td-title" title={track.filename}>{displayValue(track.title, track.filename)}</td>
@@ -1150,28 +1298,68 @@ export default function CrateMind() {
                           {track.issues.length > 4 && <span className="muted">+{track.issues.length - 4}</span>}
                         </div>
                       </td>
+                      {showIssueActions && (
+                        <td className="crate-issue-actions-cell">
+                          <div className="crate-issue-actions">
+                            <button
+                              type="button"
+                              className="btn btn--ghost btn--xs"
+                              disabled={issueActionBusyId === track.id}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                openIssueRoute(track.id, 'metadata-repair')
+                              }}
+                            >
+                              Repair
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn--ghost btn--xs"
+                              disabled={issueActionBusyId === track.id}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                openIssueRoute(track.id, 'metadata-sanitation')
+                              }}
+                            >
+                              Sanitize
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn--primary btn--xs"
+                              disabled={issueActionBusyId === track.id}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                void generateIssueProposal(track)
+                              }}
+                              title={track.recommended_route ? `Generate ${track.recommended_action?.toLowerCase() ?? 'proposal'} proposal` : 'Generate proposal'}
+                            >
+                              Generate
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))}
                   {virtualBottomPad > 0 && (
                     <tr className="crate-virtual-spacer" aria-hidden="true">
-                      <td colSpan={7} style={{ height: virtualBottomPad }} />
+                      <td colSpan={trackColSpan} style={{ height: virtualBottomPad }} />
                     </tr>
                   )}
                   {!loading && items.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="crate-empty">No tracks match the current filters.</td>
+                      <td colSpan={trackColSpan} className="crate-empty">No tracks match the current filters.</td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </div>
             <div className="crate-pagination">
-              <span className="muted">{selectedId ? '1 track selected' : 'No track selected'}</span>
-              <button className="btn btn--ghost btn--sm" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - LIMIT))}>
+              <span className="muted">{activeUi.selectedId ? '1 track selected' : 'No track selected'}</span>
+              <button className="btn btn--ghost btn--sm" disabled={activeUi.offset === 0} onClick={() => setActiveUi((current) => ({ ...current, offset: Math.max(0, current.offset - LIMIT) }))}>
                 Prev
               </button>
-              <span>{total ? `${offset + 1}-${Math.min(offset + items.length, total)} of ${total}` : '0 tracks'}</span>
-              <button className="btn btn--ghost btn--sm" disabled={offset + items.length >= total} onClick={() => setOffset(offset + LIMIT)}>
+              <span>{total ? `${activeUi.offset + 1}-${Math.min(activeUi.offset + items.length, total)} of ${total}` : '0 tracks'}</span>
+              <button className="btn btn--ghost btn--sm" disabled={activeUi.offset + items.length >= total} onClick={() => setActiveUi((current) => ({ ...current, offset: current.offset + LIMIT }))}>
                 Next
               </button>
             </div>

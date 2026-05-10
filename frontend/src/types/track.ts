@@ -40,6 +40,8 @@ export interface TrackSummary {
   quality_tier: QualityTier | null
   parse_confidence: ParseConfidence | null
   issues:       TrackIssue[]
+  recommended_action?: string | null
+  recommended_route?: string | null
 }
 
 // Shape returned by GET /api/tracks/{id} (full detail)

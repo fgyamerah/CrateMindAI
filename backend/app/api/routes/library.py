@@ -26,6 +26,8 @@ from pydantic import BaseModel
 from ...core.library_root import selected_library_root
 from ...core.pipeline_db import get_pipeline_conn, pipeline_db_exists
 from ...services import read_only as read_only_service
+from ...services import track_service
+from modules import metadata_repair, metadata_sanitation
 
 router = APIRouter(tags=["library"])
 
@@ -122,6 +124,40 @@ class LibraryOverviewResponse(BaseModel):
     genre_top_counts: List[Dict[str, Any]]
 
 
+class QualityQueueSummary(BaseModel):
+    queue_total: int
+    pending: int
+    approved: int
+    partial: int
+    applied: int
+    no_op: int
+    by_confidence: Dict[str, int]
+
+
+class QualityCoverageResponse(BaseModel):
+    with_artist: int
+    with_title: int
+    with_bpm: int
+    with_camelot: int
+    with_genre: int
+
+
+class QualityActionItem(BaseModel):
+    label: str
+    reason: str
+    target: str
+
+
+class LibraryQualityResponse(BaseModel):
+    total_tracks: int
+    issue_total: int
+    issues_by_type: Dict[str, int]
+    metadata_repair: QualityQueueSummary
+    metadata_sanitation: QualityQueueSummary
+    coverage: QualityCoverageResponse
+    recommended_next_actions: List[QualityActionItem]
+
+
 def _filepath_prefixes(path_str: str) -> list[str]:
     """
     Return all filepath prefix variants to match against.
@@ -207,6 +243,149 @@ async def get_library_folders() -> List[FolderStatItem]:
 @router.get("/library/overview", response_model=LibraryOverviewResponse)
 async def get_library_overview() -> LibraryOverviewResponse:
     return LibraryOverviewResponse(**read_only_service.build_overview_payload())
+
+
+def _quality_queue_summary(payload: dict[str, Any]) -> dict[str, Any]:
+    counts = payload.get("counts", {}) if isinstance(payload, dict) else {}
+    by_confidence = counts.get("by_confidence", {}) if isinstance(counts, dict) else {}
+    return {
+        "queue_total": int(payload.get("queue_total", 0) or 0),
+        "pending": int(payload.get("pending_count", 0) or 0),
+        "approved": int(payload.get("approved_count", 0) or 0),
+        "partial": int(payload.get("partial_count", 0) or 0) + int(payload.get("partial_applied_count", 0) or 0),
+        "applied": int(payload.get("applied_count", 0) or 0),
+        "no_op": int(payload.get("no_op_count", 0) or 0),
+        "by_confidence": {
+            "HIGH": int(by_confidence.get("HIGH", 0) or 0),
+            "MEDIUM": int(by_confidence.get("MEDIUM", 0) or 0),
+            "LOW": int(by_confidence.get("LOW", 0) or 0),
+        },
+    }
+
+
+def _quality_coverage_payload(total_tracks: int, overview: dict[str, Any]) -> dict[str, int]:
+    with_bpm = int(overview.get("tracks_with_bpm", 0) or 0)
+    with_camelot = int(overview.get("tracks_with_camelot_key", 0) or 0)
+    missing_artist = int(overview.get("tracks_missing_artist", 0) or 0)
+    missing_title = int(overview.get("tracks_missing_title", 0) or 0)
+    with_artist = max(0, total_tracks - missing_artist)
+    with_title = max(0, total_tracks - missing_title)
+    with_genre = 0
+    if pipeline_db_exists():
+        try:
+            with get_pipeline_conn() as conn:
+                row = conn.execute(
+                    "SELECT COUNT(*) AS cnt FROM tracks WHERE TRIM(COALESCE(genre,'')) != ''"
+                ).fetchone()
+            with_genre = int(row["cnt"] or 0) if row else 0
+        except Exception:
+            with_genre = 0
+    return {
+        "with_artist": with_artist,
+        "with_title": with_title,
+        "with_bpm": with_bpm,
+        "with_camelot": with_camelot,
+        "with_genre": with_genre,
+    }
+
+
+def _quality_actions(
+    *,
+    issue_counts: dict[str, int],
+    repair_summary: dict[str, Any],
+    sanitation_summary: dict[str, Any],
+) -> list[dict[str, str]]:
+    actions: list[dict[str, str]] = []
+    sanitation_high = int(sanitation_summary.get("by_confidence", {}).get("HIGH", 0) or 0)
+    repair_high = int(repair_summary.get("by_confidence", {}).get("HIGH", 0) or 0)
+    weak_parse = int(issue_counts.get("weak_filename_parse", 0) or 0)
+    missing_artist = int(issue_counts.get("missing_artist", 0) or 0)
+    missing_title = int(issue_counts.get("missing_title", 0) or 0)
+    suspicious_artist = int(issue_counts.get("suspicious_artist", 0) or 0)
+    suspicious_title = int(issue_counts.get("suspicious_title", 0) or 0)
+
+    if sanitation_high:
+        actions.append({
+            "label": "Review HIGH metadata sanitation proposals",
+            "reason": f"{sanitation_high} high-confidence sanitation proposal(s) are ready.",
+            "target": "/metadata-sanitation",
+        })
+    if repair_high:
+        actions.append({
+            "label": "Review HIGH metadata repair proposals",
+            "reason": f"{repair_high} high-confidence metadata repair proposal(s) are ready.",
+            "target": "/metadata-repair",
+        })
+    if missing_artist or missing_title:
+        actions.append({
+            "label": "Investigate missing metadata",
+            "reason": f"{missing_artist} missing artist and {missing_title} missing title issue(s) remain.",
+            "target": "/issues",
+        })
+    if suspicious_artist or suspicious_title:
+        actions.append({
+            "label": "Review suspicious metadata issues",
+            "reason": f"{suspicious_artist + suspicious_title} suspicious artist/title issue(s) remain.",
+            "target": "/issues",
+        })
+    if weak_parse:
+        actions.append({
+            "label": "Review weak filename parses",
+            "reason": f"{weak_parse} track(s) still have weak filename parsing.",
+            "target": "/issues",
+        })
+    if not actions:
+        actions.append({
+            "label": "Open Library",
+            "reason": "No active cleanup actions are queued right now.",
+            "target": "/",
+        })
+    return actions[:4]
+
+
+@router.get("/library/quality", response_model=LibraryQualityResponse)
+async def get_library_quality() -> LibraryQualityResponse:
+    overview = read_only_service.build_overview_payload()
+    total_tracks = int(overview.get("total_tracks", 0) or 0)
+    issue_counts = track_service.get_issue_counts()
+    issue_total = sum(int(issue_counts.get(key, 0) or 0) for key in (
+        "missing_artist",
+        "missing_title",
+        "suspicious_artist",
+        "suspicious_title",
+        "weak_filename_parse",
+    ))
+    try:
+        root = selected_library_root()
+    except Exception:
+        root = None
+    if root is not None:
+        repair_summary = metadata_repair.summary(root)
+        sanitation_summary = metadata_sanitation.summary(root)
+    else:
+        repair_summary = metadata_repair.summary(Path("/nonexistent"))
+        sanitation_summary = metadata_sanitation.summary(Path("/nonexistent"))
+
+    response = {
+        "total_tracks": total_tracks,
+        "issue_total": issue_total,
+        "issues_by_type": {
+            "missing_artist": int(issue_counts.get("missing_artist", 0) or 0),
+            "missing_title": int(issue_counts.get("missing_title", 0) or 0),
+            "suspicious_artist": int(issue_counts.get("suspicious_artist", 0) or 0),
+            "suspicious_title": int(issue_counts.get("suspicious_title", 0) or 0),
+            "weak_filename_parse": int(issue_counts.get("weak_filename_parse", 0) or 0),
+        },
+        "metadata_repair": _quality_queue_summary(repair_summary),
+        "metadata_sanitation": _quality_queue_summary(sanitation_summary),
+        "coverage": _quality_coverage_payload(total_tracks, overview),
+        "recommended_next_actions": _quality_actions(
+            issue_counts=issue_counts,
+            repair_summary=repair_summary,
+            sanitation_summary=sanitation_summary,
+        ),
+    }
+    return LibraryQualityResponse(**response)
 
 
 # ---------------------------------------------------------------------------

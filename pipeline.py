@@ -2530,6 +2530,95 @@ def run_metadata_score_online(args) -> int:
     return 0
 
 
+def run_metadata_repair_scan(args) -> int:
+    """Generate deterministic metadata repair proposals without DB writes."""
+    try:
+        root = resolve_library_root(args)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    from modules import metadata_repair
+
+    result = metadata_repair.scan(root)
+    metadata_repair.print_scan_summary(result)
+    return 0
+
+
+def run_metadata_repair_apply(args) -> int:
+    """Dry-run or apply approved metadata repair proposals to tracks only."""
+    if getattr(args, "apply", False) and not getattr(args, "yes", False):
+        print("ERROR: --apply requires --yes for metadata-repair-apply.", file=sys.stderr)
+        return 2
+    try:
+        root = resolve_library_root(args)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    from modules import metadata_repair
+
+    result = metadata_repair.apply_approved(root, apply=bool(args.apply))
+    metadata_repair.print_apply_summary(result)
+    return 0
+
+
+def run_metadata_sanitation_scan(args) -> int:
+    """Generate deterministic metadata sanitation proposals without DB writes."""
+    try:
+        root = resolve_library_root(args)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    from modules import metadata_sanitation
+
+    result = metadata_sanitation.scan(root)
+    print("\n=== metadata-sanitation-scan ===")
+    print(f"root: {result['root']}")
+    print(f"queue: {result['queue_path']}")
+    print(
+        f"tracks scanned: {result['total_tracks']}  "
+        f"proposals: {result['proposal_count']}  "
+        f"skipped: {result['skipped_count']}"
+    )
+    confidence = result.get("counts", {}).get("by_confidence", {})
+    print(
+        "confidence: "
+        f"HIGH={confidence.get('HIGH', 0)} "
+        f"MEDIUM={confidence.get('MEDIUM', 0)} "
+        f"LOW={confidence.get('LOW', 0)}"
+    )
+    return 0
+
+
+def run_metadata_sanitation_apply(args) -> int:
+    """Dry-run or apply approved metadata sanitation proposals to tracks only."""
+    if getattr(args, "apply", False) and not getattr(args, "yes", False):
+        print("ERROR: --apply requires --yes for metadata-sanitation-apply.", file=sys.stderr)
+        return 2
+    try:
+        root = resolve_library_root(args)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    from modules import metadata_sanitation
+
+    result = metadata_sanitation.apply_approved(root, apply=bool(args.apply))
+    mode = "APPLY" if result.get("dry_run") is False else "DRY RUN"
+    print(f"\n=== metadata-sanitation-apply {mode} ===")
+    print(f"root: {result['root']}")
+    print(f"queue: {result['queue_path']}")
+    print(f"approved seen: {result['approved_seen']}")
+    print(
+        f"proposed: {result['proposed_count']}  "
+        f"applied: {result['applied_count']}  "
+        f"skipped: {result['skipped_count']}"
+    )
+    return 0
+
+
 def _load_enrichment_review_queue(root: Path) -> list[dict]:
     queue_path = root / "data" / "intelligence" / "enrichment_review_queue.jsonl"
     if not queue_path.exists():
@@ -5347,6 +5436,9 @@ def main() -> None:
             "Metadata Clean (global junk removal):\n"
             "  python pipeline.py metadata-clean --dry-run      # preview all field changes\n"
             "  python pipeline.py metadata-clean                # apply changes to library\n\n"
+            "Metadata Sanitation:\n"
+            "  python pipeline.py metadata-sanitation-scan --root /mnt/music_ssd/KKDJ\n"
+            "  python pipeline.py metadata-sanitation-apply --root /mnt/music_ssd/KKDJ --apply --yes\n\n"
             "Label Clean (local, Phase 1):\n"
             "  python pipeline.py label-clean                   # scan + report, no writes\n"
             "  python pipeline.py label-clean --write-tags      # write high-confidence labels\n"
@@ -6138,6 +6230,102 @@ def main() -> None:
     p_mso.add_argument(
         "--mock-providers", action="store_true",
         help="Use deterministic mock Spotify/Deezer candidates for scoring tests.",
+    )
+
+    # ----- metadata-repair-scan subcommand -----
+    p_mrs = subparsers.add_parser(
+        "metadata-repair-scan",
+        help="Generate deterministic metadata repair proposals",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Scan tracks for safe artist/title metadata repairs using only the\n"
+            "canonical DB and deterministic filename parsing. The scan does not\n"
+            "write the DB, audio tags, or library files; it writes only the queue\n"
+            "JSONL under <root>/data/intelligence/.\n\n"
+            "Example:\n"
+            "  python3 pipeline.py metadata-repair-scan --root /mnt/music_ssd/KKDJ\n"
+        ),
+    )
+    p_mrs.add_argument(
+        "--root", metavar="DIR", required=True,
+        help="Library root. DB defaults to <root>/logs/processed.db.",
+    )
+
+    # ----- metadata-repair-apply subcommand -----
+    p_mra = subparsers.add_parser(
+        "metadata-repair-apply",
+        help="Dry-run or apply approved metadata repairs to tracks only",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Read metadata_repair_state.json and apply only approved HIGH/MEDIUM\n"
+            "repair proposals to tracks.artist/title. No tags, files, BPM, key,\n"
+            "cue fields, or processed_state rows are changed.\n\n"
+            "Default mode: dry-run\n"
+            "Apply mode : --apply --yes\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py metadata-repair-apply --root /mnt/music_ssd/KKDJ\n"
+            "  python3 pipeline.py metadata-repair-apply --root /mnt/music_ssd/KKDJ --apply --yes\n"
+        ),
+    )
+    p_mra.add_argument(
+        "--root", metavar="DIR", required=True,
+        help="Library root. DB defaults to <root>/logs/processed.db.",
+    )
+    p_mra.add_argument(
+        "--apply", action="store_true",
+        help="Apply approved updates to the tracks table. Dry-run is the default.",
+    )
+    p_mra.add_argument(
+        "--yes", action="store_true",
+        help="Confirm apply mode. Required together with --apply.",
+    )
+
+    # ----- metadata-sanitation-scan subcommand -----
+    p_mss = subparsers.add_parser(
+        "metadata-sanitation-scan",
+        help="Generate deterministic metadata sanitation proposals",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Scan tracks for suspicious artist/title contamination using only the\n"
+            "canonical DB and deterministic sanitation rules. The scan does not\n"
+            "write the DB, audio tags, or library files; it writes only the queue\n"
+            "JSONL under <root>/data/intelligence/.\n\n"
+            "Example:\n"
+            "  python3 pipeline.py metadata-sanitation-scan --root /mnt/music_ssd/KKDJ\n"
+        ),
+    )
+    p_mss.add_argument(
+        "--root", metavar="DIR", required=True,
+        help="Library root. DB defaults to <root>/logs/processed.db.",
+    )
+
+    # ----- metadata-sanitation-apply subcommand -----
+    p_msa = subparsers.add_parser(
+        "metadata-sanitation-apply",
+        help="Dry-run or apply approved metadata sanitation proposals to tracks only",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Read metadata_sanitation_state.json and apply only approved artist/title\n"
+            "sanitation proposals to tracks.artist/title. No tags, files, BPM, key,\n"
+            "cue fields, or processed_state rows are changed.\n\n"
+            "Default mode: dry-run\n"
+            "Apply mode : --apply --yes\n\n"
+            "Examples:\n"
+            "  python3 pipeline.py metadata-sanitation-apply --root /mnt/music_ssd/KKDJ\n"
+            "  python3 pipeline.py metadata-sanitation-apply --root /mnt/music_ssd/KKDJ --apply --yes\n"
+        ),
+    )
+    p_msa.add_argument(
+        "--root", metavar="DIR", required=True,
+        help="Library root. DB defaults to <root>/logs/processed.db.",
+    )
+    p_msa.add_argument(
+        "--apply", action="store_true",
+        help="Apply approved updates to the tracks table. Dry-run is the default.",
+    )
+    p_msa.add_argument(
+        "--yes", action="store_true",
+        help="Confirm apply mode. Required together with --apply.",
     )
 
     # ----- enrichment-review subcommand -----
@@ -7630,6 +7818,18 @@ def main() -> None:
 
     if args.command == "metadata-score-online":
         sys.exit(run_metadata_score_online(args))
+
+    if args.command == "metadata-repair-scan":
+        sys.exit(run_metadata_repair_scan(args))
+
+    if args.command == "metadata-repair-apply":
+        sys.exit(run_metadata_repair_apply(args))
+
+    if args.command == "metadata-sanitation-scan":
+        sys.exit(run_metadata_sanitation_scan(args))
+
+    if args.command == "metadata-sanitation-apply":
+        sys.exit(run_metadata_sanitation_apply(args))
 
     if args.command == "enrichment-review":
         sys.exit(run_enrichment_review(args))

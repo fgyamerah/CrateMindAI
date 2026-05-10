@@ -15,6 +15,15 @@ from pydantic import BaseModel
 from ..models.track import Track
 
 
+def _recommended_issue_route(issues: List[str]) -> tuple[Optional[str], Optional[str]]:
+    issue_set = {str(issue) for issue in issues}
+    if {"suspicious_artist", "suspicious_title"} & issue_set:
+        return "Sanitize", "metadata-sanitation"
+    if {"missing_artist", "missing_title", "weak_filename_parse"} & issue_set:
+        return "Repair", "metadata-repair"
+    return None, None
+
+
 class TrackSummary(BaseModel):
     """Lightweight representation used in list/table responses."""
 
@@ -33,9 +42,12 @@ class TrackSummary(BaseModel):
     quality_tier: Optional[str] = None
     parse_confidence: Optional[str] = None
     issues:       List[str] = []
+    recommended_action: Optional[str] = None
+    recommended_route: Optional[str] = None
 
     @classmethod
     def from_track(cls, t: Track) -> "TrackSummary":
+        recommended_action, recommended_route = _recommended_issue_route(t.issues)
         return cls(
             id=t.id,
             filepath=t.filepath,
@@ -52,6 +64,8 @@ class TrackSummary(BaseModel):
             quality_tier=t.quality_tier,
             parse_confidence=t.parse_confidence,
             issues=t.issues,
+            recommended_action=recommended_action,
+            recommended_route=recommended_route,
         )
 
 
@@ -79,6 +93,8 @@ class TrackDetail(BaseModel):
     parse_confidence: Optional[str] = None
     enrichment_queue_item: Optional[Dict[str, Any]] = None
     issues:         List[str] = []
+    recommended_action: Optional[str] = None
+    recommended_route: Optional[str] = None
 
     @classmethod
     def from_track(
@@ -87,6 +103,7 @@ class TrackDetail(BaseModel):
         *,
         enrichment_queue_item: Optional[Dict[str, Any]] = None,
     ) -> "TrackDetail":
+        recommended_action, recommended_route = _recommended_issue_route(t.issues)
         return cls(
             id=t.id,
             filepath=t.filepath,
@@ -109,6 +126,8 @@ class TrackDetail(BaseModel):
             parse_confidence=t.parse_confidence,
             enrichment_queue_item=enrichment_queue_item,
             issues=t.issues,
+            recommended_action=recommended_action,
+            recommended_route=recommended_route,
         )
 
 

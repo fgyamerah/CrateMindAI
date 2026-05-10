@@ -603,7 +603,7 @@ function RunResultsPanel({
         ) : (
           <select
             style={{
-              background: 'var(--bg-secondary)', color: 'var(--text)',
+              background: 'var(--bg)', color: 'var(--text)', colorScheme: 'dark',
               border: '1px solid var(--border)', borderRadius: 3,
               fontSize: 11, padding: '2px 6px', maxWidth: 400,
             }}

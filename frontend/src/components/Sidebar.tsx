@@ -6,6 +6,9 @@ import {
   ClipboardList,
   FolderTree,
   Database,
+  Eraser,
+  BarChart3,
+  Wrench,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
@@ -28,8 +31,11 @@ const NAV: NavSection[] = [
     title: 'Browse',
     items: [
       { to: '/',             label: 'Library',          Icon: Library,       end: true },
+      { to: '/quality',      label: 'Quality',          Icon: BarChart3 },
       { to: '/issues',       label: 'Issues',           Icon: AlertTriangle },
       { to: '/enrichment',   label: 'Enrichment Queue', Icon: Sparkles },
+      { to: '/metadata-repair', label: 'Metadata Repair', Icon: Wrench },
+      { to: '/metadata-sanitation', label: 'Metadata Sanitation', Icon: Eraser },
       { to: '/audit',        label: 'Audit',            Icon: ClipboardList },
       { to: '/folders',      label: 'Folders',          Icon: FolderTree },
     ],
