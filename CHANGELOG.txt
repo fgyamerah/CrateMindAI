@@ -8,6 +8,57 @@ Rules:
 - Focus on WHY, not just WHAT
 
 ----------------------------------------------------------------------
+[2026-05-10] — docs: agent guidance and project direction documentation refresh
+----------------------------------------------------------------------
+TYPE: Documentation
+SUMMARY: Updated the repository guidance and context docs to reflect the current
+         CrateMindAI metadata operations workstation direction.
+
+DETAILS:
+  CLAUDE.md
+    - Preserved the scoped READ / MODIFY / EXPLORE operating model.
+    - Updated the project overview from TrackIQ-era pipeline wording to the
+      current CrateMindAI workstation direction.
+    - Added current architecture, current app commands, and new documentation
+      completion rules.
+
+  AGENTS.md
+    - Added concise Codex/OpenAI guidance with safety rules, root path rule,
+      human review model, and completion checklist.
+
+  docs/architecture/HUMAN_REVIEW_MODEL.md
+    - Documented issue detection, proposals, queues, field-level approval,
+      editable proposals, DB-only apply, and audit logging.
+
+  docs/architecture/UI_WORKFLOW_MODEL.md
+    - Documented the Library / Issues / Quality / Repair / Sanitation /
+      Enrichment / Reconciliation / Manual Editor workflow surfaces.
+
+  docs/operations/SESSION_COMPLETION_CHECKLIST.md
+    - Added a reusable end-of-session checklist for documentation and reporting.
+
+  PROJECT_CONTEXT.md
+    - Refreshed the canonical project memory to the current workstation model.
+
+  PROJECT_CONTEXT.txt
+    - Added the plain-text context mirror requested for future sessions.
+
+  README.md
+    - Added a short current-direction section for the metadata operations
+      workstation model.
+
+  NEXT_TASKS.txt
+    - Marked the documentation refresh and Phase 11B manual editor as complete.
+
+FILES: CLAUDE.md, AGENTS.md, docs/architecture/HUMAN_REVIEW_MODEL.md,
+       docs/architecture/UI_WORKFLOW_MODEL.md,
+       docs/operations/SESSION_COMPLETION_CHECKLIST.md,
+       PROJECT_CONTEXT.md, PROJECT_CONTEXT.txt, README.md, NEXT_TASKS.txt
+IMPACT: Documentation-only. No runtime behavior changed.
+NOTES: AGENTS.md and CLAUDE.md intentionally differ: CLAUDE keeps Claude-specific
+       operating modes and token discipline; AGENTS stays concise and Codex-focused.
+
+----------------------------------------------------------------------
 [2026-05-03] — feat: artist-repair-review command — human approval workflow for queued repairs
 ----------------------------------------------------------------------
 TYPE: Feature

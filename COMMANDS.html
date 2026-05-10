@@ -65,8 +65,37 @@
 
       <div class="mb-4 pb-3 border-bottom">
         <h1 class="h3 mb-1">CrateMindAI Command Reference</h1>
-        <span class="text-muted small">Version 2.0.0 &nbsp;·&nbsp; Updated 2026-04-20</span>
+        <span class="text-muted small">Version 2.0.0 &nbsp;·&nbsp; Updated 2026-05-10</span>
       </div>
+
+      <section class="mb-5 pb-3 border-bottom">
+        <h2 class="h5 mb-3">Current CrateMindAI Commands</h2>
+        <h6 class="text-uppercase text-muted small fw-bold mt-3 mb-1">App Startup</h6>
+        <pre class="bg-light border rounded p-3 small"><code>export CRATEMINDAI_LIBRARY_ROOT=/mnt/music_ssd/KKDJ
+uvicorn backend.app.main:app --reload --port 8000
+
+cd frontend
+npm run dev -- --host 127.0.0.1
+
+cd frontend
+npm run build
+
+./.venv/bin/python -m pytest tests/test_backend_api.py -q</code></pre>
+        <h6 class="text-uppercase text-muted small fw-bold mt-3 mb-1">Core CLI</h6>
+        <pre class="bg-light border rounded p-3 small"><code>python3 pipeline.py path-audit --root /mnt/music_ssd/KKDJ
+python3 pipeline.py path-reconcile --root /mnt/music_ssd/KKDJ
+python3 pipeline.py build-tracks --root /mnt/music_ssd/KKDJ
+python3 pipeline.py extract-track-metadata --root /mnt/music_ssd/KKDJ
+python3 pipeline.py metadata-score-online --root /mnt/music_ssd/KKDJ
+python3 pipeline.py metadata-repair-scan --root /mnt/music_ssd/KKDJ
+python3 pipeline.py metadata-repair-apply --root /mnt/music_ssd/KKDJ --apply --yes
+python3 pipeline.py metadata-sanitation-scan --root /mnt/music_ssd/KKDJ
+python3 pipeline.py metadata-sanitation-apply --root /mnt/music_ssd/KKDJ --apply --yes
+python3 pipeline.py enrichment-apply-approved --root /mnt/music_ssd/KKDJ --apply --yes</code></pre>
+        <h6 class="text-uppercase text-muted small fw-bold mt-3 mb-1">Manual Metadata API</h6>
+        <pre class="bg-light border rounded p-3 small"><code>POST /api/manual-metadata/preview
+POST /api/manual-metadata/apply</code></pre>
+      </section>
 
       <!-- Core Pipeline -->
       <section id="core-pipeline" class="mb-5 pb-3 border-bottom">

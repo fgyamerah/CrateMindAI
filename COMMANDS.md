@@ -2,7 +2,54 @@
 
 A reference for the CrateMindAI intelligence pipeline CLI.
 
-Version 2.0.0 &nbsp;·&nbsp; Updated 2026-04-20
+Version 2.0.0 &nbsp;·&nbsp; Updated 2026-05-10
+
+---
+
+## Current CrateMindAI Commands
+
+### App Startup
+
+```bash
+export CRATEMINDAI_LIBRARY_ROOT=/mnt/music_ssd/KKDJ
+uvicorn backend.app.main:app --reload --port 8000
+```
+
+```bash
+cd frontend
+npm run dev -- --host 127.0.0.1
+```
+
+```bash
+cd frontend
+npm run build
+```
+
+```bash
+./.venv/bin/python -m pytest tests/test_backend_api.py -q
+```
+
+### Core CLI
+
+```bash
+python3 pipeline.py path-audit --root /mnt/music_ssd/KKDJ
+python3 pipeline.py path-reconcile --root /mnt/music_ssd/KKDJ
+python3 pipeline.py build-tracks --root /mnt/music_ssd/KKDJ
+python3 pipeline.py extract-track-metadata --root /mnt/music_ssd/KKDJ
+python3 pipeline.py metadata-score-online --root /mnt/music_ssd/KKDJ
+python3 pipeline.py metadata-repair-scan --root /mnt/music_ssd/KKDJ
+python3 pipeline.py metadata-repair-apply --root /mnt/music_ssd/KKDJ --apply --yes
+python3 pipeline.py metadata-sanitation-scan --root /mnt/music_ssd/KKDJ
+python3 pipeline.py metadata-sanitation-apply --root /mnt/music_ssd/KKDJ --apply --yes
+python3 pipeline.py enrichment-apply-approved --root /mnt/music_ssd/KKDJ --apply --yes
+```
+
+### Manual Metadata API
+
+```text
+POST /api/manual-metadata/preview
+POST /api/manual-metadata/apply
+```
 
 ---
 

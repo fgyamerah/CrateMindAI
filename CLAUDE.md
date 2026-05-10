@@ -83,7 +83,7 @@ Claude MUST follow strict scope:
 
 # 🔁 SESSION HOUSEKEEPING (REQUIRED)
 
-At the end of every session where you changed code, fixed a bug, added a feature, or completed a task, you MUST update these three files before finishing:
+At the end of every session where you changed code, fixed a bug, added a feature, or completed a task, you MUST update the required documentation set before finishing:
 
 ### CHANGELOG.txt
 
@@ -100,7 +100,7 @@ Add an entry at the top:
 * Add new follow-ups
 * Update [~] for in-progress tasks
 
-### DJToolkit_CONTEXT.txt
+### PROJECT_CONTEXT.md
 
 Update any sections where:
 
@@ -110,20 +110,61 @@ Update any sections where:
 * config keys changed
 * known issues changed
 
+### PROJECT_CONTEXT.txt
+
+Keep the plain-text mirror aligned with `PROJECT_CONTEXT.md`.
+
+### README.md
+
+Update the high-level direction when architecture or workflow changed.
+
+### commands.md / COMMANDS.txt / COMMANDS.md / COMMANDS.html
+
+Update command references when startup, CLI, backend, or workflow commands change.
+
+### docs/architecture/HUMAN_REVIEW_MODEL.md
+
+Update when review queues, editable proposals, or DB-only apply behavior changes.
+
+### docs/architecture/UI_WORKFLOW_MODEL.md
+
+Update when navigation, routing, or review surfaces change.
+
+### docs/operations/SESSION_COMPLETION_CHECKLIST.md
+
+Keep the completion checklist aligned with the current documentation workflow.
+
+### AGENTS.md
+
+Update Codex/OpenAI guidance when operating rules or architecture change.
+
 Do NOT update these files if session was read-only.
 
 ---
 
 # 🧱 PROJECT OVERVIEW
 
-TrackIQ — a local-first, pipeline-based DJ library automation toolkit.
+CrateMindAI is a local-first, human-guided DJ library metadata operations workstation.
 
-Transforms raw downloads into:
+It turns a messy DJ library into a reviewed, auditable, current-state metadata
+system with deterministic repair, sanitation, and manual correction workflows.
 
-* clean metadata
-* BPM/key (MIK-compliant)
-* organized library
-* Rekordbox-compatible exports
+Current architecture:
+
+* `pipeline.py` CLI router
+* SQLite `logs/processed.db`
+* canonical `tracks` current-state table
+* `processed_state` history/audit table
+* FastAPI backend
+* React/Vite frontend
+* metadata repair workflow
+* metadata sanitation workflow
+* manual metadata editor
+* issue routing and review queues
+* reconciliation ledger / validation
+
+The user controls architecture and scope. If a task requires broader context,
+STOP and ask for permission.
 
 Runs on Linux → outputs to Windows-compatible DJ drive.
 
@@ -166,6 +207,48 @@ Use:
 ---
 
 # ⚙️ COMMANDS
+
+## Current App
+
+Backend startup:
+
+```bash
+export CRATEMINDAI_LIBRARY_ROOT=/mnt/music_ssd/KKDJ
+uvicorn backend.app.main:app --reload --port 8000
+```
+
+Frontend startup:
+
+```bash
+cd frontend
+npm run dev -- --host 127.0.0.1
+```
+
+Frontend build:
+
+```bash
+cd frontend
+npm run build
+```
+
+Backend tests:
+
+```bash
+./.venv/bin/python -m pytest tests/test_backend_api.py -q
+```
+
+Important CLI commands:
+
+* `path-audit`
+* `path-reconcile`
+* `build-tracks`
+* `extract-track-metadata`
+* `metadata-score-online`
+* `metadata-repair-scan`
+* `metadata-repair-apply`
+* `metadata-sanitation-scan`
+* `metadata-sanitation-apply`
+* `enrichment-apply-approved`
 
 ## Pipeline
 

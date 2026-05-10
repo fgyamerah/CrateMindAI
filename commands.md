@@ -1,6 +1,59 @@
 # DJ Toolkit — Command Reference
 
-All commands run from the project root:
+Current CrateMindAI commands:
+
+## App Startup
+
+Backend:
+
+```bash
+export CRATEMINDAI_LIBRARY_ROOT=/mnt/music_ssd/KKDJ
+uvicorn backend.app.main:app --reload --port 8000
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm run dev -- --host 127.0.0.1
+```
+
+Build:
+
+```bash
+cd frontend
+npm run build
+```
+
+Tests:
+
+```bash
+./.venv/bin/python -m pytest tests/test_backend_api.py -q
+```
+
+## Core CLI
+
+```bash
+python3 pipeline.py path-audit --root /mnt/music_ssd/KKDJ
+python3 pipeline.py path-reconcile --root /mnt/music_ssd/KKDJ
+python3 pipeline.py build-tracks --root /mnt/music_ssd/KKDJ
+python3 pipeline.py extract-track-metadata --root /mnt/music_ssd/KKDJ
+python3 pipeline.py metadata-score-online --root /mnt/music_ssd/KKDJ
+python3 pipeline.py metadata-repair-scan --root /mnt/music_ssd/KKDJ
+python3 pipeline.py metadata-repair-apply --root /mnt/music_ssd/KKDJ --apply --yes
+python3 pipeline.py metadata-sanitation-scan --root /mnt/music_ssd/KKDJ
+python3 pipeline.py metadata-sanitation-apply --root /mnt/music_ssd/KKDJ --apply --yes
+python3 pipeline.py enrichment-apply-approved --root /mnt/music_ssd/KKDJ --apply --yes
+```
+
+## Manual Metadata API
+
+```text
+POST /api/manual-metadata/preview
+POST /api/manual-metadata/apply
+```
+
+Legacy pipeline-era commands remain below for reference.
 
 
 # Quick Start

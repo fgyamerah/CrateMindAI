@@ -6,11 +6,27 @@
 [![Safety](https://img.shields.io/badge/safety-dry--run%20first-blue)](#safety-model)
 [![Mode](https://img.shields.io/badge/mode-review--first-informational)](#core-philosophy)
 
-CrateMindAI is a local-first DJ library operations platform for building and maintaining a clean, auditable, Rekordbox-ready music library.
+CrateMindAI is a local-first, human-guided DJ library metadata operations workstation for building and maintaining a clean, auditable, Rekordbox-ready music library.
 
 It is built around deterministic automation, explicit review queues, and conservative metadata ownership. It helps inspect, normalize, reconcile, and enrich a DJ library without handing control of musical analysis or performance-critical data to unstable automation.
 
 CrateMindAI is not a Rekordbox replacement. It is an operational layer around a DJ library: it prepares, audits, reviews, and organizes metadata so Rekordbox and Mixed In Key can remain the source of truth for DJ performance workflows.
+
+## Current Direction: Metadata Operations Workstation
+
+CrateMindAI now centers on canonical current-state library metadata management:
+
+- `tracks` is the canonical metadata surface.
+- `processed_state` is history and audit.
+- FastAPI powers the backend.
+- React/Vite powers the operational UI.
+- Metadata Repair recovers missing or broken artist/title values.
+- Metadata Sanitation removes junk/source/download contamination.
+- Manual Metadata Editor handles safe human correction when heuristics cannot decide.
+- Issues routes tracks into the correct review surface.
+- The reconciliation ledger records validation and state changes.
+
+The rest of this README still contains useful pipeline-era reference material and operational details.
 
 ## Overview
 
