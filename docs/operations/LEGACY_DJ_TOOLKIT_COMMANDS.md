@@ -1,4 +1,8 @@
-# DJ Toolkit — Command Reference
+# Legacy DJ Toolkit Command Reference
+
+> Historical archive preserved from the former lowercase `commands.md`.
+> Commands and safety semantics may be outdated. Use the canonical
+> [CrateMindAI command reference](../../COMMANDS.md) for current operations.
 
 All commands run from the project root:
 

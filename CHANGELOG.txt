@@ -2,6 +2,29 @@
 DJTOOLKIT — CHANGELOG
 ======================================================================
 
+[2026-07-02] — docs: resolve command-reference case conflict
+----------------------------------------------------------------------
+TYPE: Documentation stabilization
+SUMMARY: Removed the tracked COMMANDS.md/commands.md case-only collision that
+         caused a permanently confusing working tree on case-insensitive macOS.
+
+DETAILS:
+  - Kept COMMANDS.md as the canonical CrateMindAI command reference.
+  - Moved the distinct lowercase legacy guide to
+    docs/operations/LEGACY_DJ_TOOLKIT_COMMANDS.md.
+  - Added a historical warning and canonical-reference link to the archive.
+  - Updated repository documentation and generated file index references.
+
+FILES: COMMANDS.md, commands.md,
+       docs/operations/LEGACY_DJ_TOOLKIT_COMMANDS.md,
+       docs/generated/repo_file_index.md, README.md, NEXT_TASKS.txt,
+       PROJECT_CONTEXT.md, CHANGELOG.txt
+IMPACT: Documentation paths only; no backend, frontend, pipeline, sync, export,
+        reconciliation, or destructive workflow behavior changed.
+NOTES: Git records the lowercase file as a rename to a path that differs by
+       more than case, making the checkout portable across filesystem types.
+
+----------------------------------------------------------------------
 [2026-07-02] — test: stabilize clean backend test environment
 ----------------------------------------------------------------------
 TYPE: Stabilization

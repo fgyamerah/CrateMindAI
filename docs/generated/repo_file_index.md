@@ -54,7 +54,6 @@
 - `backend/requirements.txt`
 - `before_repair.txt`
 - `clean_pass.txt`
-- `commands.md`
 - `config/junk_patterns.json`
 - `config.py`
 - `config_local.py`
@@ -72,6 +71,7 @@
 - `docs/generated/safety_logic_index.md`
 - `docs/generated/schema_sql_index.md`
 - `docs/generated/sqlite_schema_dump.md`
+- `docs/operations/LEGACY_DJ_TOOLKIT_COMMANDS.md`
 - `enrich_pass.txt`
 - `enrich_run.txt`
 - `frontend/package-lock.json`

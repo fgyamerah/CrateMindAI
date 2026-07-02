@@ -472,6 +472,9 @@ Representative structure:
 Notes:
 
 - `pipeline.py` is the CLI entrypoint.
+- [COMMANDS.md](COMMANDS.md) is the canonical CrateMindAI CLI command reference.
+- [Legacy DJ Toolkit commands](docs/operations/LEGACY_DJ_TOOLKIT_COMMANDS.md)
+  are preserved for historical context only.
 - `db.py` owns the core SQLite schema helpers.
 - `backend/app/` owns the FastAPI backend.
 - `frontend/src/pages/CrateMind.tsx` owns the current dashboard workspace.

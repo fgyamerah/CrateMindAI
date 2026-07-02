@@ -31,6 +31,10 @@
   isolates `DJ_MUSIC_ROOT` and `CRATEMINDAI_LIBRARY_ROOT` in a temporary
   directory; no real library path is needed. One FastAPI/Starlette TestClient
   deprecation warning remains.
+- `COMMANDS.md` is the canonical command reference. The former lowercase
+  `commands.md` was moved to `docs/operations/LEGACY_DJ_TOOLKIT_COMMANDS.md`
+  to remove the macOS case-insensitive checkout conflict while preserving its
+  distinct historical content.
 - Next recommended task: add a non-secret environment template, runtime
   path/tool preflight, and smoke tests for the supported frontend/API contract.
 

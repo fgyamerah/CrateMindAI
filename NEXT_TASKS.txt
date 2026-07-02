@@ -30,6 +30,9 @@ P3 = low
 ----------------------------------------------------------------------
 CURRENT FOCUS
 ----------------------------------------------------------------------
+[x] (P1) Resolve COMMANDS.md / commands.md macOS case conflict (2026-07-02)
+         COMMANDS.md remains canonical; the distinct legacy DJ Toolkit guide is
+         archived at docs/operations/LEGACY_DJ_TOOLKIT_COMMANDS.md.
 [x] (P1) Post-audit frontend route/navigation consolidation (2026-07-02)
          Supported: library/quality/issues/enrichment/repair/sanitation/BPM/audit/
          folders/jobs/set-builder/exports/sync/reconciliation.
