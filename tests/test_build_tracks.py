@@ -43,6 +43,7 @@ def _create_db(
             filename TEXT NOT NULL,
             artist TEXT,
             title TEXT,
+            album TEXT,
             genre TEXT,
             bpm REAL,
             key_musical TEXT,
@@ -53,7 +54,8 @@ def _create_db(
             status TEXT NOT NULL DEFAULT 'pending',
             error_msg TEXT,
             processed_at TEXT,
-            pipeline_ver TEXT
+            pipeline_ver TEXT,
+            parse_confidence TEXT
         )
         """
     )

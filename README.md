@@ -353,12 +353,31 @@ The frontend is a React/Vite operational dashboard for CrateMindAI.
 
 It is intentionally dense and work-focused, not a marketing UI.
 
-Main areas:
+Supported routes:
 
-- Left sidebar: Library, Issues, Enrichment Queue, Audit, Folders.
-- Top bar: API status, library root, search, refresh.
-- Main content: overview, queue, audit, folders, and track table.
-- Right inspector: selected track details and enrichment review context.
+| Route | Workflow |
+|---|---|
+| `/` | Library workspace and track browsing |
+| `/quality` | Library quality summary |
+| `/issues` | Track issue review |
+| `/enrichment` | Enrichment queue review |
+| `/metadata-repair` | Deterministic metadata repair review |
+| `/metadata-sanitation` | Metadata sanitation review |
+| `/bpm-review` | BPM anomaly scan and review |
+| `/audit` | Latest path/library audit |
+| `/folders` | Folder-level library view |
+| `/jobs` | Allowlisted pipeline job submission and monitoring |
+| `/set-builder` | Set generation and saved set review |
+| `/exports` | Export validation and Rekordbox export jobs |
+| `/sync` | SSD sync preview and controlled execution |
+| `/reconciliation` | Read-only reconciliation ledger and plan validation |
+
+Legacy or incomplete page implementations remain in `frontend/src/pages/` for
+reference but are intentionally hidden. `/dashboard`, `/collection`, `/tracks`,
+and `/settings` redirect to `/`; the singular `/export` and `/ssd-sync` aliases
+redirect to their supported routes. `Collection.tsx` includes unfinished controls,
+`Settings.tsx` is a placeholder, and `Dashboard.tsx`/`Tracks.tsx` duplicate the
+current library and operations surfaces.
 
 Core dashboard capabilities:
 
@@ -471,16 +490,19 @@ Requirements vary by workflow, but the common local setup is:
 Python setup:
 
 ```bash
+python3 --version  # must be Python 3.10 or newer
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
+python -m pip install -r backend/requirements.txt
 ```
 
 Frontend setup:
 
 ```bash
-cd frontend
-npm install
+npm --prefix frontend install
+npm --prefix frontend run typecheck
+npm --prefix frontend run build
 ```
 
 Configure the active library root:
@@ -494,14 +516,14 @@ export CRATEMINDAI_LIBRARY_ROOT=/path/to/library
 Run the backend from the repository root:
 
 ```bash
-uvicorn backend.app.main:app --reload --port 8000 --app-dir .
+source .venv/bin/activate
+python -m uvicorn backend.app.main:app --reload --port 8000 --app-dir .
 ```
 
 Run the frontend:
 
 ```bash
-cd frontend
-npm run dev
+npm --prefix frontend run dev
 ```
 
 Typical local URLs:
@@ -565,53 +587,74 @@ Open operational dashboard:
 
 ```bash
 export CRATEMINDAI_LIBRARY_ROOT=/path/to/library
-uvicorn backend.app.main:app --reload --port 8000 --app-dir .
-cd frontend
-npm run dev
+source .venv/bin/activate
+python -m uvicorn backend.app.main:app --reload --port 8000 --app-dir .
+npm --prefix frontend run dev
 ```
 
 ## Testing
 
-Backend tests:
+Install Python test dependencies in an activated virtual environment:
 
 ```bash
-pytest tests/test_backend_api.py -q
+python3 --version  # must be Python 3.10 or newer
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-dev.txt
 ```
 
-Enrichment apply tests:
+Run the backend/pipeline test suite:
 
 ```bash
-pytest tests/test_enrichment_apply.py -q
+python -m pytest -q
 ```
 
-Frontend build:
+`requirements-dev.txt` includes pipeline dependencies, backend dependencies,
+pytest, FastAPI TestClient support, and a binary-wheel compatibility constraint
+for librosa's numba/llvmlite chain. The test suite automatically assigns both
+`DJ_MUSIC_ROOT` and `CRATEMINDAI_LIBRARY_ROOT` to a temporary directory; no
+local music-library path is required and tests do not write under `/music`.
+
+Run frontend verification:
 
 ```bash
-cd frontend
-npm run build
+npm --prefix frontend install
+npm --prefix frontend run typecheck
+npm --prefix frontend run build
 ```
 
 Common combined check:
 
 ```bash
-pytest tests/test_backend_api.py tests/test_enrichment_apply.py -q
-cd frontend
-npm run build
+python -m pytest -q
+npm --prefix frontend run typecheck
+npm --prefix frontend run build
 ```
 
-No tests are required for README-only edits unless markdown tooling is added to the repository.
+There is currently no frontend unit-test script; TypeScript and the production
+Vite build are the frontend checks.
 
 ## Known Limitations
 
 - CrateMindAI is not a Rekordbox replacement.
 - CrateMindAI does not own BPM, key, beatgrid, or cue authoring.
-- Phase 7 has not started.
+- Phase 7 apply implementation has not started; a planning specification exists.
 - Path reconciliation is not a broad automatic repair system.
 - Online enrichment is candidate scoring plus review workflow, not blind metadata overwrite.
 - Some legacy modules remain in the repository for compatibility and historical context.
 - `modules/organizer.py` is legacy/deprecated.
-- The frontend dashboard is operational and read-first; it is not intended to replace CLI control for every pipeline operation.
+- Legacy frontend pages are retained but hidden as described in the supported route table.
+- There is no authentication; run the app only in a trusted local environment.
+- Runtime paths and external tool availability still depend heavily on environment configuration.
+- The generic Jobs page is constrained by backend allowlists but does not explain every command's individual safety semantics.
+- Production frontend dependencies audit clean; development tooling still has advisories whose npm-proposed fix requires a Vite major upgrade.
+- The backend suite passes but currently emits one FastAPI/Starlette TestClient deprecation warning about the future HTTP client transition.
+- The frontend dashboard is operational but is not intended to replace CLI control for every pipeline operation.
 - External provider data may be incomplete or wrong, which is why review state exists.
+
+The recommended next stabilization task is a reproducible local-runtime preflight:
+add a non-secret environment template, validate required paths/tools at startup,
+and add smoke tests for the supported frontend/API route contract.
 
 ## Long-Term Vision
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw, Loader2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import {
   runBpmCheck,
   fetchBpmAnomalies,
@@ -114,7 +115,7 @@ function ReanalyzePanel({ onJobStarted }: ReanalyzePanelProps) {
         This runs <code>analyze-missing</code> as a tracked background job.
         With <code>--reanalyze</code>, BPM is re-detected even for tracks that already
         have a value — use this to fix incorrect stored BPMs.
-        Watch progress in the <a href="/jobs" className="card-action">Jobs page</a>.
+        Watch progress in the <Link to="/jobs" className="card-action">Jobs page</Link>.
       </p>
     </div>
   )

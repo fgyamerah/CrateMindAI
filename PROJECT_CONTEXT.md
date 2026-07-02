@@ -1,6 +1,7 @@
 # CrateMindAI Project Context
 
-**Updated:** 2026-05-06  
+**Updated:** 2026-07-02
+
 **Purpose:** Canonical low-token engineering memory for future AI sessions.
 
 ## Latest Milestone
@@ -9,6 +10,29 @@
 - Current stable commit hash: `b4c6ffb4048c4c98d225f6c65e40a7cce7f1a8e3`.
 - Next recommended phase: Phase 7 Full Reconciliation.
 - Warning: back up `<root>/logs/processed.db` before any reconciliation apply work.
+- Repository audit completed on 2026-07-02; see `AUDIT_REPORT.md` for the current technical/product state and follow-up priorities.
+- First post-audit stabilization completed on 2026-07-02: the frontend router
+  and sidebar now expose only supported workflows.
+- Supported frontend routes: `/`, `/quality`, `/issues`, `/enrichment`,
+  `/metadata-repair`, `/metadata-sanitation`, `/bpm-review`, `/audit`,
+  `/folders`, `/jobs`, `/set-builder`, `/exports`, `/sync`, and
+  `/reconciliation`.
+- Legacy `Dashboard`, `Collection`, and `Tracks` pages and placeholder
+  `Settings` remain in source but redirect to `/`; `/export` and `/ssd-sync`
+  are compatibility redirects.
+- Frontend install, typecheck, and production build pass. Production npm
+  dependencies audit clean after non-breaking updates; clearing the remaining
+  development-tool advisories requires a separately tested Vite major upgrade.
+- Backend development setup now uses `requirements-dev.txt` from a Python 3.10+
+  virtual environment. It includes pipeline/backend dependencies, pytest,
+  TestClient support, and a wheel-backed numba constraint.
+- `python -m pytest -q` passes 857 tests under an activated Python 3.12 venv.
+  Shared pytest setup
+  isolates `DJ_MUSIC_ROOT` and `CRATEMINDAI_LIBRARY_ROOT` in a temporary
+  directory; no real library path is needed. One FastAPI/Starlette TestClient
+  deprecation warning remains.
+- Next recommended task: add a non-secret environment template, runtime
+  path/tool preflight, and smoke tests for the supported frontend/API contract.
 
 ## Phase 7 Planning
 

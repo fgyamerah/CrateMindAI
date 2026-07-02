@@ -315,8 +315,9 @@ def test_validate_plan_accepts_valid_update_path_reference(tmp_path, monkeypatch
     out = capsys.readouterr().out
     assert rc == 0
     assert "Valid actions         : 1" in out
-    result_path = root / "logs" / "path_reconcile" / "20260507_validate_plan.json"
-    assert result_path.exists()
+    result_paths = list((root / "logs" / "path_reconcile").glob("*_validate_plan.json"))
+    assert len(result_paths) == 1
+    result_path = result_paths[0]
     payload = json.loads(result_path.read_text(encoding="utf-8"))
     assert payload["valid_actions"] == 1
 

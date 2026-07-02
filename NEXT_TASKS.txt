@@ -2,6 +2,19 @@
 DJTOOLKIT — NEXT TASKS / OPEN WORK
 ======================================================================
 
+Post-audit stabilization note (2026-07-02):
+- Full repository audit completed in `AUDIT_REPORT.md`.
+- Frontend route/navigation consolidation completed: supported operational pages
+  are mounted, legacy/placeholder pages redirect safely, and navigation matches
+  the router.
+- Frontend package metadata and documented install/typecheck/build commands were
+  normalized for a clean workspace.
+- Backend test environment stabilization completed: the dev requirements now
+  include backend/TestClient dependencies, test runs use an isolated temporary
+  pipeline/backend library root, and `python -m pytest -q` passes in Python 3.12.
+- Next recommended task: add a reproducible local-runtime preflight with a
+  non-secret environment template and smoke tests for supported UI/API routes.
+
 Legend:
 [ ] = open
 [~] = in progress
@@ -17,6 +30,21 @@ P3 = low
 ----------------------------------------------------------------------
 CURRENT FOCUS
 ----------------------------------------------------------------------
+[x] (P1) Post-audit frontend route/navigation consolidation (2026-07-02)
+         Supported: library/quality/issues/enrichment/repair/sanitation/BPM/audit/
+         folders/jobs/set-builder/exports/sync/reconciliation.
+         Hidden via redirects: legacy Dashboard, Collection, Tracks, and placeholder Settings.
+[x] (P1) Backend test environment stabilization (2026-07-02)
+         requirements-dev includes pipeline/backend/test dependencies; tests
+         isolate both library-root environment variables; 857 tests pass under Python 3.12.
+[ ] (P1) Local-runtime preflight and smoke-test contract
+         Add a non-secret env example, validate required paths/external tools,
+         and smoke-test the supported frontend/API route surface.
+[ ] (P2) Resolve FastAPI/Starlette TestClient HTTP client deprecation warning
+         Evaluate the supported httpx2 migration separately; current tests pass.
+[ ] (P2) Frontend build-tool dependency upgrade
+         Plan and test the Vite major upgrade required to clear the remaining
+         development-only npm audit advisories; do not use npm audit fix --force.
 [~] (P0) Phase 7 Full Reconciliation — next recommended phase after README Phase 1-8 platform milestone (2026-05-06)
          README.md has been updated for the Phase 1-8 platform milestone.
          Current stable commit hash: b4c6ffb4048c4c98d225f6c65e40a7cce7f1a8e3

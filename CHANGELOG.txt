@@ -2,6 +2,76 @@
 DJTOOLKIT — CHANGELOG
 ======================================================================
 
+[2026-07-02] — test: stabilize clean backend test environment
+----------------------------------------------------------------------
+TYPE: Stabilization
+SUMMARY: Made the declared development environment sufficient for the full
+         backend/pipeline test suite and isolated tests from real library paths.
+
+DETAILS:
+  - requirements-dev.txt now includes pipeline and backend runtime requirements,
+    pytest, explicit FastAPI TestClient support, and a wheel-backed numba range.
+  - Added shared pytest setup that assigns DJ_MUSIC_ROOT and
+    CRATEMINDAI_LIBRARY_ROOT to a temporary directory before application modules
+    are imported and removes it after the session.
+  - Updated stale build-tracks fixture schema for parse_confidence/album.
+  - Removed a date-dependent reconciliation assertion.
+  - Standardized documented setup on Python 3.10+ virtual environments and
+    `python -m pytest -q` after activation.
+
+FILES: requirements-dev.txt, tests/conftest.py, tests/test_build_tracks.py,
+       tests/test_reconciliation_ledger.py, README.md, AUDIT_REPORT.md,
+       NEXT_TASKS.txt, PROJECT_CONTEXT.md, CHANGELOG.txt
+IMPACT: Test/development environment only; no backend, frontend, or pipeline
+        runtime behavior changed.
+NOTES: 857 tests pass under Python 3.12. One FastAPI/Starlette TestClient
+       deprecation warning remains for a future HTTP client migration.
+
+----------------------------------------------------------------------
+[2026-07-02] — fix: consolidate supported frontend routes and navigation
+----------------------------------------------------------------------
+TYPE: Stabilization
+SUMMARY: Mounted completed operational pages, aligned the sidebar with the
+         router, redirected legacy surfaces, and normalized frontend setup docs.
+
+DETAILS:
+  - Added routes for BPM review, jobs, set builder, exports, and SSD sync.
+  - Added matching navigation entries and a catch-all redirect.
+  - Redirected duplicate/legacy Dashboard, Collection, and Tracks pages plus
+    placeholder Settings; retained their source files for future review.
+  - Added compatibility redirects from /export and /ssd-sync.
+  - Changed visible frontend naming from DJ Toolkit to CrateMindAI.
+  - Applied non-breaking npm security updates; production dependencies now
+    audit clean. Deferred the breaking Vite major upgrade needed for the
+    remaining development-toolchain advisories.
+  - Documented supported/deferred routes and clean install/typecheck/build commands.
+
+FILES: frontend/src/App.tsx, frontend/src/components/Sidebar.tsx,
+       frontend/src/pages/BpmReview.tsx, frontend/index.html,
+       frontend/package.json, frontend/package-lock.json, AUDIT_REPORT.md,
+       README.md, NEXT_TASKS.txt, PROJECT_CONTEXT.md, CHANGELOG.txt
+IMPACT: Frontend-only route/navigation stabilization; no backend or pipeline
+        execution behavior changed.
+NOTES: Authentication remains intentionally out of scope. Operations remain
+       suitable only for a trusted local environment.
+
+----------------------------------------------------------------------
+[2026-07-02] — docs: repository audit report added
+----------------------------------------------------------------------
+TYPE: Documentation
+SUMMARY: Added a full technical/product audit at `AUDIT_REPORT.md` and
+         recorded the current highest-priority follow-up tasks.
+
+DETAILS:
+  - Captured repository structure, runtime setup, persistence, security,
+    frontend/backend surface, AI/LLM usage, and verification results.
+  - Noted that frontend routing and clean-checkout build/test reproducibility
+    are the most immediate issues to address next.
+
+FILES: AUDIT_REPORT.md, NEXT_TASKS.txt, PROJECT_CONTEXT.md
+IMPACT: No runtime behavior change.
+NOTES: This is a documentation-only update to support the next implementation phase.
+
 Rules:
 - Most recent entries at the top
 - Always include: TYPE, SUMMARY, DETAILS, FILES, IMPACT, NOTES

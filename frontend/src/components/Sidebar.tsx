@@ -9,6 +9,11 @@ import {
   Eraser,
   BarChart3,
   Wrench,
+  Activity,
+  ListChecks,
+  Music,
+  Download,
+  HardDrive,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
@@ -36,8 +41,18 @@ const NAV: NavSection[] = [
       { to: '/enrichment',   label: 'Enrichment Queue', Icon: Sparkles },
       { to: '/metadata-repair', label: 'Metadata Repair', Icon: Wrench },
       { to: '/metadata-sanitation', label: 'Metadata Sanitation', Icon: Eraser },
+      { to: '/bpm-review',   label: 'BPM Review',       Icon: Activity },
       { to: '/audit',        label: 'Audit',            Icon: ClipboardList },
       { to: '/folders',      label: 'Folders',          Icon: FolderTree },
+    ],
+  },
+  {
+    title: 'Operations',
+    items: [
+      { to: '/jobs',        label: 'Jobs',        Icon: ListChecks },
+      { to: '/set-builder', label: 'Set Builder', Icon: Music },
+      { to: '/exports',     label: 'Export',      Icon: Download },
+      { to: '/sync',        label: 'SSD Sync',    Icon: HardDrive },
     ],
   },
   {
