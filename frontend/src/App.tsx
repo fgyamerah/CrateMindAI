@@ -18,7 +18,7 @@ import SsdSync from './pages/SsdSync'
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route element={<AppShell />}>
             <Route index element={<ErrorBoundary><Home /></ErrorBoundary>} />
