@@ -1,0 +1,17 @@
+[
+  {
+    "path": "/home/koolkatdj/Music/music/library/sorted/#/&ME Rampa Adam Port Keinemusik Chuala/Say What.mp3",
+    "reason": "low_confidence",
+    "details": ""
+  },
+  {
+    "path": "/home/koolkatdj/Music/music/library/sorted/#/2point1/2Point1 - 3 Don't Say (1).mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/home/koolkatdj/Music/music/library/sorted/#/2point1/2Point1 - 3 Don't Say.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  }
+]

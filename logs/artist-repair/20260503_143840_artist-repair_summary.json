@@ -1,0 +1,14 @@
+{
+  "run_date": "2026-05-03T14:38:40.625374+00:00",
+  "input": "/mnt/music_ssd/KKDJ/sorted",
+  "mode": "APPLY",
+  "files_scanned": 5633,
+  "skip_unchanged": 0,
+  "no_merge": 5170,
+  "flagged": 463,
+  "high_confidence": 120,
+  "review_queued": 343,
+  "applied": 120,
+  "moved": 0,
+  "errors": 0
+}

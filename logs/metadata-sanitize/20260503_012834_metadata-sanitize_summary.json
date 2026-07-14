@@ -1,0 +1,25 @@
+{
+  "command": "metadata-sanitize",
+  "input_path": "/mnt/music_ssd/KKDJ/sorted/A",
+  "limit": 8000,
+  "started_at": "2026-05-03T01:28:34.129888",
+  "finished_at": "2026-05-03T01:28:37.532779",
+  "duration_sec": 3.402891,
+  "files_scanned": 119,
+  "files_processed": 119,
+  "applied": true,
+  "results": {
+    "changed": 8,
+    "unchanged": 111,
+    "skipped": 0,
+    "errors": 0
+  },
+  "review_count": 0,
+  "moved_to_ignored": 0,
+  "exit_code": 0,
+  "detail_files": {
+    "modified": [
+      "20260503_012834_metadata-sanitize_modified_001.json"
+    ]
+  }
+}

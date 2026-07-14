@@ -1,0 +1,47 @@
+[
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/&ME Rampa Adam Port Keinemusik Chuala/Say What - 8A - 120.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/&ME Rampa Adam Port Sofie/Discoteca - 12A - 120.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/&friends Phina Asa/This Is What It Feels Like - 4A - 120.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/2fox/Just Be - 8A - 118.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/4th Measure Men/4th Measure Men You - 2A - 123.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Ain't Gonna - 8A - 94.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Can't Get Through - 7A - 122.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.79"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Everybody - 8A - 116.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.76"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Hi End (Blond_ish remix) - 11A - 125.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  }
+]

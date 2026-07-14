@@ -1,0 +1,1002 @@
+[
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Pirahnahead & Diviniti/A Dream - 5A - 126.mp3",
+    "reason": "separator_normalized",
+    "details": "Pirahnahead & Diviniti → Pirahnahead, Diviniti"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Pitchben, Tiger & Woods/Stand Up - 4A - 117.mp3",
+    "reason": "nested_split",
+    "details": "Pitchben, Tiger & Woods → Pitchben, Tiger, Woods"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Premiere David Mayer & Floyd Lavine/XI - 5A - 123.mp3",
+    "reason": "separator_normalized",
+    "details": "PREMIERE : David Mayer & Floyd Lavine → PREMIERE : David Mayer, Floyd Lavine"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Premiere Floyd Lavine & Gumz/Black Note - 10A - 123.mp3",
+    "reason": "separator_normalized",
+    "details": "PREMIERE : Floyd Lavine & Gumz → PREMIERE : Floyd Lavine, Gumz"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Pretty Pink Feat. Northern Lite/2 Here Comes The Sun - 3A - 122.mp3",
+    "reason": "separator_normalized",
+    "details": "Pretty Pink Feat. Northern Lite → Pretty Pink feat. Northern Lite"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Prince Kaybee/Prince Kaybee Feat. Lady Zamar Charlotte (Original) (1) - 12A - 122.mp3",
+    "reason": "separator_normalized",
+    "details": "Prince Kaybee Feat. Lady Zamar → Prince Kaybee feat. Lady Zamar"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Prince Kaybee/Prince Kaybee Feat. Lady Zamar Charlotte (Original) - 12A - 122.mp3",
+    "reason": "separator_normalized",
+    "details": "Prince Kaybee Feat. Lady Zamar → Prince Kaybee feat. Lady Zamar"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Prince Kaybee/Prince Kaybee Gugulethu - 12A - 123.mp3",
+    "reason": "separator_normalized",
+    "details": "Prince Kaybee Feat. Indlovukazi, Supta & Afro Brothers → Prince Kaybee feat. Indlovukazi, Supta & Afro Brothers"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Professor/3 Imoto - 11A - 156.mp3",
+    "reason": "separator_normalized",
+    "details": "Professor Feat. Charactor & Oskido → Professor feat. Charactor & Oskido"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Professor/Professor Feat. Charactor & Oskido Imoto (Vega Durban Drumappella) - 8A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Professor Feat. Charactor & Oskido → Professor feat. Charactor & Oskido"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Project Soul Vs. How2 Groove/Rumour - 5A - 126.mp3",
+    "reason": "separator_normalized",
+    "details": "Project Soul Vs. How2 Groove → Project Soul, How2 Groove"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Prok & Fitch/3 Rhyme For Rhyme - 3A - 123.mp3",
+    "reason": "separator_normalized",
+    "details": "Prok & Fitch → Prok, Fitch"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Prok & Fitch & Filthy Rich/4 Time To Jam - 1A - 126.mp3",
+    "reason": "separator_normalized",
+    "details": "Prok & Fitch & Filthy Rich → Prok, Fitch, Filthy Rich"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Purple Disco Machine/Purple Disco Machine - Hypnotized (Club Dub Mix) - 10A - 120.mp3",
+    "reason": "separator_normalized",
+    "details": "Purple Disco Machine/Sophie and the Giants → Purple Disco Machine/Sophie, the Giants"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Purple Disco Machine/Purple Disco Machine - Hypnotized (Club Dub Mix) [Mixed] - 10A - 120.mp3",
+    "reason": "separator_normalized",
+    "details": "Purple Disco Machine/Sophie and the Giants → Purple Disco Machine/Sophie, the Giants"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Purple Disco Machine/Purple Disco Machine - Hypnotized - 10A - 108.mp3",
+    "reason": "separator_normalized",
+    "details": "Purple Disco Machine/Sophie and the Giants → Purple Disco Machine/Sophie, the Giants"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Purple Disco Machine/Purple Disco Machine - I Love You More - 9A - 105.mp3",
+    "reason": "separator_normalized",
+    "details": "René & Angela → René, Angela"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Purple Disco Machine/Purple Disco Machine - In the Dark - 11A - 116.mp3",
+    "reason": "separator_normalized",
+    "details": "Purple Disco Machine/Sophie and the Giants → Purple Disco Machine/Sophie, the Giants"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Purple Disco Machine/Purple Disco Machine - Shake It Down - 8A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Mattei & Omich → Mattei, Omich"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Purple Disco Machine/Purple Disco Machine - Taste of Bitter Love - 6A - 111.mp3",
+    "reason": "separator_normalized",
+    "details": "Gladys Knight & The Pips → Gladys Knight, The Pips"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/The Power Of Three & Vanessa Freeman/1 The Time Is Coming - 8A - 120.mp3",
+    "reason": "separator_normalized",
+    "details": "The Power Of Three & Vanessa Freeman → The Power Of Three, Vanessa Freeman"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/Q/Qubiko & Fabio Ricciuti/On Your Mind - 8A - 123.mp3",
+    "reason": "separator_normalized",
+    "details": "Qubiko & Fabio Ricciuti → Qubiko, Fabio Ricciuti"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/R & R/Just Another Day - 5A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "R & R → R, R"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rabs Vhafuwi & Gami Swaga/Rabs Vhafuwi & Gami Swaga Light After Dark - 9A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Rabs Vhafuwi & Gami Swaga → Rabs Vhafuwi, Gami Swaga"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rabs Vhafuwi & Pale Rozay/Where She Goes - 11A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Rabs Vhafuwi & Pale Rozay → Rabs Vhafuwi, Pale Rozay"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rafael Drager & Sebastian Rivero/Even If We Fight - 8A - 122.mp3",
+    "reason": "separator_normalized",
+    "details": "Rafael Drager & Sebastian Rivero → Rafael Drager, Sebastian Rivero"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Ralf GUM & Monique Bingham/2 Claudette - 3A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Ralf GUM & Monique Bingham → Ralf GUM, Monique Bingham"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rampa/Rampa, Sparrow & Barbossa - Champion - 5A - 121.mp3",
+    "reason": "nested_split",
+    "details": "Rampa, Sparrow & Barbossa → Rampa, Sparrow, Barbossa"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rampa & Sparrow & Barbossa/Champion - 5A - 121.mp3",
+    "reason": "separator_normalized",
+    "details": "Rampa & Sparrow & Barbossa → Rampa, Sparrow, Barbossa"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rampa, Sparrow & Barbossa/Champion - 5A - 121.mp3",
+    "reason": "nested_split",
+    "details": "Rampa, Sparrow & Barbossa → Rampa, Sparrow, Barbossa"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rare Music Store/CHASING CARS - 11A - 120.mp3",
+    "reason": "casing_normalized",
+    "details": "SNOW PATROL → Snow Patrol"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rare Music Store/GLADIATOR - 11A - 124.mp3",
+    "reason": "casing_normalized",
+    "details": "ALEXIS CARTIER → Alexis Cartier"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rare Music Store/HIGHEST IN THE ROOM - 7A - 122.mp3",
+    "reason": "casing_normalized",
+    "details": "TRAVIS SCOTT → Travis Scott"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rare Music Store/HOZA - 4A - 120.mp3",
+    "reason": "casing_normalized",
+    "details": "NATIVE P → Native P"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rare Music Store/MADAN - 5A - 123.mp3",
+    "reason": "casing_normalized",
+    "details": "SALIF KEITA → Salif Keita"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rare Music Store/MAPS - 12A - 120.mp3",
+    "reason": "casing_normalized",
+    "details": "MAROON 5 → Maroon 5"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rare Music Store/WALKING ON A DREAM - 4A - 120.mp3",
+    "reason": "casing_normalized",
+    "details": "EMPIRE OF THE SUN → Empire Of The Sun"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rawnik ft Themba/Rawnik ft Themba Ncama Jika - 7A - 124.m4a",
+    "reason": "feat_normalized",
+    "details": "Rawnik ft Themba → Rawnik feat. Themba"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Red Light [feat. David Gordon]/Thankful - 6A - 124.mp3",
+    "reason": "multi_artist_split",
+    "details": "Red Light David Gordon → Red Light, David Gordon"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Reel People feat. Angela Johnson/Can’t Stop - 8A - 121.mp3",
+    "reason": "multi_artist_split",
+    "details": "Reel People Angela Johnson → Reel People, Angela Johnson"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Reelsoul, Groove Junkies & Solara/2 For Those Who Know, Part 2 - 8A - 123.mp3",
+    "reason": "nested_split",
+    "details": "Reelsoul, Groove Junkies & Solara → Reelsoul, Groove Junkies, Solara"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Renato Xtrova & Eddy Tussa/3 Angolano Kikola - 7A - 126.mp3",
+    "reason": "separator_normalized",
+    "details": "Renato Xtrova & Eddy Tussa → Renato Xtrova, Eddy Tussa"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rene Amesz, Prok & Fitch/4 Keep On - 3A - 123.mp3",
+    "reason": "nested_split",
+    "details": "Rene Amesz, Prok & Fitch → Rene Amesz, Prok, Fitch"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Reuxen, Larion, Sofiya Nzau/Niuka - 10A - 118.mp3",
+    "reason": "multi_artist_split",
+    "details": "Reuxen Larion Sofiya Nzau → Reuxen Larion, Sofiya Nzau"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rhythm Staircase, Stones & Bones, HyperSOUL-X/Assim Bebe - 6A - 120.mp3",
+    "reason": "nested_split",
+    "details": "Rhythm Staircase, Stones & Bones, HyperSOUL-X → Rhythm Staircase, Stones, Bones, HyperSOUL-X"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Richar Earnshaw feat Imogen Ryall/Richar Earnshaw feat Imogen Ryall Cry Me A River (Remixed By Black Coffee) - 7A - 127.mp3",
+    "reason": "separator_normalized",
+    "details": "Richar Earnshaw feat Imogen Ryall → Richar Earnshaw feat. Imogen Ryall"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Risk Assessment Monica Blaire/It's Not Right But It's Okay - 5A - 125.mp3",
+    "reason": "multi_artist_split",
+    "details": "Risk Assessment Monica Blaire → Risk Assessment, Monica Blaire"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Risk Assessment Vanessa Freeman/Do U Love Me - 11A - 122.mp3",
+    "reason": "multi_artist_split",
+    "details": "Risk Assessment Vanessa Freeman → Risk Assessment, Vanessa Freeman"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Risque Connection Dave Lee/Saturday - 8A - 123.mp3",
+    "reason": "multi_artist_split",
+    "details": "Risque Connection Dave Lee → Risque Connection, Dave Lee"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Riva Starr & Dajae/The Loft - 8A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Riva Starr & Dajae → Riva Starr, Dajae"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Riva Starr & Fideles/The Superdope feat. Fideles - 7A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Riva Starr & Fideles → Riva Starr, Fideles"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Riva Starr & Hyperloop/Resilience - 5A - 127.mp3",
+    "reason": "separator_normalized",
+    "details": "Riva Starr & Hyperloop → Riva Starr, Hyperloop"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Riva Starr & Phebe Edwards/Love Divine feat. Phebe Edwards - 4A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Riva Starr & Phebe Edwards → Riva Starr, Phebe Edwards"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Riva Starr & Trim/Dance Me - 4A - 126.mp3",
+    "reason": "separator_normalized",
+    "details": "Riva Starr & Trim → Riva Starr, Trim"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rocco Rodamaal Keith Thompson/Break 4 Love (1) - 6A - 125.mp3",
+    "reason": "multi_artist_split",
+    "details": "Rocco Rodamaal Keith Thompson → Rocco Rodamaal, Keith Thompson"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rocco Rodamaal Keith Thompson/Break 4 Love - 5A - 125.mp3",
+    "reason": "multi_artist_split",
+    "details": "Rocco Rodamaal Keith Thompson → Rocco Rodamaal, Keith Thompson"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Roland Clark Urban Soul/What Do I Gotta Do - 7A - 122.mp3",
+    "reason": "multi_artist_split",
+    "details": "Roland Clark Urban Soul → Roland Clark, Urban Soul"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Roland Wrightangle ft Darcus/In Your Blood - 9A - 116.mp3",
+    "reason": "feat_normalized",
+    "details": "Roland Wrightangle ft Darcus → Roland Wrightangle feat. Darcus"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Ron Hall & The Muthafunkaz/The Way You Love Me - 8A - 126.mp3",
+    "reason": "separator_normalized",
+    "details": "Ron Hall & The Muthafunkaz → Ron Hall, The Muthafunkaz"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Ron Hall & The Muthafunkaz ft. Marc Evans/The Way You Love Me - 8A - 126.mp3",
+    "reason": "separator_normalized",
+    "details": "Ron Hall & The Muthafunkaz feat. Marc Evans → Ron Hall, The Muthafunkaz feat. Marc Evans"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rony Breaker, Coree Mathews/I'm Crazy In Love - 7A - 123.mp3",
+    "reason": "multi_artist_split",
+    "details": "Rony Breaker Coree Mathews → Rony Breaker, Coree Mathews"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rosalie., James Mac & Vall/The Boy Is Mine - 12A - 123.mp3",
+    "reason": "nested_split",
+    "details": "Rosalie., James Mac & Vall → Rosalie., James Mac, Vall"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rosario, DJ Nax & DJ Satelite/Rosario, DJ Nax & DJ Satelite Drum Movement (Mix Main) - 2A - 126.mp3",
+    "reason": "nested_split",
+    "details": "Rosario, DJ Nax & DJ Satelite → Rosario, DJ Nax, DJ Satelite"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/SLAMTWISTED feat. Poetic Leestar/So Alive - 4A - 122.mp3",
+    "reason": "separator_normalized",
+    "details": "SLAMTWISTED feat. Poetic Leestar → Slamtwisted feat. Poetic Leestar"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/SLAMTWISTED, Kareem Shabazz/Love Will Find A Way - 12A - 102.mp3",
+    "reason": "separator_normalized",
+    "details": "SLAMTWISTED, Kareem Shabazz → Slamtwisted, Kareem Shabazz"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/SPHEctacula & DJ Naves/SPHEctacula & DJ Naves Bhampa (feat. DJ Tira Tipcee & Beast) - 9A - 126.mp3",
+    "reason": "separator_normalized",
+    "details": "SPHEctacula & DJ Naves → SPHEctacula, DJ Naves"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/SPHEctacula and DJ Naves/2 Ngisho - 2A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "SPHEctacula and DJ Naves → SPHEctacula, DJ Naves"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/SPIRITCHASER DEANNA FEARON/Tonight - 3B - 123.mp3",
+    "reason": "casing_normalized",
+    "details": "SPIRITCHASER DEANNA FEARON → Spiritchaser Deanna Fearon"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/SUPER BAD, Dario Cecchini/Superchicken - 3A - 105.mp3",
+    "reason": "separator_normalized",
+    "details": "SUPER BAD, Dario Cecchini → Super Bad, Dario Cecchini"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sammy Deuce, Treasure Fingers/Fooled Me - 5A - 123.mp3",
+    "reason": "multi_artist_split",
+    "details": "Sammy Deuce Treasure Fingers → Sammy Deuce, Treasure Fingers"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/SanXero Feat. Mr. V & Louie Vega/Let's Freak - 2A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "SanXero Feat. Mr. V & Louie Vega → SanXero feat. Mr. V, Louie Vega"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sandy Rivera & Andy Daniell/Whatever - 1A - 127.mp3",
+    "reason": "separator_normalized",
+    "details": "Sandy Rivera & Andy Daniell → Sandy Rivera, Andy Daniell"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sandy Rivera & Haze/Freak - 7A - 128.mp3",
+    "reason": "separator_normalized",
+    "details": "Sandy Rivera & Haze → Sandy Rivera, Haze"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sandy Rivera & Jose Burgos/Papi - 9A - 127.mp3",
+    "reason": "separator_normalized",
+    "details": "Sandy Rivera & Jose Burgos → Sandy Rivera, Jose Burgos"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sandy Rivera & Jose Burgos/The Path - 9A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Sandy Rivera & Jose Burgos → Sandy Rivera, Jose Burgos"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Santé vs MD X-Spress/This Is House - 7A - 123.mp3",
+    "reason": "separator_normalized",
+    "details": "Santé vs MD X-Spress → Santé, MD X-Spress"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Scara ft Elaina/Scara ft Elaina Rising (Mizz Remix) - 8A - 122.m4a",
+    "reason": "feat_normalized",
+    "details": "Scara ft Elaina → Scara feat. Elaina"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Scoper & Bubba/I'm Satisfied - 8A - 120.mp3",
+    "reason": "separator_normalized",
+    "details": "Scoper & Bubba → Scoper, Bubba"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sdudla Noma1000/Sdudla Noma1000 - Isingingci - 3A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Sdudla Noma1000/Mr. Luu & MSK → Sdudla Noma1000/Mr. Luu, MSK"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Seamus Haji & Michael Gray Audrey Martells/Wish - 10A - 120.mp3",
+    "reason": "separator_normalized",
+    "details": "Seamus Haji & Michael Gray Audrey Martells → Seamus Haji, Michael Gray Audrey Martells"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Seb Skalski Nick Sinckler/Awaken Me - 8B - 120.mp3",
+    "reason": "multi_artist_split",
+    "details": "Seb Skalski Nick Sinckler → Seb Skalski, Nick Sinckler"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Seb Skalski Rona Ray/It's Getting Started - 11A - 124.mp3",
+    "reason": "multi_artist_split",
+    "details": "Seb Skalski Rona Ray → Seb Skalski, Rona Ray"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sebas Ramis & Tutsi Girl Play House/3 Heartbreaker - 2A - 121.mp3",
+    "reason": "separator_normalized",
+    "details": "Sebas Ramis & Tutsi Girl Play House → Sebas Ramis, Tutsi Girl Play House"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Seductive Souls/Ain't Nobody - 9A - 125.mp3",
+    "reason": "multi_artist_split",
+    "details": "Seductive Souls Onita Boone → Seductive Souls, Onita Boone"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Seth Schwarz & Westerby/Aphelion - 8A - 123.mp3",
+    "reason": "separator_normalized",
+    "details": "Seth Schwarz & Westerby → Seth Schwarz, Westerby"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sgt Slick Karina Chavez/I Thank You - 3A - 123.mp3",
+    "reason": "multi_artist_split",
+    "details": "Sgt Slick Karina Chavez → Sgt Slick, Karina Chavez"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sharinga/Sharinga Black Coffee (DJ Joejo Remix) - 4A - 125.mp3",
+    "reason": "feat_normalized",
+    "details": "Sharinga ft Soulstar My World → Sharinga feat. Soulstar My World"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Shazmicsoul Artwork Sounds Neosoul/My Name On it - 10A - 116.mp3",
+    "reason": "multi_artist_split",
+    "details": "Shazmicsoul Artwork Sounds Neosoul → Shazmicsoul Artwork, Sounds Neosoul"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sheila & B. Devotion/Spacer - 8A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Sheila & B Devotion → Sheila, B Devotion"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Shimza/Shimza - Lolo - 12A - 125.mp3",
+    "reason": "alias_resolved",
+    "details": "Shimza, Heavy-K, S'dudla Ma 1000 → Shimza, Heavy K, S'dudla Ma 1000"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Shona SA & DJ Fresh SA feat. Zimkitha/Baleka - 1A - 120.mp3",
+    "reason": "separator_normalized",
+    "details": "Shona SA & DJ Fresh SA feat. Zimkitha → Shona SA, DJ Fresh SA feat. Zimkitha"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Shredder SA & Marco Pex & Lyrical Ivy/Horizon - 10A - 120.mp3",
+    "reason": "separator_normalized",
+    "details": "Shredder SA x Marco Pex x Lyrical Ivy → Shredder SA, Marco Pex, Lyrical Ivy"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Siege & Cevin Fisher/4 Consciousness - 6A - 126.mp3",
+    "reason": "separator_normalized",
+    "details": "Siege & Cevin Fisher → Siege, Cevin Fisher"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Signum Feat. Scott Mac/4 Coming On Strong - 7A - 126.mp3",
+    "reason": "separator_normalized",
+    "details": "Signum Feat. Scott Mac → Signum feat. Scott Mac"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Simo Lagnawi, FNX OMAR/Simo Lagnawi, FNX OMAR Freeka (Original Mix) - 9A - 120.mp3",
+    "reason": "separator_normalized",
+    "details": "Simo Lagnawi, FNX OMAR → Simo Lagnawi, Fnx Omar"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Simo Lagnawi, FNX OMAR/Simo Lagnawi, FNX OMAR Freeka - 9A - 120.mp3",
+    "reason": "separator_normalized",
+    "details": "Simo Lagnawi, FNX OMAR → Simo Lagnawi, Fnx Omar"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sio, Atmos Blaq/Abandonment Issues - 12A - 120.mp3",
+    "reason": "separator_normalized",
+    "details": "Sio x Atmos Blaq → Sio, Atmos Blaq"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sllash & Doppe/Bamboleo (1) - 11A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Sllash & Doppe → Sllash, Doppe"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sllash & Doppe/Bamboleo - 11A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Sllash & Doppe → Sllash, Doppe"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sllash & Doppe/Sllash & Doppe - Bamboleo - 11A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Sllash & Doppe → Sllash, Doppe"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soldera & Cazt & Dandara Manoela/Minha Prece Remix - 6A - 122.mp3",
+    "reason": "separator_normalized",
+    "details": "Soldera & Cazt & Dandara Manoela → Soldera, Cazt, Dandara Manoela"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soneec, Crazibiza & Vince Tomas/Once Again - 8A - 126.mp3",
+    "reason": "nested_split",
+    "details": "Soneec, Crazibiza & Vince Tomas → Soneec, Crazibiza, Vince Tomas"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sonny Fodera & Bontan/Reach Out - 5A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Sonny Fodera & Bontan → Sonny Fodera, Bontan"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sonny Fodera & Cervendos/Let's Go - 6A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Sonny Fodera & Cervendos → Sonny Fodera, Cervendos"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sonny Fodera & Cervendos/Let’s Go - 6A - 123.mp3",
+    "reason": "separator_normalized",
+    "details": "Sonny Fodera & Cervendos → Sonny Fodera, Cervendos"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sophie Lloyd & Dames Brown/Calling Out feat. Dames Brown - 4A - 126.mp3",
+    "reason": "separator_normalized",
+    "details": "Sophie Lloyd & Dames Brown → Sophie Lloyd, Dames Brown"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soul Invaders ft Lady Vox/1 Faith In Me - 9A - 123.mp3",
+    "reason": "feat_normalized",
+    "details": "Soul Invaders ft Lady Vox → Soul Invaders feat. Lady Vox"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soul Invaders ft Lady Vox/2 Faith In Me - 11A - 120.mp3",
+    "reason": "feat_normalized",
+    "details": "Soul Invaders ft Lady Vox → Soul Invaders feat. Lady Vox"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulic M/Let Music Speak - 9A - 124.mp3",
+    "reason": "multi_artist_split",
+    "details": "Soulic M Drama Drizzy → Soulic M Drama, Drizzy"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulroots & Chaleee feat. Lizwi/Izinyand - 2A - 120.mp3",
+    "reason": "separator_normalized",
+    "details": "Soulroots & Chaleee feat. Lizwi → Soulroots, Chaleee feat. Lizwi"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulroots & Native Tribe feat. Lelloh/Choose You - 2A - 121.mp3",
+    "reason": "separator_normalized",
+    "details": "Soulroots & Native Tribe feat. Lelloh → Soulroots, Native Tribe feat. Lelloh"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulroots, West & Hill and Jackie Queens/Let Me In - 8A - 122.mp3",
+    "reason": "nested_split",
+    "details": "Soulroots, West & Hill and Jackie Queens → Soulroots, West, Hill and Jackie Queens"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulstance & The Modern African Spirit/Black Star - 5A - 120.mp3",
+    "reason": "separator_normalized",
+    "details": "Soulstance & The Modern African Spirit → Soulstance, The Modern African Spirit"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soweto Gospel Choir & Groove Terminator/Good Life - 10A - 116.mp3",
+    "reason": "separator_normalized",
+    "details": "Soweto Gospel Choir & Groove Terminator → Soweto Gospel Choir, Groove Terminator"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sparrow & Barbossa/Amore Profondo - 8A - 120.mp3",
+    "reason": "separator_normalized",
+    "details": "Sparrow & Barbossa → Sparrow, Barbossa"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sparrow & Barbossa/Sparrow & Barbossa Yeke (Enzo Siffredi's Remix) - 5A - 122.mp3",
+    "reason": "separator_normalized",
+    "details": "Sparrow & Barbossa → Sparrow, Barbossa"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sparrow & Barbossa/Sparrow & Barbossa, Nomvula SA - Amore Profondo (Caiiro Remix) - 8A - 120.mp3",
+    "reason": "nested_split",
+    "details": "Sparrow & Barbossa, Nomvula SA → Sparrow, Barbossa, Nomvula SA"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Spencer Morales, Phebe Edwards/Whatcha Gonna Do With My Lovin - 3A - 120.mp3",
+    "reason": "multi_artist_split",
+    "details": "Spencer Morales Phebe Edwards → Spencer Morales, Phebe Edwards"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Spiller & Sophie Ellis-Bextor/Groovejetfeat. Sophie Ellis-Bextor (Riva Starr Skylight Ha - 8A - 123.mp3",
+    "reason": "separator_normalized",
+    "details": "Spiller & Sophie Ellis-Bextor → Spiller, Sophie Ellis-Bextor"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Spin Worx Dynamic Soul/Heart Sings Louder - 8A - 118.mp3",
+    "reason": "multi_artist_split",
+    "details": "Spin Worx Dynamic Soul → Spin Worx, Dynamic Soul"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Stabfinger & K.D.S/Lloré - 10A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Stabfinger & K.D.S → Stabfinger, K.D.S"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Stand Up (feat Ramona Renea/Extended Mix) - 6A - 123.mp3",
+    "reason": "separator_normalized",
+    "details": "Stand Up (feat Ramona Renea → Stand Up (feat. Ramona Renea"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sterling Ensemble, Michelle Rivera/Todo De Ti - 5A - 123.mp3",
+    "reason": "multi_artist_split",
+    "details": "Sterling Ensemble Michelle Rivera → Sterling Ensemble, Michelle Rivera"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Steve Group & Mono T ft Xelimpilo & Vital/Steve Group & Mono T ft Xelimpilo & Vital Nyambarara (Original) - 6A - 125.mp3",
+    "reason": "feat_normalized",
+    "details": "Steve Group & Mono T ft Xelimpilo & Vital → Steve Group, Mono T feat. Xelimpilo & Vital"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Steve Group Feat. Uhuru/Steve Group Feat. Uhuru Celina (Original) - 6A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Steve Group Feat. Uhuru → Steve Group feat. Uhuru"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Steve Silk Hurley ft Sharon Pass/The Word Is Love - 5A - 126.mp3",
+    "reason": "feat_normalized",
+    "details": "Steve Silk Hurley ft Sharon Pass → Steve Silk Hurley feat. Sharon Pass"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Steven Stone & Marc Evans/Never Give Up - 8A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Steven Stone & Marc Evans → Steven Stone, Marc Evans"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Stones & Bones/Amahloni - 4A - 116.mp3",
+    "reason": "separator_normalized",
+    "details": "Stones & Bones Toshi → Stones, Bones Toshi"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Stones & Bones/Amahloni feat. Toshi - 4A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "21. Stones & Bones → 21. Stones, Bones"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Stones & Bones/Marhambu - 7A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Stones & Bones → Stones, Bones"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Stones & Bones/Stones & Bones Feat. Mque Soultie (Enoo Napa & Kususa Remix) - 11A - 123.mp3",
+    "reason": "separator_normalized",
+    "details": "Stones & Bones Feat. Mque → Stones, Bones feat. Mque"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Stones & Bones/Stones & Bones Feat. Mque Soultie - 11A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Stones & Bones Feat. Mque → Stones, Bones feat. Mque"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Stones & Bones/Stones & Bones Masambe (feat. Mpumi) - 7A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Stones & Bones → Stones, Bones"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Stones & Bones/Stones & Bones, Mpumi Masambe feat. Mpumi (Santiago Garcia Remix) - 7A - 121.mp3",
+    "reason": "nested_split",
+    "details": "Stones & Bones, Mpumi → Stones, Bones, Mpumi"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sunnery James & Ryan Marciano Vs. Thomas Newson/3 I'll House You - 11A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Sunnery James & Ryan Marciano Vs. Thomas Newson → Sunnery James, Ryan Marciano Vs. Thomas Newson"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Supernova, Prok & Fitch/3 Frozen Ladies - 8A - 124.mp3",
+    "reason": "nested_split",
+    "details": "Supernova, Prok & Fitch → Supernova, Prok, Fitch"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Swift Feat. Theo Lawson/Swift Feat. Theo Lawson Afro Hard (Moon Rocket & Romero Remix) - 6A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Swift Feat. Theo Lawson → Swift feat. Theo Lawson"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sydenham & Ferrer/Sandcastles - 6A - 126.mp3",
+    "reason": "separator_normalized",
+    "details": "Sydenham & Ferrer → Sydenham, Ferrer"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/The Soul Kitchen Micky More & Andy Tee Angela Johnson Dj Meme/Is It Love You're After - 7A - 120.mp3",
+    "reason": "separator_normalized",
+    "details": "The Soul Kitchen Micky More & Andy Tee Angela Johnson Dj Meme → The Soul Kitchen Micky More, Andy Tee Angela Johnson Dj Meme"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/TSOS & Nalize/Open Your Eyes - 5A - 123.mp3",
+    "reason": "separator_normalized",
+    "details": "TSOS & Nalize → TSOS, Nalize"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tabia, Maz (BR), MAXI MERAKI, APACHE (FR)/Nothing On Me - 11A - 122.mp3",
+    "reason": "separator_normalized",
+    "details": "Tabia, Maz (BR), MAXI MERAKI, APACHE (FR) → Tabia, Maz (BR), Maxi Meraki, APACHE (FR)"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tabia, Maz (BR), MAXI MERAKI, APACHE (FR)/Tabia, Maz (BR), MAXI MERAKI, APACHE (FR) - Nothing On Me - 11A - 122.mp3",
+    "reason": "separator_normalized",
+    "details": "Tabia, Maz (BR), MAXI MERAKI, APACHE (FR) → Tabia, Maz (BR), Maxi Meraki, APACHE (FR)"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tapesh & Mr. J feat. Nacho Lezcano/Tapesh & Mr. J feat. Nacho Lezcano Camino - 9A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Tapesh & Mr. J feat. Nacho Lezcano → Tapesh, Mr. J feat. Nacho Lezcano"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Teddy Douglas Pauline Taylor/Don't Turn Your Back On Me - 4A - 123.mp3",
+    "reason": "multi_artist_split",
+    "details": "Teddy Douglas Pauline Taylor → Teddy Douglas, Pauline Taylor"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Teddy Douglas Ultra Nate/Searching - 9A - 126.mp3",
+    "reason": "multi_artist_split",
+    "details": "Teddy Douglas Ultra Nate → Teddy Douglas, Ultra Nate"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tee Smith feat. Emily Holligan/Keep On Going - 1A - 124.mp3",
+    "reason": "multi_artist_split",
+    "details": "Tee Smith Emily Holligan → Tee Smith, Emily Holligan"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Teejay Walton & Gina Glover/Teejay Walton & Gina Glover Rescue Me (Nikos Diamantopoulos Remix) - 3A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Teejay Walton & Gina Glover → Teejay Walton, Gina Glover"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Terry Dexter/Renegade (1) - 8A - 123.mp3",
+    "reason": "multi_artist_split",
+    "details": "Terry Dexter Wez Whynt → Terry Dexter, Wez Whynt"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Thabzen Dj Bibo Feat. FB/Thabzen Dj Bibo Feat. 3 Famba Nawena (Album Version) - 4A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Thabzen Dj Bibo Feat. FB → Thabzen Dj Bibo feat. FB"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Thandi Draai & Dj Beekay/Letha - 12A - 120.mp3",
+    "reason": "separator_normalized",
+    "details": "Thandi Draai & Dj Beekay → Thandi Draai, Dj Beekay"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/The Truffle Tribe x Belladonna/Hidden Harmony - 5A - 122.mp3",
+    "reason": "separator_normalized",
+    "details": "The Truffle Tribe x Belladonna → The Truffle Tribe, Belladonna"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/The Truffle Tribe x Belladonna/Tangent - 12A - 123.mp3",
+    "reason": "separator_normalized",
+    "details": "The Truffle Tribe x Belladonna → The Truffle Tribe, Belladonna"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Thulasizwe/Thulasizwe Amaphupho - 1A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Thulasizwe Feat. Caiiro → Thulasizwe feat. Caiiro"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tiesto, Tears For Fears, NIIKO X SWAE, GUDFELLA/Rule The World - 10A - 128.mp3",
+    "reason": "separator_normalized",
+    "details": "Tiesto, Tears For Fears, NIIKO X SWAE, GUDFELLA → Tiesto, Tears For Fears, Niiko X Swae, Gudfella"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tikyo ft Andrea Love/Love Will Bring Us Back - 3A - 124.mp3",
+    "reason": "feat_normalized",
+    "details": "Tikyo ft Andrea Love → Tikyo feat. Andrea Love"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Timmy Regisford & Felicia Graham/Timmy Regisford & Felicia Graham Smile - 6A - 126.mp3",
+    "reason": "separator_normalized",
+    "details": "Timmy Regisford & Felicia Graham → Timmy Regisford, Felicia Graham"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Todd Edwards & Sinden/Deeper - 8A - 126.mp3",
+    "reason": "separator_normalized",
+    "details": "Todd Edwards & Sinden → Todd Edwards, Sinden"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Todd Terry & Gypsymen/Babarabatiri - 7A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Todd Terry & Gypsymen → Todd Terry, Gypsymen"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Todd Terry & Riva Starr/This Is The Sound - 8A - 126.mp3",
+    "reason": "separator_normalized",
+    "details": "Todd Terry & Riva Starr → Todd Terry, Riva Starr"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tom Bug & Grooveline/Love Will Shine - 7A - 127.mp3",
+    "reason": "separator_normalized",
+    "details": "Tom Bug & Grooveline → Tom Bug, Grooveline"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tom Conrad Carla Prather/Speechless - 8A - 123.mp3",
+    "reason": "multi_artist_split",
+    "details": "Tom Conrad Carla Prather → Tom Conrad, Carla Prather"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tom Glide/You Are My Light - 2A - 122.mp3",
+    "reason": "multi_artist_split",
+    "details": "Tom Glide Funmilayo Ngozi → Tom Glide, Funmilayo Ngozi"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Toni Braxton & Baby Face/Toni Braxton & Baby Face Hurt You (Baba Visto House Remix) - 11A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Toni Braxton & Baby Face → Toni Braxton, Baby Face"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/TradeMark Feat. Durban Nyts, Zinhle Ngid/TradeMark Feat. Durban Nyts, Zinhle Ngid Shumaya (Mash.O Herb Mix) - 6A - 126.mp3",
+    "reason": "separator_normalized",
+    "details": "TradeMark Feat. Durban Nyts, Zinhle Ngid → TradeMark feat. Durban Nyts, Zinhle Ngid"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Trademark & Afrikan Roots/Trademark & Afrikan Roots Ndebele Guitar - 12A - 126.mp3",
+    "reason": "separator_normalized",
+    "details": "Trademark & Afrikan Roots → Trademark, Afrikan Roots"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Trigga, Chase & Status, Irah, Flowdan, Bou/Baddadan - 4A - 87.mp3",
+    "reason": "nested_split",
+    "details": "Trigga, Chase & Status, Irah, Flowdan, Bou → Trigga, Chase, Status, Irah, Flowdan, Bou"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tube & Berger/Imprint of Pleasure - 8A - 122.mp3",
+    "reason": "separator_normalized",
+    "details": "Tube & Berger → Tube, Berger"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tuccillo & Kiko Navarro feat. Amor/Tuccillo & Kiko Navarro feat. Amor Lovery (D.Y.A & Kalyma Remix) - 1A - 121.mp3",
+    "reason": "separator_normalized",
+    "details": "Tuccillo & Kiko Navarro feat. Amor → Tuccillo, Kiko Navarro feat. Amor"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tumelo/Tumelo Feat. Rorisang Not Sleeping Alone (1) - 12A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Tumelo Feat. Rorisang → Tumelo feat. Rorisang"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tumelo/Tumelo Feat. Rorisang Not Sleeping Alone - 12A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Tumelo Feat. Rorisang → Tumelo feat. Rorisang"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Turbojazz ft Jennyfire/Optimistic - 2A - 121.mp3",
+    "reason": "feat_normalized",
+    "details": "Turbojazz ft Jennyfire → Turbojazz feat. Jennyfire"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Two Door Cinema Club/Two Door Cinema Club - Bad Decisions (Purple Disco Machine Remix) - 7B - 118.mp3",
+    "reason": "multi_artist_split",
+    "details": "Two Door Cinema Club → Two Door, Cinema Club"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/T/Tyga Ft Big Sean & Flo Milli/Dumb107 - 3A - 107.mp3",
+    "reason": "feat_normalized",
+    "details": "Tyga Ft Big Sean & Flo Milli → Tyga feat. Big Sean & Flo Milli"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/UMEK & Groovebox/4 Cause And Effect - 4A - 130.mp3",
+    "reason": "separator_normalized",
+    "details": "UMEK & Groovebox → UMEK, Groovebox"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/UPZ & PM Project Sofiya Nzau/Na Wose - 5A - 120.mp3",
+    "reason": "separator_normalized",
+    "details": "UPZ & PM Project Sofiya Nzau → UPZ, PM Project Sofiya Nzau"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/UPZ & Salvador & Sofiya Nzau/Walking on Water - 8A - 116.mp3",
+    "reason": "separator_normalized",
+    "details": "UPZ & Salvador & Sofiya Nzau → UPZ, Salvador, Sofiya Nzau"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Uhuru/3 Shoota (Original) - 7A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Uhuru Feat. Heavy k & Dicklas One → Uhuru feat. Heavy k & Dicklas One"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Uhuru/3 Shoota - 7A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Uhuru Feat. Heavy k & Dicklas One → Uhuru feat. Heavy k & Dicklas One"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Uhuru/Uhuru Feat. Mafikizolo Khona (Deejay Ivan Afro5 HardRemix) - 2A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Uhuru Feat. Mafikizolo → Uhuru feat. Mafikizolo"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Umek & Mike Vale/3 All I Want - 9A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Umek & Mike Vale → Umek, Mike Vale"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Uncle Waffles & Tony Duardo/Tanzania Sino Msolo & Boibizza) - 2A - 113.mp3",
+    "reason": "separator_normalized",
+    "details": "Uncle Waffles & Tony Duardo → Uncle Waffles, Tony Duardo"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Underground Ministries feat. Kenny Bobien/I Shall Not Be Moved - 1A - 126.mp3",
+    "reason": "multi_artist_split",
+    "details": "Underground Ministries Kenny Bobien → Underground Ministries, Kenny Bobien"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Alive - 7A - 122.mp3",
+    "reason": "multi_artist_split",
+    "details": "Badbox Vanco Bobbi Fallon → Badbox Vanco, Bobbi Fallon"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Another One Bites - 9A - 120.mp3",
+    "reason": "separator_normalized",
+    "details": "Block & Crown → Block, Crown"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Chagu (1) - 2A - 120.mp3",
+    "reason": "nested_split",
+    "details": "MoBlack, Emmanuel Jal & Henrik Schwarz → MoBlack, Emmanuel Jal, Henrik Schwarz"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Famax - 4A - 121.mp3",
+    "reason": "casing_normalized",
+    "details": "RAFFA GUIDO → Raffa Guido"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Gold - 7A - 122.mp3",
+    "reason": "separator_normalized",
+    "details": "Daniel Rateuke & Awen → Daniel Rateuke, Awen"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/I Want U Back - 4B - 118.mp3",
+    "reason": "separator_normalized",
+    "details": "Block & Crown DJ Groovemonkey → Block, Crown DJ Groovemonkey"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Imamou - 5A - 123.mp3",
+    "reason": "multi_artist_split",
+    "details": "Francis Mercier Boukman Eksperyans → Francis Mercier, Boukman Eksperyans"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Kamili - 8A - 120.mp3",
+    "reason": "separator_normalized",
+    "details": "Francis Mercier Idd Aziz & Nitefreak → Francis Mercier Idd Aziz, Nitefreak"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Mantra - 3A - 122.mp3",
+    "reason": "separator_normalized",
+    "details": "Nes Mburu & Bush B4 Me → Nes Mburu, Bush B4 Me"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Marrakech - 9A - 123.mp3",
+    "reason": "multi_artist_split",
+    "details": "Bun Xapa Jalal Ramdani → Bun Xapa, Jalal Ramdani"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Mi Casa - 11A - 124.mp3",
+    "reason": "feat_normalized",
+    "details": "2fox ft Nandi → 2fox feat. Nandi"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Oh Boy - 3A - 123.mp3",
+    "reason": "multi_artist_split",
+    "details": "Dave Anthony Lynn Lockamy → Dave Anthony, Lynn Lockamy"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Panko Day - 12A - 121.mp3",
+    "reason": "separator_normalized",
+    "details": "Sébastien Léger & Roy Rosenfeld → Sébastien Léger, Roy Rosenfeld"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Party People Night & Day - 2A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Block & Crown Paul Parsons → Block, Crown Paul Parsons"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Peperuke - 10A - 122.mp3",
+    "reason": "multi_artist_split",
+    "details": "Nes Mburu Alex Wann → Nes Mburu, Alex Wann"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Possibilities & Harmonies - 8A - 120.mp3",
+    "reason": "separator_normalized",
+    "details": "Emanuele Esposito Gianni Romano & Tim Schou → Emanuele Esposito Gianni Romano, Tim Schou"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Savior.mp3",
+    "reason": "separator_normalized",
+    "details": "Coco Mole & Nitefreak → Coco Mole, Nitefreak"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Shinbra.mp3",
+    "reason": "separator_normalized",
+    "details": "Lizwi x Sounds Of Rituals Komashov → Lizwi, Sounds Of Rituals Komashov"
+  }
+]

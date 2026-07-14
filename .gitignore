@@ -1,82 +1,151 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# =========================
+# ENV / SECRETS
+# =========================
+.env
+.env.*
+.envrc
+.envrc.local
+config_local.py
 
-# IDE and editors
-.idea/
-.vscode/
-
-# Dependencies
-node_modules/
-/node_modules
-/.pnp
-.pnp.js
-.yarn/install-state.gz
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# Testing
-/coverage
-
-# Next.js
-/.next/
-/out/
-next-env.d.ts
-*.tsbuildinfo
-
-# Production builds
-/build
-dist/
-dist
-
-# Environment files (comprehensive coverage)
-
-*token.json*
-*credentials.json*
-
-# Logs and debug files
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-dump.rdb
-
-# System files
-.DS_Store
-*.pem
-
-# Python
+# =========================
+# PYTHON
+# =========================
 __pycache__/
-*pyc*
-venv/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+build/
+dist/
+*.whl
+
+# Virtual environments
 .venv/
+venv/
 
-# Development tools
-chainlit.md
-.chainlit
-.ipynb_checkpoints/
-.ac
+# =========================
+# AI / PREVIEW OUTPUTS
+# =========================
+preview*.json
+*_preview.json
+full_preview.json
 
-# Deployment
-.vercel
+# Claude / prompt logs
+last-prompts/
 
-# Data and databases
-agenthub/agents/youtube/db
+# =========================
+# AI DATASETS (LOCAL ONLY)
+# =========================
+data/intelligence/
+*.jsonl
+ai/review_dataset.py
 
-# Archive files and large assets
-**/*.zip
-**/*.tar.gz
-**/*.tar
-**/*.tgz
-*.pack
-*.deb
-*.dylib
-
-# Build caches
+# =========================
+# CACHE / TEMP
+# =========================
+cache/
 .cache/
+*.tmp
+*.cache
 
-memory/test_credentials.md
+# =========================
+# DATABASES
+# =========================
+*.db
+*.sqlite
+backend/data/
 
-# Mobile development
-android-sdk/
+# =========================
+# LOGS
+# =========================
+_LOGS/
+*.log
+
+# =========================
+# AUDIO FILES (DO NOT TRACK)
+# =========================
+*.mp3
+*.wav
+*.flac
+*.aiff
+*.aac
+*.m4a
+*.ogg
+
+# =========================
+# ARCHIVES
+# =========================
+*.zip
+*.tar
+*.gz
+
+# =========================
+# NODE / FRONTEND
+# =========================
+node_modules/
+dist/
+build/
+
+# =========================
+# EDITOR / OS
+# =========================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.lock
+
+# =========================
+# EXTERNAL / MOUNTED PATHS
+# =========================
+mnt/
+
+# =========================
+# DJ LIBRARY (CRITICAL)
+# =========================
+Music/
+music/
+KKDJ/
+*_LIBRARY/
+*_SSD/
+
+# =========================
+# EXPORTS
+# =========================
+exports/
+output/
+*.m3u
+*.xml
+
+# =========================
+# TEST / COVERAGE
+# =========================
+.coverage
+htmlcov/
+.pytest_cache/
+
+# =========================
+# LOCAL AI MODELS
+# =========================
+*.gguf
+ollama_models/
+
+# temp dev files
+*_pass.txt
+*_run.txt
+preview.txt
+sample_codes/
+
+# Assistant / workflow files
+CLAUDE.md
+DJToolkit_CONTEXT.txt
+PROJECT_CONTEXT.txt
+
+# Scratch / preview
+preview.txt
+sample_codes/
+djtoolkit_label_intelligence_feature/
+
+# Local service files if not meant for repo
+systemd/

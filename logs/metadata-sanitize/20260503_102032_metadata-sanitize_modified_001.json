@@ -1,0 +1,437 @@
+[
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/B Show/B Show, Lilocox - 3 Union.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Babes Wodumo/Babes Wodumo - Jiva Phez'kombhede (Feat. Mampintsha, Ntando Duma).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Baila/Baila - Amine'o, Lilyass, Ottmann (Extended Mix) 122.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Beat Bazar/Beat Bazar - Mama Oke (Original Mix) (Unquantize) 122.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bekzin Terris/Bekzin Terris - 3 Bekzin B3at (Original).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Belyi/Belyi, Kirr - Good Karma (Moblack Records).mp3",
+    "reason": "title_label_suffix_stripped",
+    "details": "title:title_label_suffix_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Berita/Berita - 2 Yours (Pastor Snow Afro Mix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Beyonce/Beyonce feat. Jay-Z - 3 Drunk In Love (DJ Nova Afro Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bhizer/Bhizer, Busiswa - 3 Gobisiqolo (Club Mix 2016).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bhizer/Bhizer, Oskido - 3 Dlaaaala Mamazi.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Big Nuz/Big Nuz - Ama Starter (Feat. DJ Tira).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Big Nuz/Big Nuz - Umsindo (Feat. DJ Tira).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black/Black, White - Ziddo (Original Mix) 120.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Cofee/Black Cofee feat. Bucie - 2 Superman (Afro Dj Pupo's Ancestry Children Tune).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Coffee/Black Coffee - 2 Trip To Lyon.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Coffee/Black Coffee - 2 Turn Me On (feat. Bucie).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Coffee/Black Coffee feat. Bucie - 2 Finish Line (Original).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Coffee/Black Coffee feat. Cara - 2 I Will Find You (Original).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Coffee/Black Coffee feat. Pharrell Williams & Jozzy - 10 Missed Calls.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Coffee/Black Coffee feat. Soulstar - 2 Rock My World (Enawadan Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Coffee/Black Coffee feat. Soulstar - 2 Rock My World (Rancido's Travelling Soul Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Coffee/Black Coffee feat. Zakes Bantwini - 1 Juju (Bekzin Tetris Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Coffee/Black Coffee, Bucie - 2 Superman (Main Mix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Coffee/Black Coffee, Busi Mhlongo - 2 Izizwe.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Coffee/Black Coffee, Karyendasoul - 2 Any Other Way (feat. Zhao).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Coffee/Black Coffee, Karyendasoul - 2 Thando (feat. Mbuso Khoza).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Coffee/Black Coffee, Nomsa Mazwai, Black Motion - 2 Traveller.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Coffee/Pharrel Williams/Jozzy/Black CoffeePharrel WilliamsJozzy - 10 Missed Calls.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion - 2 Fortune Teller.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion - 2 I Rise (feat. Msaki).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion - 2 Ikisha.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion - 2 Imali (feat. Nokwazi).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion - 2 Omo Dudu (feat. Wunmi).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion - 2 So Where To (feat TRESOR & The Mahotella Queens).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion - 2 That Song (Tribute To Kwani Experience).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion - 2 Trap en Los (feat. Nokwazi).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion - 2 We As One difficult.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion - 2 Ya Badimo (feat. Tlokwe Sehume).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion - 3 Fortune Teller (Spet Error & Znicho Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion - 3 Mekgolokwane.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion - 3 Ngungunyane (feat. Mholi Vilakazi).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion feat. Black Coffee & Xelimpilo - 3 Thamokuro.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion feat. Candy - 2 Manghoro.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion feat. Fearless Boys, Udu - 3 Dark Channels.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion feat. Jah Rich - 2 Banane Mavoko (Real Clap).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion feat. Mckenzie - 2 Mother Of Earth (Intro) KKDJ Afro INTRO.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion feat. Miss P - 2 It's You (feat. Miss P).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion feat. Monea - 3 Charity.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion feat. Noumoucounda Cissoko - 2 Sheri.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion feat. Salif Keita - 2 Dranakuta.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion feat. Toshi - 1 The Journey.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion feat. Xoli - 2 Set Me Free (Early Breeze Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion feat. Xoli - 2 Set Me Free (MKTL Master Kev and Tony Loreto Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion feat. Yasirah Bhelz, Siseko - 2 Dare Dance.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion, Malehloka Hlalele - 3 Don't Let Me Go ft. DJeff.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion, Soulflow - 3 Mumi Wango (Main Mix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Pen/Black Pen - Aero Manyelo, Octavez (Original Mix) 123.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Blackcoffee/BlackCoffee feat. Zano - 2 Someday (1).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Blaze/Blaze feat. Palmer Brown - My Beat (Original) (Feat. Palmer Brown).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Blaze/Blaze feat. Palmer Brown - My Beat (Swag's Spiritual Mix) (Feat. Palmer Brown).mp3",
+    "reason": "title_feat_normalized",
+    "details": "title:title_feat_normalized"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Blondish/Blondish - Wa Is Da Wa (Monkey Safari Remix) 123.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bob Marley/Bob Marley - 3 Is this love (Maphorisa n Clap Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bob Sinclar/Bob Sinclar feat. Chezere Vs. Ken Norris - A - 103.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bob Sinclar/Bob Sinclar feat. Shabba Ranks - 2 Love You No More (Boddhi Satva Ancestral Dub).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bobendanaka/Bobendanaka - 3 Afrika Beatz (Original).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Boddhi Satva/Boddhi Satva - 2 Kanga Mutu (feat. Spilulu & H-Baraka) (Ancestral Soul).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Boddhi Satva/Boddhi Satva - 2 Nankoumandjan (Rancido's Deep Deep Journey Dub).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Boddhi Satva/Boddhi Satva feat. E-Man - 2 Sweet Brown Sugar (Eltonnick Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Boddhi Satva/Boddhi Satva, James Germain - 2 An Nou Ale (Studio Bros Main Mix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Boddhi Satva/Boddhi Satva, Maalem Hammam - 3 Zid Lmel (FNX Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Boddhi Satva/Boddhi Satva, Mehdi Nassouli - 1 Ghaita (Extended Mix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Boddhi Satva/Boddhi Satva, Oumou Sangare - 2 Ngnari Konon.mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Boddhi Satva/Boddhi Satva, Spilulu, H-Baraka - 3 Kanga Mutu (LiloCox Remix 'Ancestral Soul Edit').mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bombossa Brothers/Bombossa Brothers - Momentum (Original Mix) (01frbl) 124.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bongo Beats/Bongo Beats - 2 Ndive (feat. Bukeka).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bosknegra/Bosknegra - I Run (Original Mix) (Cafe Creme Music Records) 123.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Boy From Suburbs/Boy From Suburbs - Estas En Mi Mente (Original Mix) (Cafe Creme Music Records) 120.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Brian Power/Brian Power, Rebecca Scales, N'dinga Gaba - 2 So Long Gone (N'Dinga Gaba Afro Vocal Mix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Broskies/Broskies, Km Love - Fantasy (Cafe Creme Music Records) 117.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Brown Stereo/Brown Stereo, Dj Steavy Boy - Bucwebe (Original Mix) (Brown Stereo Music) 123.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Brown Stereo/Brown Stereo, Dj Steavy Boy - Ejoni (Original Mix) (Brown Stereo Music) 121.mp3",
+    "reason": "title_trailing_bpm_stripped",
+    "details": "title:title_trailing_bpm_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bucie/Bucie - 2 Celi Ndoda (Point 5 Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bucie/Bucie - 2 Easy to Love (Zola EmoBoys Remix).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bucie/Bucie - 2 Njabulo (feat. DJ Mshega).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bucie/Bucie - 3 Shela (Original).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Busiswa/Busiswa feat. Oskido - 3 Ngoku (Uhuru Remake).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Busiswa/Busiswa feat. Oskido, Uhuru - 3 Lahla (Radio Edit).mp3",
+    "reason": "title_bare_number_stripped",
+    "details": "title:title_bare_number_stripped"
+  }
+]

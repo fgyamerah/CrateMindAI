@@ -1,0 +1,1002 @@
+[
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/4th Measure Men/4th Measure Men You - 2A - 123.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Hi End (Blond_ish remix) - 11A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.87"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Dance to the Rhythm - 5B - 124.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Don't Stop (original mix) - 1A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.63"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - El Sur - 6A - 126.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Finally (original extended mix) - 8B - 125.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various/Various - Freaky (The _Bar Heads_ mix) - 12A - 124.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists - Breathe - 5A - 126.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.75"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Various Artists/Various Artists Samba (club mix) - 5A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.54"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/ADJUMA Lyrical Ivy/Don't Make Me Wait - 1A - 120.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/AUGUSTE Idd Aziz/Tomorrow - 11A - 120.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Adam Port Keinemusik Stryv Malachiii/Move - 1A - 120.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Adana Twins/Strange - 12A - 120.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Adeva/Musical Freedom - 7A - 113.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Adrian Roman & Martin HERRS/Atlant - 2A - 120.mp3",
+    "reason": "skipped_version_conflict",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Africanism, DJ Gregory/Block Party - 6A - 126.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=0.96"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - Bayete (DJ Twice Mix) - 1A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.87"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - Cross Over - 3A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.73"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - Dance Of The Tribe (1) - 1A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.68"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - Dance Of The Tribe - 1A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.79"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - Jabula - 8A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.60"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - Killer Sax - 2A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.62"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - Ko Morago - 10A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.70"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - My Window - 10A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.79"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - Ndimlo - 7A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.65"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - Pieces On The Ground - 3A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.80"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - Remembering Thami Mnyele - 8A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.67"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - Say Yes - 11A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.67"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - Stories From Creation - 3A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.76"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - Wololo (1) - 9A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.67"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots - Wololo - 9A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots Feat. Xoli M - Angel - 2A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.69"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots Say Yes (feat. Mizz Dee) - 11A - 125.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrikan Roots/Afrikan Roots ft. Team Distant - The Killer Sax - 2A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.72"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Brotherz/Afro Brotherz, DR Thulz, Ntsikee, Nunicky, Tebza De Guitar, Thulasizwe The Vocal - Sabela - 10A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.63"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro House/Afro House - Beats & Djembe - 6A - 124.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.84"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro House/Afro House - Cross Over - 3A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.78"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro House/Afro House - Dance Of The Tribe - 1A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.79"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro House/Afro House - Jabula (feat. Cici & Ishmael) - 8A - 125.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro House/Afro House - Killer Sax - 2A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.72"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro House/Afro House - Ko Morago - 10A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.78"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro House/Afro House - My Window - 10A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.83"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro House/Afro House - Ndimlo - 7A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.73"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro House/Afro House - Pieces On The Ground - 3A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.86"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro House/Afro House - Say Yes - 11A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.75"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro House/Afro House - Stories From Creation - 3A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.76"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro House/Afro House - Wololo - 9A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro House/Afro House Nana - 4A - 125.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro House/Afro House Prophets - 3A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro House/Afro House Say Yes (feat. Mizz Dee) - 11A - 125.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro House/Afro House Traveller - 9A - 125.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Medusa/Pasilda (2) - 5A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.92"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Tech/Afro Tech - Oloro Nyager - 9A - 122.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=0.94"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Warriors & Zano/Afro Warriors & Zano Higher - 12A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afro Wav DJ Satelite Dj Gálio Buhle Seres Producoes/Simba reDenga - 8A - 120.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Afrokillerz, Szon/Countdown - 6A - 121.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Agoria/Scala - 7A - 124.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Ajna (BE)/Kwenze - 12A - 121.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Ajna (Be) Samm (Be)/Does It Matter - 6A - 120.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Alex & Rai/4 The Love Of You - 5A - 121.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.92"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Alex Finkin feat. DJ Disciple/House Music Is - 1A - 122.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.90"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Alex Wann/Milkshake - 7A - 118.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.29"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Ali Love, Kali/Emperor - 11A - 117.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=0.90"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Andre Butano, Miguel Lobo/2 Chop Suey - 5A - 122.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Andy Roda Jerome Sydenham Dorrey Lyles/Fired Up - 12A - 124.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.48"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Angelo Ferreri, Moon Rocket/Angelo Ferreri, Moon Rocket Inspirational (Extended Mix) - 8A - 122.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=0.90"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Antonello Ferrari & Aldo Bergamasco/Freedom - 8A - 120.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Argento Dust/Argento Dust - The Night - 8A - 123.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.50"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Armand Van Helden/Break Da 80s - 3A - 123.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.79"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Armand Van Helden/Flowerz - 2A - 126.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=0.98"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Armand Van Helden/In & Out Of My Life - 11A - 123.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=0.98"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Armand Van Helden/Love Thang - 1A - 123.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Armand Van Helden/Spark Da Meth - 11A - 130.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Armand Van Helden/Witch Doktor (1) - 5A - 125.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Armand Van Helden/Witch Doktor - 5A - 125.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Armand Van Helden/Zulu - 10A - 125.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Armand Van Helden, Duane Harden/You Don't Know Me - 6A - 130.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=0.96"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Armand Van Helden, Roland Clark/Flowerz - 2A - 126.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=0.96"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Artwork Sounds/Righteous - 12A - 114.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/A/Avenue DJ Dav Risen MoreSoul/Best In Me - 11A - 120.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/BAM M Wash/You're Gone - 10A - 124.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/BAMO Rainy Payne/Color Blind - 6A - 124.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Babes Wodumo/Babes Wodumo Babes Wodumo - 2A - 126.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.64"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Barbara Tucker, The BCrew, Rodney Chester/Shine - 6A - 125.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Beatsbyhand Kali Mija/King Of My Castle - 3A - 122.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.71"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Beatsbyhand Rona Ray/Say Yes - 4A - 122.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.79"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Belocca & Soneec/4 Chupakamra - 11A - 126.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.73"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Berin/Many Times - 7A - 120.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bicep/Vision Of Love - 6A - 123.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Billie Brown/2 Nobodys Bizness - 12A - 124.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Coffee/Black Coffee - Your Eyes - 4A - 102.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Coffee/Black Coffee Come With Me - 8A - 125.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Coffee/Inkodlo Kamashimane - 9A - 124.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Coffee David Guetta Delilah Montagu/Black Coffee David Guetta Delilah Montagu - Drive (Tom Staar Remix) - 11A - 126.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.75"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Coffee Tsepo/Black Coffee Tsepo - Never Saw You Coming (Original Mix) - 3A - 123.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion/Black Motion - Mumi Wango (feat. Soulflow) - 7A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.92"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion Jah Rich/Black Motion Jah Rich - Banane Mavoko (Dub Mix) - 12A - 124.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.72"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion Xoli/Black Motion Xoli - Set Me Free (Club Mix) - 11A - 124.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion, Xoli/Set Me Free - Original Mix - 11A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.58"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Black Motion,Homeboyz/Ven pa ka - 11A - 122.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.50"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Blaze/Do You Remember House - 2A - 128.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.94"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Blaze UDAUFL Barbara Tucker/Most Precious Love - 6A - 122.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Block/Close To You - 8B - 116.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.45"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Block & Crown Sean Finn Culum Frea/What Have You Done For Me Lately - 2A - 120.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bob Sinclar/Everybody Movin' - 5A - 128.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.84"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bob Sinclar/I Feel For You - 2A - 130.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.95"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bob Sinclar/The Beat Goes On - 5A - 128.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bob Sinclar/The Ghetto - 6A - 117.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bob Sinclar Steve Edwards/World Hold On - 1A - 122.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.87"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bob Sinclar ft. Dollarman & Big Ali/Rock This Remix - 4A - 130.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.69"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bob Sinclar, Quinze/Never Knew Love Like This Before - 4A - 123.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bobby & Steve feat. Janine Dyer- Overjoyed/Welcome To The Real World - 11A - 124.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bobby & Steve feat.Gwen Yvette/Let's Go All The Way - 7B - 122.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Boddhi Satva/Boddhi Satva Punch Koko (Ancestry Remix) - 11A - 122.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.95"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Booka Shade/In White Rooms - 5A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.83"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Brian Power ft Lucita Jules/Optimistic - 2A - 120.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.88"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Bucie/Get over It - 4A - 124.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Butch/1 Dope - 2A - 123.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/Butch/Dope - 2A - 123.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/The BCrew/Promised Land - 5A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.91"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/The Blessed Madonna Clementine Douglas/Happier - 9B - 126.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.57"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/B/The Blessed Madonna Joy Anonymous & Danielle Ponder/Carry Me Higher - 11A - 127.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.73"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/C-Blak/Awudeli - 3A - 118.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/CLS/Can You Feel It - 10A - 122.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro Behind the Rain - 4A - 120.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.81"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro Electronic Lab - 8A - 123.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.81"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro Watoto - 1A - 120.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.70"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro Woman (feat. Wunmi) (1) - 6A - 120.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.82"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro/Caiiro Woman (feat. Wunmi) - 6A - 120.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.82"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Caiiro Pixie L/Hlala - 6A - 88.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.51"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Cajmere Gene Farris/Gimme Your Luv - 8A - 123.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Candy Man Gumz/Spirit of Africa - 12A - 150.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Cece Rogers/Someday - 8A - 120.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.70"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Cee ElAssaad/Ore Yeye O - 8A - 124.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Cee ElAssaad Jaidene Veda/CLEVER - 9A - 122.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Charles Ramirez/3 Up Down - 8A - 123.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Charles Webster/Kinda Kickin - 8A - 123.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.62"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Cheesecake Boys & Crazibiza/Negra - 5A - 126.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=0.90"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Cherie Lee/Love Me Or Leave Me - 4A - 124.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Chez Damier/Can You Feel It (1) - 2A - 124.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.92"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Chez Damier/I Never Knew Love (1) - 7A - 123.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/China Charmeleon Rona Ray/Invisible - 1A - 116.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.75"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/China Charmeleon, Chronical Deep/Save South Africa - 10A - 116.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.78"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Chocolate Puma/Chiuso - 5A - 125.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Chocolate Puma/Merluche Ideale - 6A - 130.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=0.98"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Chris IDH/By Myself - 5A - 120.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Christos Fourkis/Christos Fourkis - Beats & Djembe (Marc Francis Organ Mix) - 5A - 124.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Christos Fourkis/Christos Fourkis - Negrita - 7A - 123.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Chymamusique Dustinho Brian Temba/Glory - 12A - 117.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Chynaman & Kususa & Argento Dust Ft. Azola/Just Love - 11A - 123.mp3",
+    "reason": "skipped_version_conflict",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/City Soul Project/Carnivale - 10A - 122.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.94"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Coflo & Lady C/Coflo & Lady 2 Wind Cries - 7A - 122.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=0.90"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Copyright pres. One Track Minds feat. Lisa Millett/Late At Night - 3A - 126.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Crazibiza, Realcyclers/Murder on the Dance Floor - 12A - 122.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Crookers, WILLS/Withdrawals - 2A - 124.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=0.96"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Crookid, Gumzito, Sabrina Chyld/Crookid, Gumzito, Sabrina Chyld Piece Of My Mind (Benny T Botswana Afro Mix) - 1A - 124.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Crystal Waters/100% Pure Love - 6A - 120.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.91"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/Crystal Waters Soul Central Robin S/Love One Another - 2B - 126.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/C/The Checkup & DJ Merci feat Mona Lee/You Make Me Stronger - 8A - 125.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/D.Ramirez/Yeah Yeah - 5A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.68"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/D.o.r Projects/D.o.r Projects Abakuria - 9A - 93.m4a",
+    "reason": "skipped_low_score",
+    "details": "conf=0.43"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Epitonic Ft. Hakeem/Lerato - 4A - 120.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.93"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Ganyani/3 Cinela - 1A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.76"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Gregory/Attend 127 - 5A - 127.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.86"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ K1, Jackie Queens/DJ K1, Jackie Queens The Reason - 11A - 123.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.80"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Maphorisa & DJ Shimza/3 Makhe - 9A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.88"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Maphorisa & DJ Shimza/DJ Maphorisa & DJ Shimza Makhe (feat. MoonChild) - 9A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.88"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Matpat Fawziyya Heart/Hold Your Hand - 3A - 125.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Merlon/DJ Merlon - Layla - 7A - 123.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.64"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Merlon/DJ Merlon Super Africans - 12A - 122.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Mshega/DJ Mshega - Suga - Edit - 9A - 125.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.57"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Spen/You Are My Friend - 8A - 124.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.76"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJ Spen, Reelsoul, Cleveland P. Jones/& Forever - 11B - 122.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/DJExpo SA Sole TK Afrika/Yehla Moya - 12A - 112.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Da Mike & Lazarusman/Da Mike & Lazarusman The Thing (Original Mix) - 2A - 122.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=0.90"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Da Mike & Oluhle/Da Mike & Oluhle Lendoda (Vocal Mix) - 7A - 122.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=0.96"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dale Habibi & Idd Aziz/Kitu - 8A - 117.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dames Brown/What Would You Do - 9A - 119.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.89"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Danny Clark & Nicole Mitchell/Optimistic - 2A - 124.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.52"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Danny Tenaglia & Celeda/Music Is the Answer[Fire Island's 'La Musica Es La Respues - 1A - 125.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=0.96"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Dave Lee & Maurissa Rose/Open Me Up - 5A - 123.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=0.96"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Bailey feat. MissFly/You Don't Know - 8A - 122.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Mayer/David Mayer, Floyd Lavine, Xolisa - Sondela (Original mix) - 7A - 123.m4a",
+    "reason": "skipped_low_score",
+    "details": "conf=0.61"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Mayer & Floyd Lavine Feat. Xolisa/Sondela - 7A - 122.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.81"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Morales/AZAPHOLA - 8A - 125.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.69"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Penn & Jabato/El Sur - 6A - 126.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=0.96"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Penn & Rober Gaez/What Is House - 9A - 127.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.69"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Penn Bemende/Reachin Out - 4A - 124.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/David Penn ft. Monia Amore/Ocean Drive - 5A - 127.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.94"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Defected House Masters/Camarera - 6A - 130.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.80"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Defected House Masters/Can't Win For Losin' - 5A - 118.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.87"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Defected House Masters/Desire - 10A - 121.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.88"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Defected House Masters/I'll House You - 9A - 123.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.48"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Defected House Masters/Movin' - 6A - 124.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Defected House Masters/Razen Theme - 9A - 123.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.64"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Defected House Masters/Rock 2 the Beat - 3A - 126.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.89"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Defected House Masters/Salome - 8A - 124.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Defected House Masters/So Special - 4A - 119.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.83"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Defected House Masters/What Would We Do - 3A - 121.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/D/Defected House Masters/Wishing You Were Here - 5A - 123.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  }
+]

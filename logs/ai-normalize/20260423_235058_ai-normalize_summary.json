@@ -1,0 +1,35 @@
+{
+  "command": "ai-normalize",
+  "input_path": "/mnt/music_ssd/KKDJ/sorted",
+  "limit": 50,
+  "started_at": "2026-04-23T23:50:58.931073",
+  "finished_at": "2026-04-23T23:57:04.418382",
+  "duration_sec": 365.487309,
+  "files_scanned": 50,
+  "files_processed": 50,
+  "applied": true,
+  "results": {
+    "changed": 0,
+    "unchanged": 33,
+    "skipped": 17,
+    "errors": 0
+  },
+  "ai": {
+    "valid_responses": 33,
+    "guard_rejections": 15
+  },
+  "quality": {
+    "high_confidence": 33
+  },
+  "sanitize": {
+    "sanitize_clean": 50
+  },
+  "review_count": 0,
+  "moved_to_ignored": 0,
+  "exit_code": 0,
+  "detail_files": {
+    "skipped": [
+      "20260423_235058_ai-normalize_skipped_001.json"
+    ]
+  }
+}

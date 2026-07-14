@@ -1,0 +1,18 @@
+# CrateMindAI — Development and test dependencies
+#
+# Install after activating a Python 3.10+ venv:
+#   python -m pip install -r requirements-dev.txt
+# This pulls in the pipeline and backend runtime dependencies needed by tests.
+
+-r requirements.txt
+-r backend/requirements.txt
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+pytest>=7.4.0
+
+# Required by FastAPI/Starlette TestClient in backend API tests.
+httpx>=0.27.0
+
+# Keep librosa's transitive numba/llvmlite chain on released binary wheels.
+# Newer source-only releases require a local LLVM toolchain on macOS.
+numba>=0.59.0,<0.63.0

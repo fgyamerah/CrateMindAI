@@ -1,0 +1,32 @@
+{
+  "command": "metadata-enrich-online",
+  "input_path": "/mnt/music_ssd/KKDJ/sorted",
+  "limit": 50,
+  "started_at": "2026-04-23T23:58:56.422235",
+  "finished_at": "2026-04-23T23:59:31.231784",
+  "duration_sec": 34.809549,
+  "files_scanned": 50,
+  "files_processed": 50,
+  "applied": true,
+  "results": {
+    "changed": 22,
+    "unchanged": 1,
+    "skipped": 7,
+    "errors": 0
+  },
+  "quality": {
+    "high_confidence": 25,
+    "medium_confidence": 7
+  },
+  "review_count": 2,
+  "moved_to_ignored": 7,
+  "exit_code": 0,
+  "detail_files": {
+    "modified": [
+      "20260423_235856_metadata-enrich-online_modified_001.json"
+    ],
+    "skipped": [
+      "20260423_235856_metadata-enrich-online_skipped_001.json"
+    ]
+  }
+}

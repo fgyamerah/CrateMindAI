@@ -1,0 +1,3000 @@
+======================================================================
+DJTOOLKIT — CHANGELOG
+======================================================================
+
+[2026-07-14] — Phase A+B: runtime foundation, design system, command-center home
+----------------------------------------------------------------------
+TYPE: Product redesign foundation (backend additive, frontend shell + home)
+SUMMARY: Added a read-only runtime preflight API, environment-overridable sync
+         paths, a deterministic fixture-library seeder, a new design-token
+         system, a responsive application shell with consolidated navigation,
+         and a command-center Home page. No pipeline behavior changed. All
+         existing routes preserved via redirects.
+
+DETAILS:
+  Backend (additive only):
+  - New GET /api/runtime/preflight: read-only environment validation
+    (library root, pipeline DB, pipeline.py, job storage, rsync, sync
+    source/destination, optional provider presence). Never exposes secret
+    values. Overall status: ready | degraded | unsafe.
+  - SYNC_SOURCE_LIBRARY / SYNC_SOURCE_INBOX / SYNC_DEST_SSD are now
+    overridable via CRATEMINDAI_SYNC_SOURCE_LIBRARY,
+    CRATEMINDAI_SYNC_SOURCE_INBOX, CRATEMINDAI_SYNC_DEST (defaults unchanged).
+  - backend/server.py supervisor shim (loads backend/.env, re-exports app).
+  - FastAPI title/logs renamed DJ Toolkit → CrateMindAI.
+  - 5 new tests (tests/test_runtime_preflight.py). Suite: 862 passed.
+
+  Frontend:
+  - New IA: Overview / Library / Fix & Review / Sets / Publish / Operations.
+    Library workspace moved from '/' to '/library' ('/', collection, tracks
+    redirects preserved).
+  - New command-center Home ('/'): readiness panel, health metrics,
+    coverage bars, actionable attention cards, recent jobs, and a
+    deterministic "recommended next action" banner. Failed loads render as
+    "Unavailable", never as zero.
+  - New responsive AppShell: collapsible sidebar (desktop), drawer navigation
+    (narrow screens), skip link, reduced-motion support.
+  - Design tokens (src/styles/tokens.css): graphite surfaces, electric-cyan
+    accent, Archivo UI font + JetBrains Mono for technical values, 15px base.
+  - TanStack Query for server state on new pages; typed API layer additions.
+  - Unified status model (src/lib/status.ts): Pending review / Approved for
+    apply / Applied / Verified / Failed / Deferred / Rejected / Skipped /
+    Blocked with consistent tones.
+  - Vitest unit tests for next-action engine and status model (11 tests).
+  - Removed superseded Layout.tsx/Sidebar.tsx (replaced by AppShell).
+
+  Tooling:
+  - scripts/seed_fixture_library.py: deterministic ~300-track fixture library
+    with real (tiny, silent) MP3s + ID3 tags, issue coverage, duplicate pairs,
+    enrichment queue, and genuine repair/sanitation/path-audit scans.
+    Never touches a real library.
+
+FILES: backend/app/api/routes/runtime.py,
+       backend/app/services/runtime_preflight.py, backend/app/core/config.py,
+       backend/app/main.py, backend/server.py, tests/test_runtime_preflight.py,
+       scripts/seed_fixture_library.py, frontend/src/** (shell, home, lib,
+       styles, App.tsx), frontend/vite.config.ts, frontend/package.json
+
+MIGRATION: none required. Library workspace is now at /library; '/' shows the
+           new Home. Old URLs redirect.
+
+[2026-07-02] — docs: resolve command-reference case conflict
+----------------------------------------------------------------------
+TYPE: Documentation stabilization
+SUMMARY: Removed the tracked COMMANDS.md/commands.md case-only collision that
+         caused a permanently confusing working tree on case-insensitive macOS.
+
+DETAILS:
+  - Kept COMMANDS.md as the canonical CrateMindAI command reference.
+  - Moved the distinct lowercase legacy guide to
+    docs/operations/LEGACY_DJ_TOOLKIT_COMMANDS.md.
+  - Added a historical warning and canonical-reference link to the archive.
+  - Updated repository documentation and generated file index references.
+
+FILES: COMMANDS.md, commands.md,
+       docs/operations/LEGACY_DJ_TOOLKIT_COMMANDS.md,
+       docs/generated/repo_file_index.md, README.md, NEXT_TASKS.txt,
+       PROJECT_CONTEXT.md, CHANGELOG.txt
+IMPACT: Documentation paths only; no backend, frontend, pipeline, sync, export,
+        reconciliation, or destructive workflow behavior changed.
+NOTES: Git records the lowercase file as a rename to a path that differs by
+       more than case, making the checkout portable across filesystem types.
+
+----------------------------------------------------------------------
+[2026-07-02] — test: stabilize clean backend test environment
+----------------------------------------------------------------------
+TYPE: Stabilization
+SUMMARY: Made the declared development environment sufficient for the full
+         backend/pipeline test suite and isolated tests from real library paths.
+
+DETAILS:
+  - requirements-dev.txt now includes pipeline and backend runtime requirements,
+    pytest, explicit FastAPI TestClient support, and a wheel-backed numba range.
+  - Added shared pytest setup that assigns DJ_MUSIC_ROOT and
+    CRATEMINDAI_LIBRARY_ROOT to a temporary directory before application modules
+    are imported and removes it after the session.
+  - Updated stale build-tracks fixture schema for parse_confidence/album.
+  - Removed a date-dependent reconciliation assertion.
+  - Standardized documented setup on Python 3.10+ virtual environments and
+    `python -m pytest -q` after activation.
+
+FILES: requirements-dev.txt, tests/conftest.py, tests/test_build_tracks.py,
+       tests/test_reconciliation_ledger.py, README.md, AUDIT_REPORT.md,
+       NEXT_TASKS.txt, PROJECT_CONTEXT.md, CHANGELOG.txt
+IMPACT: Test/development environment only; no backend, frontend, or pipeline
+        runtime behavior changed.
+NOTES: 857 tests pass under Python 3.12. One FastAPI/Starlette TestClient
+       deprecation warning remains for a future HTTP client migration.
+
+----------------------------------------------------------------------
+[2026-07-02] — fix: consolidate supported frontend routes and navigation
+----------------------------------------------------------------------
+TYPE: Stabilization
+SUMMARY: Mounted completed operational pages, aligned the sidebar with the
+         router, redirected legacy surfaces, and normalized frontend setup docs.
+
+DETAILS:
+  - Added routes for BPM review, jobs, set builder, exports, and SSD sync.
+  - Added matching navigation entries and a catch-all redirect.
+  - Redirected duplicate/legacy Dashboard, Collection, and Tracks pages plus
+    placeholder Settings; retained their source files for future review.
+  - Added compatibility redirects from /export and /ssd-sync.
+  - Changed visible frontend naming from DJ Toolkit to CrateMindAI.
+  - Applied non-breaking npm security updates; production dependencies now
+    audit clean. Deferred the breaking Vite major upgrade needed for the
+    remaining development-toolchain advisories.
+  - Documented supported/deferred routes and clean install/typecheck/build commands.
+
+FILES: frontend/src/App.tsx, frontend/src/components/Sidebar.tsx,
+       frontend/src/pages/BpmReview.tsx, frontend/index.html,
+       frontend/package.json, frontend/package-lock.json, AUDIT_REPORT.md,
+       README.md, NEXT_TASKS.txt, PROJECT_CONTEXT.md, CHANGELOG.txt
+IMPACT: Frontend-only route/navigation stabilization; no backend or pipeline
+        execution behavior changed.
+NOTES: Authentication remains intentionally out of scope. Operations remain
+       suitable only for a trusted local environment.
+
+----------------------------------------------------------------------
+[2026-07-02] — docs: repository audit report added
+----------------------------------------------------------------------
+TYPE: Documentation
+SUMMARY: Added a full technical/product audit at `AUDIT_REPORT.md` and
+         recorded the current highest-priority follow-up tasks.
+
+DETAILS:
+  - Captured repository structure, runtime setup, persistence, security,
+    frontend/backend surface, AI/LLM usage, and verification results.
+  - Noted that frontend routing and clean-checkout build/test reproducibility
+    are the most immediate issues to address next.
+
+FILES: AUDIT_REPORT.md, NEXT_TASKS.txt, PROJECT_CONTEXT.md
+IMPACT: No runtime behavior change.
+NOTES: This is a documentation-only update to support the next implementation phase.
+
+Rules:
+- Most recent entries at the top
+- Always include: TYPE, SUMMARY, DETAILS, FILES, IMPACT, NOTES
+- Focus on WHY, not just WHAT
+
+----------------------------------------------------------------------
+[2026-05-03] — feat: artist-repair-review command — human approval workflow for queued repairs
+----------------------------------------------------------------------
+TYPE: Feature
+SUMMARY: New artist-repair-review subcommand adds safe human approval/rejection
+         workflow for MEDIUM/LOW-confidence artist repairs that were blocked from
+         auto-apply. Queue entries now persist approved/rejected state across re-scans.
+
+DETAILS:
+  modules/artist_repair.py
+    - Added _load_queue, _save_queue (queue I/O helpers).
+    - Added _approve_entry, _reject_entry (in-memory queue state mutators).
+    - Added _print_queue (formatted list display with status/index).
+    - Updated _update_review_queue: preserves approved/rejected/applied state on
+      re-scan (new entries default to approved=False, rejected=False).
+    - Updated run_artist_repair: new entries include approved/rejected fields.
+    - Added run_artist_repair_review(args) entry point:
+        --list               show queue with index numbers and status
+        --approve INDEX      mark entry approved (clears rejected)
+        --reject  INDEX      mark entry rejected (clears approved)
+        --apply-approved     write ONLY approved (unapplied) entries to audio tags
+                             skips missing files and tags changed since scan.
+
+  pipeline.py
+    - Registered artist-repair-review subcommand with full argparse help.
+    - Dispatch block (no db.init_db needed — queue is JSON-only).
+
+  tests/test_artist_repair.py
+    - Added imports: _load_queue, _save_queue, _approve_entry, _reject_entry, _update_review_queue.
+    - Added _make_entry() helper.
+    - Added TestReviewQueueCreation (7 tests): defaults, roundtrip, dedup, state preservation.
+    - Added TestApproveEntry (5 tests): set, clear-rejected, out-of-range, index-0.
+    - Added TestRejectEntry (3 tests): set, clear-approved, out-of-range.
+    - Added TestApplyApprovedLogic (5 tests): eligibility filter, already-applied skip,
+      skip-changed logic.
+
+FILES: modules/artist_repair.py, pipeline.py, tests/test_artist_repair.py
+IMPACT: 158 tests pass. Queue file gains approved/rejected fields; existing entries
+        without these fields default to False on next load (setdefault pattern).
+
+----------------------------------------------------------------------
+[2026-05-03] — fix: bare-number stripping guard — numeric/ordinal second token preserved
+----------------------------------------------------------------------
+TYPE: Bugfix
+SUMMARY: Extended bare-number strip guard to also preserve titles where the token
+         immediately following the leading number is itself numeric or ordinal
+         (e.g. "3 13th Friday", "4 100 Sure"). Rules version bumped to v6.
+
+DETAILS:
+  modules/metadata_sanitize.py
+    - Added third guard condition to _sanitize_title step 2:
+        _first_is_numeric_or_ordinal = re.match(r'^\d', bare_words[0])
+      When this fires the strip is skipped and reason code
+      "title_leading_number_preserved_ambiguous" is emitted via log.debug.
+    - _SANITIZE_RULES_VERSION bumped v5 → v6.
+
+  tests/test_metadata_sanitize.py
+    - TestBareNumberGuard: added test_3_13th_friday_unchanged, test_4_100_sure_unchanged.
+    - TestBareNumberGuard: added test_2_africa_feat_luzolo_still_stripped.
+
+FILES: modules/metadata_sanitize.py, tests/test_metadata_sanitize.py
+IMPACT: 71 tests pass. v6 invalidates stale no_change DB records for re-evaluation.
+
+----------------------------------------------------------------------
+[2026-05-03] — feat: title-number-recover + extended bare-number guards (number>=10, years)
+----------------------------------------------------------------------
+TYPE: Feature + Bugfix
+SUMMARY: New filename-based title recovery tool; bare-number stripping guard extended to
+         two-digit+ numbers and "years"; rules version bumped to v5.
+
+DETAILS:
+  modules/metadata_sanitize.py
+    - Added "years" to _BARE_NUM_PROTECTED_WORDS.
+    - Extended _sanitize_title step 2 guard: also skips stripping when leading number >= 10.
+      Previously only protected-word first-word was checked.
+    - _SANITIZE_RULES_VERSION bumped v4 → v5.
+    - Added _RE_RECOVER_NUM_PREFIX, _parse_filename_title(), _is_suspicious_recovery().
+    - Added run_title_number_recover(args) entry point:
+        --input DIR     recursive audio file scan
+        --apply         write recovered title tags (preview is default)
+        --verbose       show skipped/no-match details
+        --limit N       cap files processed
+      Detection: if filename is "Artist - N Rest.ext" and current tag == "Rest",
+      proposes restoring "N Rest" when suspicious (protected word OR number >= 10).
+      Single-digit + unprotected-word cases are silently skipped as track-index junk.
+
+  pipeline.py
+    - Registered title-number-recover subcommand with full argparse help.
+    - Dispatch block calls run_title_number_recover.
+
+  tests/test_metadata_sanitize.py
+    - Updated test_two_digit_prefix → split into test_two_digit_prefix_unchanged
+      (10 Tracks Away now unchanged) and test_single_digit_non_protected_stripped.
+    - Added TestBareNumberGuard: test_10_tracks_away_unchanged, test_99_problems_unchanged.
+    - Added TestSuspiciousRecovery (11 tests covering all DO/DO-NOT recover examples).
+    - Added _is_suspicious_recovery to imports.
+
+FILES: modules/metadata_sanitize.py, pipeline.py, tests/test_metadata_sanitize.py
+IMPACT: v5 rules invalidates stale no_change DB records; files with two-digit stripped
+        titles (e.g. "10 Tracks Away" → "Tracks Away") will now be left unchanged on
+        future metadata-sanitize runs. Use title-number-recover to fix already-damaged files.
+NOTES: Recovery reads filename title — requires "Artist - Title.ext" naming convention.
+       Pass --verbose to see files skipped due to no-separator or no-match.
+
+----------------------------------------------------------------------
+[2026-05-03] — feat: metadata-sanitize-rollback + bare-number guard for protected title words
+----------------------------------------------------------------------
+TYPE: Feature + Bugfix
+SUMMARY: Rollback command for bad title_bare_number_stripped changes; guard prevents stripping
+         real titles like "4 You" or "15 Minutes" going forward.
+
+DETAILS:
+  modules/metadata_sanitize.py
+    - Added _BARE_NUM_PROTECTED_WORDS frozenset (you/me/us/them/minutes/hours/days/
+      seconds/love/life/one/two) — if the first remaining word is in this set the
+      bare-number strip is skipped entirely.
+    - _SANITIZE_RULES_VERSION bumped v3 → v4 to invalidate stale no_change records.
+    - Added rollback helpers: _load_rollback_records (JSON + JSONL), _is_suspicious_revert,
+      _read_current_title, _write_title_tag.
+    - Added run_metadata_sanitize_rollback(args) entry point:
+        --jsonl FILE           JSON log from --output-json
+        --rule RULE            default title_bare_number_stripped
+        --preview / --apply    preview is default
+        --only-suspicious      limit to first-word-in-suspicious-set hits
+
+  pipeline.py
+    - Registered metadata-sanitize-rollback subcommand with full argparse parser.
+    - Dispatch block calls run_metadata_sanitize_rollback.
+
+  tests/test_metadata_sanitize.py
+    - Added TestBareNumberGuard (8 tests):
+        "4 You", "15 Minutes", "24 Hours" → unchanged
+        "4 You (Original Mix)" → unchanged
+        "2 Love", "3 Days" → unchanged
+        "2 Sada (...)", "3 Afro" → still stripped
+
+FILES: modules/metadata_sanitize.py, pipeline.py, tests/test_metadata_sanitize.py
+IMPACT: Safe — all 55 tests pass; v4 rules version forces re-scan of previously-processed files.
+NOTES: Rollback reads --output-json log; pass --output-json on the original sanitize run to get
+       the log file.
+
+----------------------------------------------------------------------
+[2026-05-02] — feat: metadata-sanitize new title rules + artist-repair subcommand
+----------------------------------------------------------------------
+TYPE: Feature
+SUMMARY: Deterministic title cleanup expanded; new artist-repair stage detects merged artist names.
+DETAILS:
+  metadata-sanitize — new _sanitize_title() rules:
+    - Strip leading bare track numbers ("3 Afro" → "Afro", "2 Sada..." → "Sada...")
+      Guard: result must be >= 2 chars to fire.
+    - Strip trailing BPM noise (80–160 range) at end of title (" 122", ")122")
+      Order matters: BPM strips first, then label suffix — handles "Title (Label)122" in one pass.
+    - Strip domain/piracy paren tokens globally: .com/.net/.org, blogspot, hulkshare, fordjonly, etc.
+    - Strip label-like trailing paren suffix containing label keywords
+      (Records, Recordings, Music, Distrokid, etc.) + known-label set (Shockit, etc.)
+      Protected: parens containing mix/version words (Original Mix, Extended Mix, Radio Edit,
+      Dub Mix, Remix, Reprise, Rework, Club Edit...) are NEVER stripped.
+    - Normalize (Feat. → (feat. casing in titles.
+    - New helper: _strip_label_suffix(value) → (str, str) — also exported for direct use.
+  artist-repair — new module (modules/artist_repair.py):
+    - Detects merged [a-z][A-Z] boundaries mid-word: "African RootsLebo" → split at 's'→'L'.
+    - Country suffix guard: strips (IT), (De), (UK), (ZA) before analysis; restored in output.
+    - Prefix guard: boundaries within first 3 chars of a word skipped (Mc, De, La).
+    - Word-start guard: 'm' preceded by space ('mOat') not flagged — lookbehind (?<=[^ ]).
+    - Known-artist dict built from: folder hierarchy (depth 1+2) + audio tag sampling + alias JSON.
+    - Confidence: HIGH 0.85 (both sides known) → write-eligible; MEDIUM 0.65 / LOW 0.45 → review.
+    - Review queue: data/intelligence/artist_repair_queue.json.
+    - --move-artist-review: quarantine flagged files to .BIN/CHKARTISTNAMES/.
+    - Incremental skip via run_logger; --force, --reset-stage, --limit, --verbose.
+  pipeline.py:
+    - Added artist-repair subparser between metadata-sanitize and artist-intelligence.
+    - Dispatch block: `if args.command == "artist-repair": from modules.artist_repair import ...`
+  Tests:
+    - tests/test_metadata_sanitize.py — 37 tests, 7 classes (all new title rules + protected parens).
+    - tests/test_artist_repair.py — 36 tests, 4 classes (strip suffix, merge positive/negative, propose).
+    - All 73 tests pass (0.82s).
+  Recommended pipeline order updated:
+    metadata-sanitize → artist-repair → artist-intelligence → ai-normalize →
+    metadata-enrich-online → filename-normalize → library-organize
+FILES:
+  modules/metadata_sanitize.py — new constants, _strip_label_suffix(), _sanitize_title() rewrite
+  modules/artist_repair.py — new file
+  pipeline.py — artist-repair subparser + dispatch
+  tests/test_metadata_sanitize.py — new file (37 tests)
+  tests/test_artist_repair.py — new file (36 tests)
+IMPACT: No breaking changes. All existing sanitize behaviour preserved. artist-repair is additive.
+NOTES: On the real library (/mnt/music_ssd/KKDJ/sorted/A), all 3 detected merges were LOW confidence
+  (0.45) — correctly queued for review, never auto-applied.
+
+----------------------------------------------------------------------
+[2026-04-25] — fix: library-organize: nested folder bug, unsafe detection gap, filename fallback, flatten mode
+----------------------------------------------------------------------
+TYPE: Bug Fix + Feature
+SUMMARY: Three bugs fixed; two features added in library_organize.py.
+DETAILS:
+  BUG 1 — Nested collaborator folders (e.g. sorted/S/Shaun Frank/SNBRN/Dope Earth Alien/):
+    Root cause: artist tags using '/' separator (e.g. "Shaun Frank / SNBRN / Dope Earth Alien")
+    were not split, so primary="Shaun Frank / SNBRN / Dope Earth Alien" — Python's pathlib
+    then interpreted the embedded '/' as path separators.
+    Fix: added \s*/\s* alternative to _COLLAB_SEP_RE; added _sanitize_dirname() as safety net.
+
+  BUG 2 — "Zakes BantwiniKasango" not detected as unsafe (only 1 total CamelCase transition):
+    Fix: added word-level check in _extract_primary: any space-separated word whose [a-z][A-Z]
+    transition appears at offset >= 3 within the word is flagged unsafe.
+    Protects 2-char prefixes (Mc, De, La) which have transition at offset < 3.
+
+  FEATURE 1 — Filename fallback: if artist tag missing, parse from "Artist - Title.ext".
+    _artist_from_filename() returns '' if ' - ' separator absent (low confidence).
+
+  FEATURE 2 — --flatten-collab-folders flag: repair mode.
+    _run_flatten(): finds files at depth > 3 relative to sorted_root and moves them
+    to sorted_root/<letter>/<artist>/<file>. No tag reads; uses existing folder names.
+    Collision-safe. _proc.rename_path() called on successful moves.
+FILES:
+  - modules/library_organize.py
+  - pipeline.py  (new flag, split summary for flatten vs organize modes)
+IMPACT: Non-breaking for existing correct structure. --flatten-collab-folders is opt-in.
+
+----------------------------------------------------------------------
+[2026-04-25] — fix: library-organize: &ME / &lez wrongly skipped as unsafe_primary_artist
+----------------------------------------------------------------------
+TYPE: Bug Fix
+SUMMARY: Artist names starting with & (e.g. &ME, &lez) were split at the & and produced
+         an empty primary artist, triggering unsafe_primary_artist skip. First-letter
+         bucket was also wrong (returned 'M' for &ME instead of '#').
+DETAILS:
+  - _COLLAB_SEP_RE: split & into its own alternative (\s+&\s*) requiring at least one
+    leading space. Comma/semicolon keep optional-space form (\s*[,;]\s*).
+    "Papik & Bengi" still splits; "&ME" no longer splits.
+  - _first_letter: replaced forward-scan-for-first-alpha with single first-char check.
+    &ME → '#', 2Point1 → '#', Papik → 'P'.  (was: &ME → 'M' — wrong)
+FILES:
+  - modules/library_organize.py
+IMPACT: Non-breaking. Artists starting with & now correctly organized under sorted/#/<name>/.
+
+----------------------------------------------------------------------
+[2026-04-25] — fix: preview runs must not write processed_state records
+----------------------------------------------------------------------
+TYPE: Bug Fix
+SUMMARY: library-organize and filename-normalize preview runs were writing DB records,
+         causing --apply to skip files as "unchanged" instead of processing them.
+DETAILS:
+  - All _proc.record() calls in the scan loop are now gated on apply=True.
+  - Statuses written only during --apply: "skipped", "no_change" (deterministic),
+    "success", "error" (already were apply-only).
+  - Preview runs produce zero DB writes — entirely read-only.
+  - --force continues to bypass processed_state as before.
+  - library_organize.run() now returns skipped_unchanged in the stats dict for
+    proper pipeline.py summary display.
+FILES:
+  - modules/library_organize.py
+  - modules/filename_normalize.py
+IMPACT: Non-breaking. Files incorrectly marked by a previous preview run are
+        unblocked by --force; clean state is restored after the next --apply run.
+
+----------------------------------------------------------------------
+[2026-04-25] — feat: library-organize subcommand — sort files into letter/artist folders
+----------------------------------------------------------------------
+TYPE: Feature
+SUMMARY: New deterministic stage that reorganizes audio files into <sorted>/<letter>/<primary-artist>/<filename>.
+DETAILS:
+  - New modules/library_organize.py:
+      _extract_primary(): splits on feat./ft./&/,/;/x/vs./with/pres. (first separator only)
+      _find_sorted_root(): walks up from --input to find "sorted" dir (≤5 levels)
+      _first_letter(): uppercase first alpha char or '#' for non-alpha
+      _safe_target(): collision-safe with ' (1)', ' (2)' suffix
+      run(): collect → plan → output/apply; full processed-state tracking
+  - config.py: LIBRARY_ORGANIZE_SKIP_DIRS added (= MAINTENANCE_SKIP_DIRS + exports/logs/sets)
+  - pipeline.py: run_library_organize() handler; p_lorg subparser with 6 flags;
+    dispatch; _resolve_library_root() already available
+  - COMMANDS.md: TOC, Core Pipeline line, Incremental Processing list, and full
+    ## library-organize section with table, rebuild order, examples
+FILES:
+  - modules/library_organize.py  (new)
+  - config.py
+  - pipeline.py
+  - COMMANDS.md
+IMPACT: Non-breaking. New stage only. No existing commands changed.
+
+----------------------------------------------------------------------
+[2026-04-25] — fix: dedupe quarantine placed under selected library root, not global /music/.BIN
+----------------------------------------------------------------------
+TYPE: Bug Fix
+SUMMARY: Quarantine path now derives from the --path argument instead of the global config default.
+DETAILS:
+  - New _resolve_library_root(scan_path) helper: if leaf dir is "sorted", returns parent; else returns scan_path
+  - run_dedupe(): quarantine_dir derivation priority:
+      1. --quarantine-dir (explicit override, unchanged)
+      2. _resolve_library_root(custom_path) / ".BIN" / "QUARANTINE"  (new, when --path given)
+      3. config.DEDUPE_QUARANTINE_DIR  (unchanged fallback, DB-based run with no --path)
+  - Quarantine path printed to console before scan begins
+  - No change to library_dedupe.py or config.py
+FILES:
+  - pipeline.py
+IMPACT: Non-breaking. Default (no --path) behaviour unchanged. --path runs now quarantine locally.
+NOTES:
+  - /mnt/music_ssd/KKDJ/sorted  → quarantine: /mnt/music_ssd/KKDJ/.BIN/QUARANTINE
+  - .BIN is in MAINTENANCE_SKIP_DIRS so quarantine is excluded from all future scans automatically
+
+----------------------------------------------------------------------
+[2026-04-25] — feat: filename-normalize artist review queue + --move-artist-review
+----------------------------------------------------------------------
+TYPE: Feature
+SUMMARY: Unsafe-artist files are now queued for manual review instead of silently skipped.
+DETAILS:
+  - _read_tags() extended to include album field (TALB / Vorbis ALBUM / M4A ©alb)
+  - _write_review_entry(): appends JSONL entry to data/review/artist_review_queue.jsonl
+    with timestamp, file_path, current_artist, title, album, suggested_action, moved/moved_to
+  - run() now collects unsafe-artist files in artist_review list; writes queue entries for all;
+    moves files to .BIN/ARTIST_REVIEW/ when --move-artist-review --apply passed
+  - Stats: artist_review_count, moved_to_artist_review added
+  - pipeline.py: move_artist_review kwarg passed to _fn_run; --move-artist-review flag added
+    to p_fnorm; 2 new summary lines; dry-run hint for review files
+  - COMMANDS.md: --limit and --move-artist-review added to flags table;
+    "Unsafe Artist Review" section added with queue path, quarantine dir, workflow examples
+FILES:
+  - modules/filename_normalize.py
+  - pipeline.py
+  - COMMANDS.md
+IMPACT: Non-breaking. New JSONL file written on first unsafe-artist encounter.
+        .BIN/ARTIST_REVIEW/ created on first --move-artist-review --apply run.
+
+----------------------------------------------------------------------
+[2026-04-23] — feat: persistent per-stage processed-state tracking
+----------------------------------------------------------------------
+TYPE: Feature
+SUMMARY: All five pipeline stages now skip unchanged files on repeat runs using SQLite-backed mtime+size fingerprints.
+DETAILS:
+  - New processed_state table in db.py (UNIQUE(stage, filepath), mtime+size columns)
+  - New modules/run_logger.py: should_skip(), record(), clear_stage(), rename_path()
+  - Integrated into: modules/metadata_sanitize.py, ai/normalizer.py,
+    intelligence/artist/runner.py, intelligence/enrichment/runner.py,
+    modules/filename_normalize.py
+  - SKIP_STATUSES = {success, no_change, skipped, ignored}; error/review always retried
+  - --force and --reset-stage flags added to 5 subparsers in pipeline.py
+  - Skipped unchanged count shown in every stage summary
+  - filename_normalize.run() gains force/reset_stage params; rename_path() called after
+    successful renames to keep prior-stage records valid under new path
+FILES:
+  db.py, modules/run_logger.py (new), modules/metadata_sanitize.py, ai/normalizer.py,
+  intelligence/artist/runner.py, intelligence/enrichment/runner.py,
+  modules/filename_normalize.py, pipeline.py, COMMANDS.md, README.md
+IMPACT: No breaking changes. Existing DBs auto-migrate via CREATE TABLE IF NOT EXISTS.
+NOTES: First run processes everything; subsequent runs skip unchanged files.
+       Use --force or --reset-stage for full reprocessing.
+
+----------------------------------------------------------------------
+[2026-04-24] — feat: filename-normalize subcommand
+----------------------------------------------------------------------
+TYPE: Feature
+SUMMARY: New CLI command to rename audio files using embedded tags.
+DETAILS:
+  - New module modules/filename_normalize.py
+    * Walks audio files under --input dir, reads tags via mutagen
+    * Renames to {artist} - {title} ({version}).ext pattern
+    * Version deduplication: skips appending version if already in title
+    * Collision-safe: appends ' (1)', ' (2)', ... when target exists
+    * Skips files missing artist or title — never guesses
+    * Excludes: .BIN, QUARANTINE, IGNORED, _duplicates, exports, logs, sets
+  - config.py: added FILENAME_NORMALIZE_SKIP_DIRS
+  - pipeline.py: run_filename_normalize(), argparse subparser, dispatch
+  - All doc files updated: COMMANDS.md, COMMANDS.txt, COMMANDS.html, README.md
+FILES: modules/filename_normalize.py (new), config.py, pipeline.py,
+       COMMANDS.md, COMMANDS.txt, COMMANDS.html, README.md
+IMPACT: New standalone subcommand — no existing behavior changed.
+NOTES: Preview by default. Run --apply only after tags are trusted
+       (after metadata-sanitize + ai-normalize + artist-intelligence).
+
+----------------------------------------------------------------------
+[2026-04-23] — tests: dedupe fixture generator (9 controlled test cases)
+----------------------------------------------------------------------
+TYPE: Test tooling
+SUMMARY: Standalone fixture script that generates minimal but mutagen-parseable
+         MP3/FLAC stubs covering all 9 dedupe engine test scenarios.
+
+DETAILS:
+  - tests/create_dedupe_test_fixture.py
+      • 9 cases: exact dupes, format quality, bitrate quality,
+        version protection, remix protection, false-positive prevention,
+        acapella protection, near-duplicate names, nested folder structure
+      • Raw MPEG1 Layer3 frame generator (_build_mpeg_frame): valid sync word
+        0xFF 0xFB + correct bitrate index byte → mutagen reads bitrate correctly
+      • Minimal FLAC generator (_build_flac): valid fLaC + STREAMINFO (34B,
+        44100Hz/stereo/16bps) + VORBIS_COMMENT → mutagen reads format + tags
+      • ID3v2.3 tag generator (_build_id3): TIT2 + TPE1 frames → dedupe reads
+        title + artist from tags, not filenames
+      • Exact-copy cases (1 and 9) use shared byte content → identical SHA-256
+      • --cleanup flag with interactive confirmation
+      • No pipeline imports, no new dependencies, stdlib only
+
+FILES:
+  tests/create_dedupe_test_fixture.py (new)
+
+----------------------------------------------------------------------
+[2026-04-23] — Operational storage refactor: all maintenance paths under .BIN/
+----------------------------------------------------------------------
+TYPE: Refactor
+SUMMARY: All operational/maintenance folders consolidated under MUSIC_ROOT/.BIN/
+         so active library scanners never see non-library content. Scan exclusion
+         rules generalised to cover hidden dirs (dot-prefix) across all walkers.
+
+DETAILS:
+  - config.py
+      • Added BIN_DIR = MUSIC_ROOT / ".BIN" — single operational root
+      • PROCESSING → BIN_DIR/PROCESSING  (was MUSIC_ROOT/processing)
+      • DUPLICATES  → BIN_DIR/DUPLICATES  (was MUSIC_ROOT/duplicates)
+      • REJECTED    → BIN_DIR/REJECTED    (was MUSIC_ROOT/rejected)
+      • CORRUPT_DIR → BIN_DIR/CORRUPT     (was LIBRARY/_corrupt)
+      • IGNORED_DIR = BIN_DIR/IGNORED     (new constant; was hardcoded string in runner.py)
+      • DEDUPE_QUARANTINE_DIR → BIN_DIR/QUARANTINE  (was MUSIC_ROOT/QUARANTINE)
+      • MAINTENANCE_SKIP_DIRS expanded: .BIN, QUARANTINE, IGNORED, CORRUPT,
+        DUPLICATES, REJECTED, _duplicates, _corrupt, __pycache__
+      • Comment added: scanners also skip any path part starting with "."
+  - pipeline.py
+      • _collect_audio_from_dir(): added hidden-dir check (part.startswith("."))
+  - db.py
+      • scan_orphans(): _in_maintenance() now also excludes hidden-dir parts;
+        untracked rglob loop gains matching hidden-dir guard
+  - modules/library_dedupe.py
+      • _is_maintenance_path(): extended to cover hidden dirs + updated fallback set
+  - intelligence/enrichment/runner.py
+      • _ENRICH_IGNORED_DIR hardcoded path replaced with config.IGNORED_DIR
+
+FILES:
+  config.py, pipeline.py, db.py, modules/library_dedupe.py,
+  intelligence/enrichment/runner.py
+
+MIGRATION:
+  See migration steps in NEXT_TASKS.txt or run: python pipeline.py orphan-scan
+
+----------------------------------------------------------------------
+[2026-04-23] — Library maintenance: fix quarantine path isolation
+----------------------------------------------------------------------
+TYPE: Fix
+SUMMARY: Quarantine directory moved outside the active library tree; all scans
+         now exclude maintenance paths; nested quarantine moves prevented.
+
+DETAILS:
+  - config.py
+      • DEDUPE_QUARANTINE_DIR: SORTED/"_duplicates" → MUSIC_ROOT/"QUARANTINE"
+        (outside library tree; respects DJ_MUSIC_ROOT env var)
+      • MAINTENANCE_SKIP_DIRS frozenset added: {"_duplicates", "IGNORED", "QUARANTINE"}
+  - pipeline.py
+      • _collect_audio_from_dir(): skips any path containing a MAINTENANCE_SKIP_DIRS
+        component — prevents quarantine/ignored files appearing in all subcommand scans
+  - db.py
+      • scan_orphans(): excludes maintenance paths from known_fps (stale_db_rows)
+        and from the untracked rglob walk — quarantine rows no longer pollute counts
+  - modules/library_dedupe.py
+      • _is_maintenance_path() helper added (uses config.MAINTENANCE_SKIP_DIRS)
+      • apply_changes(): skips removal candidates already in a maintenance path
+      • _quarantine_file(): safety-net guard — returns None without moving if file
+        is already inside a maintenance directory
+
+FILES:
+  config.py, pipeline.py, db.py, modules/library_dedupe.py
+
+MIGRATION:
+  • Old quarantine was SORTED/_duplicates — files there are safe but no longer
+    auto-discovered by scans. Move them to MUSIC_ROOT/QUARANTINE if desired.
+
+----------------------------------------------------------------------
+[2026-04-23] — Library maintenance layer: dedupe + orphan-scan (Phase 1)
+----------------------------------------------------------------------
+TYPE: Feature
+SUMMARY: Built the operational library maintenance layer — preview-first duplicate
+         quarantine (--apply required to act) and a two-category orphan detector
+         (stale_db_rows vs untracked_files, never merged).
+
+DETAILS:
+  - modules/library_dedupe.py
+      • _quarantine_file() now accepts source_root — preserves relative folder
+        structure inside QUARANTINE/ (fallback: flat if path not relative to root)
+      • apply_changes() gains source_root parameter, passes it to _quarantine_file
+      • run() default changed to dry_run=True (preview-first); gains source_root param
+      • CLI hint updated to "Run with --apply to quarantine N file(s)."
+  - db.py
+      • scan_orphans(lib_root, *, include_untracked=True) added after prune_stale_tracks()
+        Single DB pass: stale_db_rows = non-stale rows missing on disk;
+        untracked_files = audio files on disk absent from DB.
+        Returns (stale_db_rows: list[str], untracked_files: list[Path])
+  - pipeline.py
+      • run_dedupe() updated: --dry-run replaced by --apply flag; source_root passed
+      • dedupe subparser: --dry-run → --apply; examples updated
+      • run_orphan_scan() added: preview by default; --apply writes stale status to DB
+      • orphan-scan subparser + dispatch added
+  - backend/app/services/track_service.py
+      • get_orphan_stats() → Dict[str, int] with stale_db_rows + active_rows
+
+FILES:
+  modules/library_dedupe.py, db.py, pipeline.py,
+  backend/app/services/track_service.py
+
+MIGRATION:
+  • dedupe CLI callers: replace --dry-run with --apply when wanting to quarantine
+  • All quarantine moves now preserve source folder structure inside QUARANTINE/
+
+----------------------------------------------------------------------
+[2026-04-23] — Collection workspace: pipeline run results browser (Phase 5)
+----------------------------------------------------------------------
+TYPE: Feature
+SUMMARY: Plugged pipeline run output files directly into the Collection UI.
+         Clicking "Results" in the toolbar switches the center panel to a run
+         browser — shows recent runs, summary stats, grouped tabs (Modified /
+         Skipped / Errors), paginated detail tables, and a row inspector.
+
+DETAILS:
+  - Backend: 3 new read-only endpoints in library.py
+      GET /api/library/runs                             — list runs (newest first)
+      GET /api/library/runs/{command}/{prefix}/summary  — summary JSON + page index
+      GET /api/library/runs/{command}/{prefix}/detail/{group}/{page} — paged entries
+    Looks for logs under $LOGS_DIR (config) or project_root/logs/{command}/
+    Strict path validation (regex + resolve().relative_to()) prevents traversal.
+  - Frontend: RunListItem/RunSummary/RunDetailEntry/ResultGroup types in job.ts;
+    fetchRunList/fetchRunSummary/fetchRunDetail in library.ts;
+    RunResultsPanel + RunEntryInspector components added to Collection.tsx.
+  - Center view toggles between "tracks" and "results" via BarChart2 "Results"
+    button in toolbar. Right panel shows RunEntryInspector when a result row
+    is selected.
+
+FILES:
+  backend/app/api/routes/library.py
+  frontend/src/types/job.ts
+  frontend/src/api/library.ts
+  frontend/src/pages/Collection.tsx
+
+IMPACT: Read-only. No pipeline behaviour changed. No new dependencies.
+NOTES: Logs must follow the <prefix>_summary.json + <prefix>_{group}_{page}.json
+       convention under logs/{command}/ for discovery to work.
+
+----------------------------------------------------------------------
+[2026-04-21] — Production-grade observability: paged detail files + rich summary JSON
+----------------------------------------------------------------------
+TYPE: Enhancement
+SUMMARY: Upgraded the run logging system across all four intelligence pipeline
+         commands. Adds grouped paged detail files (modified/skipped/errors,
+         max 200 entries/page), structured JSONL events, and a full summary JSON
+         with nested results/ai/quality/sanitize subsections. Memory-safe for
+         large runs (8000+ files).
+
+DETAILS:
+  utils/prompt_logger.py:
+    - RunLogger completely rewritten:
+      record_outcome(group, path, reason, details) → paged JSON files
+      inc(counter) / set_counter(key, value) → summary counters
+      log_file_event() → rich structured JSONL entries
+      finish() assembles nested summary JSON (results/ai/quality/sanitize/detail_files)
+    - _PAGE_SIZE = 200 per group page
+    - detail_files in summary references page filenames only (not duplicated inline)
+
+  modules/metadata_sanitize.py:
+    - files_scanned, files_processed, changed/unchanged/skipped/errors counters
+    - Pre-sanitize mode detection: uses sanitize_changed/sanitize_clean prefixes
+      when running as --pre-sanitize step inside ai-normalize
+
+  ai/normalizer.py:
+    - valid_responses, json_failures, guard_rejections AI subsection counters
+    - high_confidence / medium_confidence / low_confidence quality buckets
+    - record_outcome for modified (applied/preview), skipped, errors groups
+
+  intelligence/artist/runner.py:
+    - files_scanned, files_processed, changed/unchanged/review_count counters
+    - record_outcome for modified/skipped/errors groups
+    - Preview mode tracked in modified group
+
+  intelligence/enrichment/runner.py:
+    - high/medium/low_confidence quality tracking
+    - review_count, moved_to_ignored counters
+    - record_outcome for all decision branches
+    - Preview mode tracked in modified group
+
+  pipeline.py:
+    - start_run() moved before pre-sanitize step so it captures sanitize stats
+    - finish() now only needs exit_code; all other counters set inside runners
+    - print_paths() format matches spec: Log file / JSONL file / Summary file
+
+FILES: utils/prompt_logger.py, modules/metadata_sanitize.py, ai/normalizer.py,
+       intelligence/artist/runner.py, intelligence/enrichment/runner.py, pipeline.py
+IMPACT: Additive only — no pipeline behavior changed.
+NOTES: Paged files written to logs/<command>/<prefix>_<group>_NNN.json
+
+----------------------------------------------------------------------
+[2026-04-20] — Automatic persistent run logging for intelligence pipeline commands
+----------------------------------------------------------------------
+TYPE: Feature
+SUMMARY: All four intelligence pipeline commands now write per-run .log, .jsonl,
+         and _summary.json files automatically under logs/<command>/.
+
+DETAILS:
+  config.py:
+    - Added PIPELINE_LOGS_DIR = Path(__file__).parent / "logs"
+
+  utils/prompt_logger.py:
+    - Added _JsonlHandler: attaches to root logger; appends structured JSON to .jsonl
+    - Added RunLogger: manages FileHandler + _JsonlHandler lifecycle per run;
+      writes _summary.json with command, started_at, finished_at, duration_sec,
+      input_path, applied, exit_code on finish()
+    - Added start_run(command, log_root) → RunLogger
+    - Added get_run_logger() → RunLogger | None
+
+  pipeline.py:
+    - Added --log-dir flag to metadata-sanitize, artist-intelligence, ai-normalize,
+      metadata-enrich-online parsers
+    - Wrapped all four dispatch blocks with start_run() / finish() calls
+    - Prints [run log] paths at start of each run
+
+FILES: config.py, utils/prompt_logger.py, pipeline.py
+IMPACT: No behaviour change; purely additive. logs/ directory created on first run.
+NOTES: --log-dir overrides PIPELINE_LOGS_DIR. Default: logs/<command>/ in project root.
+
+----------------------------------------------------------------------
+[2026-04-20] — Project renamed to CrateMindAI; intelligence pipeline production-ready
+----------------------------------------------------------------------
+TYPE: Major milestone
+SUMMARY: Renamed project from TrackIQ/DJToolkit to CrateMindAI. The intelligence
+         pipeline (metadata-sanitize → ai-normalize → artist-intelligence →
+         metadata-enrich-online) is now production-ready with full safeguards.
+
+DETAILS:
+  Project rename:
+    - All user-facing references updated to CrateMindAI.
+    - Entry point remains pipeline.py; no CLI compatibility broken.
+
+  metadata-sanitize (production-ready):
+    - Deterministic offline cleaning layer.
+    - Removes URL watermarks, promo junk, malformed ISRCs, DJ pool artifacts.
+    - Preview by default; --apply to write.
+    - --pre-sanitize flag in ai-normalize triggers sanitize before inference.
+
+  Enrichment hardening (metadata-enrich-online):
+    - Strict validation: no guessing on artist mismatches or version conflicts.
+    - Subset artist matching supports collab tracks (e.g. "Artist feat. X").
+    - Version-aware blocking: conflicting version tokens cap confidence at 0.74.
+    - Exact ISRC trust path: confidence 0.98, bypasses all formula limits.
+    - min-confidence lowered to 0.80 (was 0.92); review zone added.
+    - Change policy: artist field NEVER proposed; label only when empty or ISRC-anchored.
+
+  Review queue + IGNORED system:
+    - review-queue CLI: interactive resolution of medium-confidence enrichment results.
+    - Deduplicates by file_path; repeat runs refresh entries, not grow queue.
+    - --move-ignored flag (metadata-enrich-online): moves all hard-rejected files
+      to IGNORED quarantine path (/home/koolkatdj/Music/music/IGNORED/).
+    - All hard-rejection codes (skipped_low_score, skipped_artist_mismatch,
+      skipped_version_conflict) trigger --move-ignored. Threshold skips excluded.
+
+  Intelligence module refactor:
+    - All intelligence modules consolidated under intelligence/:
+        intelligence/artist/    (artist_normalizer, artist_parser, alias_store, runner)
+        intelligence/enrichment/ (enrichment_schema, metadata_matcher, runner)
+        intelligence/label/      (evolving)
+    - artist-intelligence: deterministic alias store + canonical name resolution.
+
+FILES: README.md, CHANGELOG.txt, COMMANDS.txt, COMMANDS.html, DJToolkit_CONTEXT.txt,
+       PROJECT_CONTEXT.txt, intelligence/ (restructured)
+IMPACT: Documentation consistently reflects CrateMindAI identity and current pipeline.
+NOTES: CLI entry point (pipeline.py) and all subcommand names unchanged.
+
+----------------------------------------------------------------------
+[2026-04-20] — enrichment: fix move-ignored to cover all SKIPPED codes
+----------------------------------------------------------------------
+TYPE: Bugfix (intelligence/enrichment/runner.py)
+SUMMARY: --move-ignored previously only moved skipped_low_score files; now moves all
+         hard-rejected files (skipped_artist_mismatch, skipped_version_conflict too).
+
+DETAILS: Removed the _dc == "skipped_low_score" guard inside the skip branch.
+         All three hard-rejection codes now trigger _move_to_ignored when --move-ignored
+         is set. Confidence-threshold skips (do_apply but conf < min) are intentionally
+         excluded — those files have a plausible API match and should not be discarded.
+
+FILES: intelligence/enrichment/runner.py (1-line change)
+
+----------------------------------------------------------------------
+[2026-04-20] — enrichment: review queue + move-ignored operational features
+----------------------------------------------------------------------
+TYPE: Feature (intelligence/enrichment/runner.py, pipeline.py)
+SUMMARY: Two operational features for the enrichment pipeline — persistent review queue
+         for medium-confidence results, and automatic move-to-IGNORED for unresolvable files.
+
+DETAILS:
+  Review queue (enrichment_review_queue.json):
+    _enqueue_for_review(): called automatically for every review/review_ambiguous result.
+    Deduplicates by file_path — repeat runs refresh stale entries, don't grow the queue.
+    Atomic save via .json.tmp rename.
+    CLI: python3 pipeline.py review-queue [--list-only]
+    Interactive actions: a=apply, s=skip, d=delete, n=next, q=quit.
+    apply: writes proposed_changes via _apply_enrichment, removes entry.
+    skip/delete: removes entry without writing.
+
+  Move to IGNORED (--move-ignored flag):
+    Triggered only for decision_code=skipped_low_score (no usable match found).
+    Artist-mismatch and version-conflict skips are NOT moved (specific safety rejections).
+    review items are NOT moved (they go to the queue instead).
+    Preserves folder structure: file.relative_to(music_root) → IGNORED/<rel>.
+    Collision handling: appends _dup1, _dup2, … suffix.
+    Off by default — only active with explicit --move-ignored flag.
+
+  No changes to existing enrichment behavior without new flags.
+
+FILES: intelligence/enrichment/runner.py, pipeline.py
+IMPACT: New operational handles for medium and low-confidence enrichment outcomes.
+NOTES: Paths defined inline in runner.py (no config.py changes needed).
+
+----------------------------------------------------------------------
+[2026-04-20] — metadata_matcher: title normalization improvements
+----------------------------------------------------------------------
+TYPE: Refinement (intelligence/enrichment/metadata_matcher.py)
+SUMMARY: Improved _clean_title_for_match() to handle non-trailing label brackets,
+         bare BPM numbers, and duplicate bracket segments.
+
+DETAILS:
+  _LABEL_BRACKET_RE: removed $ anchor — now strips label-keyword brackets anywhere
+    in the title, not just trailing. "(Kontor Records)" in the middle is now caught.
+  _clean_title_for_match() body rewritten (same function, extended logic):
+    Step 1: _LABEL_BRACKET_RE strips label-keyword brackets anywhere.
+    Step 2: alias-index scan now uses re.finditer over ALL brackets (not trailing-only).
+    Step 3: bare trailing BPM numbers in range 60–200 stripped (in addition to "128bpm").
+    Step 4: duplicate adjacent bracket segments collapsed — "(Remix) (Remix)" → "(Remix)".
+  _TRAILING_BRACKET_RE constant removed (was only used for the old trailing-only check).
+
+FILES: intelligence/enrichment/metadata_matcher.py
+IMPACT: More accurate base-title comparison for tracks with non-trailing label tags,
+        embedded BPM, or duplicate suffix brackets. No change to scoring logic.
+NOTES: Version tokens untouched — _strip_version() still handles those separately.
+
+----------------------------------------------------------------------
+[2026-04-20] — metadata_matcher: album filter, title pre-clean, label reason codes
+----------------------------------------------------------------------
+TYPE: Safety refinement (intelligence/enrichment/metadata_matcher.py)
+SUMMARY: Three targeted safety improvements to the enrichment matching engine.
+         No gates weakened; all changes either block bad writes or improve signal clarity.
+
+DETAILS:
+  1. Album compilation filter (_build_changes):
+     Candidate albums containing "Mix", "Compilation", or "Playlist" are rejected
+     unless the match is ISRC-anchored OR label_sim >= 0.70.
+     Prevents writing "Beatport Mix Vol. 3" as a track album.
+     Logged at DEBUG as "album_rejected_compilation".
+
+  2. Title pre-clean before similarity (_clean_title_for_match):
+     Strips trailing BPM numbers ("Track 128BPM" → "Track") and label-name brackets
+     ("Track (Defected Records)" → "Track") before base-title comparison.
+     Bracket stripping uses two strategies: label-keyword regex + alias-index lookup.
+     Version tokens ((Original Mix) etc.) untouched — still handled by _strip_version().
+     Reason code: "title_cleaned_for_match".
+
+  3. Label boost reason codes renamed:
+     "label+X.XX" → split into "label_match_boost" and "label_alias_boost" for
+     cleaner per-signal traceability in logs and JSONL dataset.
+
+FILES: intelligence/enrichment/metadata_matcher.py
+IMPACT: Fewer incorrect album writes from stream/compilation sources. Better title
+        comparison for filenames with embedded BPM or label tags. Cleaner JSONL logs.
+NOTES: runner.py unchanged — new reason codes propagate via match.reason.
+
+----------------------------------------------------------------------
+[2026-04-20] — metadata_matcher: multi-artist subset matching + version tolerance
+----------------------------------------------------------------------
+TYPE: Enhancement (intelligence/enrichment/metadata_matcher.py)
+SUMMARY: Matcher was too strict for multi-artist tracks where a candidate artist
+         is a legitimate subset of the file's artist list. Added controlled
+         flexibility without weakening rejection of true mismatches.
+
+DETAILS:
+  _artist_match_score(): new helper replaces direct _similarity() for artists.
+    Falls back to list-based comparison when string sim < ARTIST_SIM_GATE.
+    - subset_artist_match: cand artists ⊆ file artists → score 0.88 (passes Gate B)
+    - partial_artist_match: some overlap, not subset → score 0.82 (fails Gate B, logged)
+    - no overlap → original string sim (rejected as before)
+  Version tolerance in score_candidate():
+    If version_sim=0.0 due to one-side-missing (not a conflict) AND
+    title_sim >= 0.95 AND artist match is strong → version_sim set to 0.70
+    instead of 0.0. Reason code: "version_missing_tolerated".
+  Reason notes unified: subset_artist_match, partial_artist_match,
+    version_missing_tolerated all appear in match.reason and propagate to JSONL.
+
+FILES: intelligence/enrichment/metadata_matcher.py
+IMPACT: More matches for multi-artist tracks; subset cases → review or ready
+        instead of skipped_artist_mismatch. No change to rejection of true mismatches.
+NOTES: All existing safety gates preserved. MIK rules unaffected (no BPM/key writes).
+
+----------------------------------------------------------------------
+[2026-04-20] — metadata-enrich-online: strict multi-factor validation layer
+----------------------------------------------------------------------
+TYPE: Hardening (intelligence/enrichment/)
+SUMMARY: Replaced loose similarity-based matching with a strict gated pipeline.
+         Goal: prefer skipping over incorrect matches; only apply when identity
+         is highly confident.
+
+DETAILS:
+  Matching pipeline (gates applied in order before scoring):
+    Gate A — Title similarity: strip mix/version tokens, require title_sim >= 0.92
+    Gate B — Artist consistency: reject if artist_sim < 0.85 (no ISRC anchor)
+    Gate C — Version alignment: reject conflicting version tokens (e.g. Remix vs Original)
+  After gates, ambiguity check: if top-2 candidates within 0.05, mark review_ambiguous.
+
+  Scoring formula changed to title-primary:
+    OLD: artist(35%) + title(30%) + version(25%) + label(10%)
+    NEW: title(50%) + artist(30%) + version(20%) + label as optional booster (+0.05)
+
+  Decision thresholds raised:
+    >= 0.90 → ready (was 0.80)
+    0.75–0.89 → review (new band, needs human confirmation)
+    < 0.75 → skip
+
+  Machine-readable decision_code added to EnrichmentMatch:
+    "ready" | "review" | "review_ambiguous"
+    "skipped_low_score" | "skipped_artist_mismatch" | "skipped_version_conflict"
+
+  Runner changes:
+    - Loads artist alias store once before file loop; resolves canonical artist per file
+    - Decision-code-driven apply logic (hard rejections never auto-apply even with --apply)
+    - review and review_ambiguous cases counted separately (n_review)
+    - JSONL logging includes decision_code on all records
+    - Summary output shows Review queue count
+
+FILES:
+  intelligence/enrichment/metadata_matcher.py — complete rewrite
+  intelligence/enrichment/enrichment_schema.py — added decision_code field
+  intelligence/enrichment/runner.py — canonical artist, decision-code logic, review tracking
+  config.py — ENRICH_ONLINE_MIN_CONFIDENCE: 0.80 → 0.90
+
+IMPACT:
+  CLI compatible (no flag changes). Stricter: more tracks will be skipped or queued
+  for review vs the old system. ISRC exact matches (0.98) are unaffected.
+
+NOTES:
+  Duration booster deferred — requires adding duration_ms to EnrichmentCandidate
+  and to Spotify/Deezer/Traxsource response parsers.
+
+----------------------------------------------------------------------
+[2026-04-19] — artist-intelligence Phase 4b: casing normalization safety — acronym / brand identity guard
+----------------------------------------------------------------------
+TYPE: Bugfix / hardening (intelligence/artist/artist_normalizer.py)
+SUMMARY: Casing normalization was too aggressive: ACRAZE → Acraze, ANOTR → Anotr, ATFC → Atfc,
+         AVG (IT) → Avg (it). Added entity-level length guard and country-code parenthetical
+         preservation so DJ brand identities and acronyms are never degraded.
+
+DETAILS:
+- artist_normalizer.py: _normalize_casing() rewritten with two new rules:
+    1. Single-word all-caps entity ≤ 6 alpha chars → kept unchanged (ACRAZE, ANOTR, ATFC,
+       AVG, HOSH, etc. — any short all-caps name could be a DJ brand or acronym).
+    2. Trailing country/region code in parens — (IT), (UK), (SA), (DE), (FR) etc. — always
+       kept uppercase and never affected by the title-case conversion.
+  Multi-word all-caps names (LISA MILLET, DJ SPEN) continue to be converted correctly.
+  Long single words > 6 chars (MAPHORISA, KEINEMUSIK) continue to be converted.
+  Added _COUNTRY_CODE_RE pattern, _ACRONYM_MAX_LEN = 6 constant, and CASING_LABEL_*
+  debug-log strings.
+- runner.py: added REASON_CASING_SKIPPED_ACRONYM and REASON_CASING_NORMALIZED_WORD constants.
+- tests/test_artist_intelligence.py: replaced test_all_caps_single_word with a full
+  TestCasingNormalization class (21 tests). Total: 116 tests.
+
+FILES:
+- intelligence/artist/artist_normalizer.py
+- intelligence/artist/runner.py
+- tests/test_artist_intelligence.py
+
+----------------------------------------------------------------------
+[2026-04-19] — artist-intelligence Phase 4: nested separator split, casing normalization, confidence boost
+----------------------------------------------------------------------
+TYPE: Feature / hardening (intelligence/artist/)
+SUMMARY: artist-intelligence now correctly handles comma + ampersand compound artist strings,
+         converts ALL-CAPS artist names to title case, and returns higher-confidence personal-
+         name splits (0.90, up from 0.85). 107 tests passing.
+
+DETAILS:
+- artist_parser.py: _split_on_separators() rewritten with two-pass hierarchical logic —
+  comma splits first, then & is applied within each comma-segment. "AC Slater, Chris Lorenzo
+  & Fly With Us" now correctly resolves to 3 artists instead of 2. Label "nested" recorded
+  in parse notes when second pass fires. _try_personal_name_split confidence bumped 0.85 → 0.90.
+- artist_normalizer.py: added step 8 — _normalize_casing() converts ALL-CAPS names (LISA MILLET
+  → Lisa Millet). Conservative: any lowercase letter in the string suppresses conversion;
+  known abbreviations (DJ, MC) and dotted initials (M.E.) preserved unchanged. Idempotent.
+- runner.py: new reason constants — nested_split, casing_normalized, confidence_boosted,
+  alias_candidate_detected. _compute_change_reasons() emits nested_split when parse notes
+  contain "nested", and casing_normalized when current was all-caps and proposed is title-case.
+- tests/test_artist_intelligence.py: added TestNestedSplit (9 tests) and TestCasingNormalization
+  (10 tests). Total: 107 tests.
+
+FILES:
+- intelligence/artist/artist_parser.py
+- intelligence/artist/artist_normalizer.py
+- intelligence/artist/runner.py
+- tests/test_artist_intelligence.py
+
+----------------------------------------------------------------------
+[2026-04-19] — artist-intelligence Phase 3: multi-artist split, pollution guards, feat dedup
+----------------------------------------------------------------------
+TYPE: Feature / hardening (intelligence/artist/)
+SUMMARY: artist-intelligence now handles real-world DJ metadata patterns: concatenated
+         artist names are split on personal-name boundaries, BPM and version bracket
+         pollution is stripped, duplicate feat tokens are collapsed, and alias changes
+         now distinguish structural rewrites from case-only normalization.
+
+DETAILS:
+- artist_normalizer.py: added steps 5b (feat. feat. → feat.), 6 (strip BPM tokens),
+  7 (strip version/mix bracket pollution). All steps are idempotent.
+- artist_parser.py: fixed _strip_feat() to strip leading duplicate feat token from
+  extracted feat_part ("feat. feat. Another" → feat_part = "Another"). Added
+  _is_personal_name_part() and _try_personal_name_split() for no-separator multi-artist
+  detection. Splits only when BOTH halves match [First] [Initial]? [Surname] pattern
+  (≥4 words required; 4+ word results return False to stay conservative). Handles
+  "Aaron K Gray Mark Francis" → ["Aaron K Gray", "Mark Francis"] and
+  "Adri Block Paul Parsons" → ["Adri Block", "Paul Parsons"] correctly.
+- runner.py: new reason constants (feat_deduped, alias_normalized, pollution_removed,
+  multi_artist_split, split_ambiguous_skipped). _process_track() runs personal-name
+  split when parser returns a single entity not found in alias store; sets entity.source
+  "heuristic_split" so reasons are tracked. Long strings (≥4 words) with no confident
+  split log split_ambiguous_skipped in notes. _compute_change_reasons() updated with
+  all new detection logic; alias_normalized distinguishes case-only vs structural alias.
+- tests/test_artist_intelligence.py: 41 new tests (88 total, all passing).
+
+FILES: intelligence/artist/artist_normalizer.py, intelligence/artist/artist_parser.py,
+       intelligence/artist/runner.py, tests/test_artist_intelligence.py
+IMPACT: No DB schema changes. No tag writes change unless these new cases are triggered.
+        Existing safe behavior preserved — minimum 4-word threshold for split attempts.
+
+----------------------------------------------------------------------
+[2026-04-19] — artist-intelligence Phase 2: structured reasons, conservative alias, feat normalization
+----------------------------------------------------------------------
+TYPE: Feature / safety hardening (intelligence/artist/)
+SUMMARY: artist-intelligence is now production-safe. Every proposed change carries a
+         named reason. CI-only alias matches are treated conservatively and queued for
+         review. feat-token normalization (ft./featuring → feat.) is now surfaced as a
+         real change instead of being silently suppressed.
+
+DETAILS:
+- intelligence/artist/artist_alias_store.py: added lookup_with_method() — returns
+  (canonical, method) where method is "exact", "normalized", or "ci". CI-only matches
+  are flagged so callers can apply lower confidence.
+- intelligence/artist/runner.py: new REASON_* constants (feat_normalized, alias_resolved,
+  separator_normalized, spacing_fixed, skipped_ambiguous_alias). _process_track() uses
+  lookup_with_method() and caps entity/result confidence to 0.70 for ci-only matches.
+  _propose_artist() changed from names_are_equivalent() to direct == comparison so feat
+  normalization changes are surfaced. New _compute_change_reasons() function. Change
+  reasons travel through _compute_diff(), terminal preview, JSON output, APPLIED log,
+  and summary breakdown. Review queue entries include skipped_ambiguous_alias note.
+- tests/test_artist_intelligence.py: new file, 47 tests covering normalizer, parser,
+  alias store (with lookup_with_method), _propose_artist, and _compute_change_reasons.
+  All 47 pass.
+
+FILES: intelligence/artist/artist_alias_store.py, intelligence/artist/runner.py,
+       tests/test_artist_intelligence.py
+IMPACT: No DB schema changes. No pipeline structure changes. CLI flags unchanged.
+        Existing alias store JSON file format unchanged.
+
+----------------------------------------------------------------------
+[2026-04-19] — ai-normalize production hardening: structured rejections, MIN_AI_CONFIDENCE, NormalizeResult
+----------------------------------------------------------------------
+TYPE: Feature / safety hardening (ai/)
+SUMMARY: ai-normalize is now production-safe. Five structured rejection reasons replace
+         ad-hoc error strings. A named constant enforces the confidence gate. Hard guards
+         return rejection reasons when the model is confused about track identity.
+
+DETAILS:
+- ai/metadata_schema.py: added MIN_AI_CONFIDENCE=0.80 constant, five REJECTION_* string
+  constants, NormalizeResult dataclass (replaces raw 3-tuple), guardrail_fired bool field
+  on NormalizedMetadata.
+- ai/normalizer.py: _normalize_track() now returns NormalizeResult; rejection order is
+  ai_error → schema_invalid → low_confidence → parsed_conflict → guardrail_violation.
+  Added _check_parsed_alignment() — rejects when AI version contradicts deterministic
+  filename parse. _apply_hard_guards() returns (proposed, reason); sets guardrail_fired
+  when AI proposed a different artist than current tag. Structured INFO log per rejection.
+  run_ai_normalize() updated: no duplicate confidence check, rejection breakdown in summary,
+  rejection_reason in JSON output instead of skipped_reason.
+- pipeline.py: --min-confidence default for ai-normalize updated from 0.75 → 0.80.
+
+FILES: ai/metadata_schema.py, ai/normalizer.py, pipeline.py
+IMPACT: No DB schema changes. No pipeline structure changes. Preview-only runs unaffected.
+        --apply runs will now reject more aggressively on confused model output.
+
+----------------------------------------------------------------------
+[2026-04-19] — Collection Phase 4: real tracks, counts, maintenance panel, sidebar collapse
+----------------------------------------------------------------------
+TYPE: Feature / bug fix (backend + frontend)
+SUMMARY: Collection workspace now shows real track data from the pipeline DB, scoped to
+         the selected folder. Log panel scrolls up to 100 lines. Sidebar is collapsible.
+         Library maintenance actions (scan dupes, prune orphans, audit) are wired to real
+         pipeline jobs.
+
+DETAILS:
+- Backend: GET /api/library/stats?path= returns global + folder-scoped counts; handles
+  both canonical (/home/.../Music/music) and /music symlink filepath forms in the DB
+- Backend: GET /api/tracks now accepts ?path= to scope results to a directory prefix;
+  same dual-form path matching used
+- Frontend: Collection table replaced from static MOCK_TRACKS → real TrackSummary rows
+  from /api/tracks?path=...&limit=500; re-fetches on every path selection change
+- Frontend: Toolbar shows "N in folder · M total" (folder count = loaded rows, global
+  count = /api/tracks/stats.total, fetched once on mount)
+- Frontend: Log panel height changed from max-height:260px to height:260px (fixed).
+  The auto-sized grid row + overflow:hidden on parent was clipping content before
+  max-height was reached; fixed height gives the flex body a definite container to
+  scroll within. Now shows up to 100 lines with scroll.
+- Frontend: Maintenance panel at bottom of tree column — Scan Duplicates (dedupe),
+  Prune Orphans (db-prune-stale), Audit Library (audit-quality --dry-run). Each
+  submits a real pipeline job and shows status/link to Jobs page.
+- Frontend: Sidebar collapsible — collapse button in brand bar toggles 210px→48px;
+  collapsed state shows icons only with tooltips; state lives in Layout.tsx.
+- Frontend: DirTreeNode active indicator now uses path equality (not label) to
+  correctly highlight the selected folder regardless of label duplicates.
+- Tree fetch depth increased 2→3 to show deeper subfolder structure.
+
+FILES:
+  backend/app/api/routes/library.py       — /library/stats endpoint
+  backend/app/services/track_service.py   — path filter + _path_prefix_clauses helper
+  backend/app/api/routes/tracks.py        — path query param
+  frontend/src/api/library.ts             — fetchLibraryStats()
+  frontend/src/types/track.ts             — path field on TrackListParams
+  frontend/src/pages/Collection.tsx       — full rewrite to TrackSummary data
+  frontend/src/components/Sidebar.tsx     — collapsed prop + toggle button
+  frontend/src/components/Layout.tsx      — sidebarCollapsed state
+  frontend/src/index.css                  — log panel height fix, sidebar collapse,
+                                            maintenance panel styles
+
+MIGRATION: None — DB schema unchanged. No config changes.
+
+----------------------------------------------------------------------
+[2026-04-19] — Fix: folder selection updates track table; log panel improvements
+----------------------------------------------------------------------
+TYPE: Bug fix (frontend only)
+SUMMARY: Folder selection now drives both the track table and job execution via
+         selectedPath as single source of truth. Log panel is taller, scrollable,
+         and auto-scrolls during active jobs.
+
+DETAILS — Issue 1 (folder→table):
+- Removed label-keyed DIR_TRACKS mapping (used fake genre labels)
+- Added getTracksForPath(path: string | null): MockTrack[] — normalises canonical
+  and symlink path forms, does prefix matching on relative path, returns filtered
+  mock tracks based on real track properties:
+    root          → all tracks
+    /inbox/**     → tracks where stage === 'metadata-sanitize' (early pipeline)
+    /library/_corrupt → status === 'error'
+    /library/sorted   → status === 'ok' | 'needs_review'
+    /library/acapella, bootlegs, edits, etc. → [] (no mock tracks in these)
+    /library/**   → status === 'ok' | 'needs_review'
+    /duplicates   → quality === 'LOW' | 'MEDIUM'
+    /rejected     → []
+- displayTracks derivation now calls getTracksForPath(selectedPath) directly;
+  selectedPath is updated on every folder click, so table changes immediately
+- selectedPath is already the --input target for job execution — no separate source of truth
+
+DETAILS — Issue 2 (log panel):
+- max-height: 180px → 260px (~12 lines visible at once instead of ~3)
+- Added logBodyRef + auto-scroll effect: scrolls to bottom on new liveLogs lines
+- Added userScrolled state: pauses forced scroll if user manually scrolls up;
+  resumes when user scrolls back to bottom (< 30px from end)
+- Scroll position reset when a new job starts (sanitizeJob.id changes)
+- Logs are per-job: fetching from /api/jobs/{id}/logs — unrelated jobs never mix
+
+FILES:
+- frontend/src/pages/Collection.tsx
+- frontend/src/index.css
+
+----------------------------------------------------------------------
+[2026-04-19] — Replace mock directory tree with real filesystem tree
+----------------------------------------------------------------------
+TYPE: Feature (backend + frontend)
+SUMMARY: The Collection sidebar now shows the real library folder structure loaded
+         from a new backend endpoint. All visible nodes are backed by real paths
+         and are executable job targets.
+
+DETAILS:
+- Genre-based mock folders (House, Deep House, Techno, etc.) removed — they
+  did not exist on disk and were pure UI fiction
+- New GET /api/library/tree endpoint walks MUSIC_ROOT (with depth param, default 2)
+  and returns {label, path, executable, children} for every real directory
+- Filtered at root level: logs/, data/, playlists/, _PLAYLISTS_M3U_EXPORT/,
+  _REKORDBOX_XML_EXPORT/, processing/ — not audio sources
+- Real tree (depth=2): KKDJ → inbox/*, library/*, duplicates, rejected,
+  _originals_m4a_converted; inbox and library each expand to their subcategory dirs
+- DirNode.executable field: all API nodes = true; fallback static nodes = true;
+  any future virtual-only node would set executable=false and render greyed/italic
+- DirTreeNode renders non-executable labels in italic muted style
+- selectedExecutable state tracked alongside selectedPath; handleRunClean checks both
+- Frontend fetches tree on mount via fetchLibraryTree(); falls back to
+  minimal static tree (KKDJ + inbox + library) if backend is unreachable
+- All 22 returned paths verified to pass the --input validator end-to-end
+
+FILES:
+- backend/app/api/routes/library.py (new)
+- backend/app/main.py
+- frontend/src/api/library.ts (new)
+- frontend/src/pages/Collection.tsx
+- frontend/src/index.css
+
+REAL vs MOCK after this change:
+- REAL: directory tree (live filesystem via API)
+- REAL: Clean job execution for any visible tree node
+- MOCK: track table rows (still mock; Phase 4)
+- MOCK: track counts in tree nodes (API doesn't return counts yet)
+
+----------------------------------------------------------------------
+[2026-04-19] — Fix: pass --input path to metadata-sanitize job
+----------------------------------------------------------------------
+TYPE: Bug fix (backend + frontend)
+SUMMARY: metadata-sanitize was failing because --input was not passed. Fixed by
+         adding real filesystem paths to the directory tree nodes and wiring
+         selectedPath state through to the job submission.
+
+DETAILS:
+Backend:
+- backend/app/core/config.py: added MUSIC_ROOT (resolved via toolkit config.py importlib);
+  resolves /music symlink → /home/koolkatdj/Music/music
+- backend/app/services/toolkit_runner.py: added --input to _ALLOWED_VALUE_FLAGS with
+  _is_safe_input_path() validator — accepts only absolute paths that resolve inside MUSIC_ROOT;
+  blocks path traversal (/music/../etc → rejected)
+
+Frontend:
+- DirNode interface: added optional path field
+- DIR_TREE: KKDJ → /music, inbox → /music/inbox; genre nodes remain mock-only (no path)
+- DirTreeNode: onSelectDir callback now passes (label, path | undefined)
+- Added selectedPath state (defaults to /music, matching initial activeDir=KKDJ)
+- handleSelectDir: sets both activeDir and selectedPath on click
+- handleRunClean: validates selectedPath before submitting; passes --input <path> in args;
+  shows clear error if user selects a mock-only folder
+- Tree panel: shows resolved path below the tree for transparency
+
+Example final command (preview):
+  python3 pipeline.py metadata-sanitize --input /music/inbox
+Example with apply:
+  python3 pipeline.py metadata-sanitize --input /music/inbox --apply
+
+FILES:
+- backend/app/core/config.py
+- backend/app/services/toolkit_runner.py
+- frontend/src/pages/Collection.tsx
+- frontend/src/index.css
+
+----------------------------------------------------------------------
+[2026-04-19] — Collection workspace UI: Phase 3 — live metadata-sanitize job
+----------------------------------------------------------------------
+TYPE: Feature (backend + frontend)
+SUMMARY: Connects the Collection workspace "Clean" preset to a real metadata-sanitize
+         pipeline job. First live backend integration in the web app.
+
+DETAILS:
+- Collection is now the default landing page (index route); Dashboard moved to /dashboard
+- Sidebar reordered: Collection first, then Dashboard
+- "Clean" preset button now submits a real job via POST /api/jobs
+  { command: "metadata-sanitize", args: [] }  — preview
+  { command: "metadata-sanitize", args: ["--apply"] }  — writes tags
+- Apply toggle added to toolbar; clearly styled red when enabled to warn about writes
+- Job lifecycle: pending → running → succeeded/failed/cancelled all reflected on the button
+- Running state: spinner + "✕ Cancel" button appears; cancel calls POST /api/jobs/{id}/cancel
+- Log panel: polls GET /api/jobs/{id}/logs?tail=100 every 2s while job is active;
+  shows real output live; falls back to mock logs when idle
+- Job summary line parsed from logs and shown in log panel header after completion
+- Error message shown as a red log line if job submission fails
+- Normalize / Enrich / Full Pass remain mock (clearly titled "Not wired yet")
+
+BACKEND:
+- "metadata-sanitize" added to ALLOWED_COMMANDS in toolkit_runner.py
+  (--apply and --verbose already in _ALLOWED_BOOL_FLAGS; no other flags needed)
+
+FRONTEND:
+- frontend/src/types/job.ts: added "metadata-sanitize" to ALLOWED_COMMANDS const
+- frontend/src/App.tsx: Collection as index, Dashboard at /dashboard
+- frontend/src/components/Sidebar.tsx: reordered nav, updated Dashboard path
+- frontend/src/pages/Collection.tsx: full job lifecycle wiring (~80 lines added)
+- frontend/src/index.css: Phase 3 CSS (btn--running, btn--spinner, apply-toggle)
+
+REAL vs MOCK:
+- REAL: Clean preset button → job submit → polling → live logs → cancel → summary
+- MOCK: Normalize, Enrich, Full Pass preset buttons (still toggle mock log lines)
+- MOCK: track table rows (not yet connected to pipeline DB)
+- MOCK: directory tree (not yet connected to real library paths)
+
+FILES:
+- backend/app/services/toolkit_runner.py
+- frontend/src/types/job.ts
+- frontend/src/App.tsx
+- frontend/src/components/Sidebar.tsx
+- frontend/src/pages/Collection.tsx
+- frontend/src/index.css
+
+NOTES: metadata-sanitize uses --apply (not --dry-run) to write. No --apply = preview.
+       This is different from the --dry-run pattern used by other commands.
+
+----------------------------------------------------------------------
+[2026-04-19] — Collection workspace UI: Phase 2 interactions
+----------------------------------------------------------------------
+TYPE: Enhancement (frontend only)
+SUMMARY: Completes the Phase 2 Collection workspace with all client-side interactions.
+
+DETAILS:
+- Folder filtering: clicking a dir in the tree filters table to that folder's track IDs
+- Inline search: toolbar search filters by artist, title, or label in real time
+- Sort: click any sortable column header to sort asc/desc; Camelot keys sort numerically
+- Preset state: selecting Clean/Normalize/Enrich/Full Pass highlights button and drives
+  the log panel to show preset-specific mock log lines; click again to deselect
+- Reactive log panel: derives content from activePreset state; collapsible via chevron
+- Pipeline progress: inspector shows per-track pipeline stage progress dots
+- Column picker: popover closes on outside click; visibility state persists within session
+- Folder selection resets search and inspector to avoid stale selections
+- Responsive: inspector hidden <1100px; tree hidden <800px
+- Phase 2 CSS appended to index.css (~170 lines): active dir highlight, toolbar search,
+  pipeline-progress dots, log-line colour (error/warn), analysis-track-label, @media
+
+FILES:
+- frontend/src/pages/Collection.tsx (complete Phase 2 rewrite)
+- frontend/src/index.css (Phase 2 CSS appended, ~170 lines)
+
+IMPACT: frontend-only; no backend, DB, or pipeline changes
+
+----------------------------------------------------------------------
+[2026-04-19] — Collection workspace UI: Phase 1 static shell
+----------------------------------------------------------------------
+TYPE: New feature (frontend only)
+SUMMARY: Adds a full 4-panel Collection workspace page to the React frontend.
+         Phase 1 is a static shell with mock data — no backend calls.
+
+DETAILS:
+- New route: /collection, added to App.tsx and Sidebar.tsx
+- Layout: toolbar / body (tree + table + inspector) / log panel
+  All panels use CSS Grid; table and inspector scroll independently
+- Toolbar: workspace title, track count, 4 job preset buttons (Clean / Normalize /
+  Enrich / Full Pass — UI only, no API calls yet), column picker
+- Left panel (200px): mock directory tree with expand/collapse, folder icons,
+  file counts per directory
+- Analysis bar: Camelot wheel (12×A/B grid, active key highlighted on selection),
+  BPM / Key / Energy readouts for selected track
+- Track table: 15 columns (cover, artist, title, version, BPM, key, energy,
+  status, rating, label, confidence, source, filetype, quality, last stage);
+  column visibility toggleable via popover; rows clickable to populate inspector
+- Inspector panel (260px): cover art placeholder, artist/title/version, analysis
+  fields, metadata fields, file info, pipeline stage; shows prompt when empty
+- Log panel (bottom, collapsible): mock sanitize/normalize/enrich log lines
+- All component CSS appended to index.css (no new CSS files); ~380 lines added
+- Sidebar brand updated from "DJ Toolkit" to "CrateMindAI"
+- TypeScript: zero errors (verified with tsc --noEmit)
+
+MOCK vs REAL:
+- Mock: track data (18 tracks), directory tree, log entries, job buttons (no-ops)
+- Real: all layout, column toggle logic, Camelot wheel, energy bars, badges
+
+FILES:
+- frontend/src/pages/Collection.tsx (new)
+- frontend/src/App.tsx
+- frontend/src/components/Sidebar.tsx
+- frontend/src/index.css
+
+PHASE 2 DEFERRED:
+- Replace MOCK_TRACKS with real API via useCollection hook
+- Wire job buttons to existing job submission API
+- Real directory tree from GET /library/tree
+- Live log streaming (SSE, same pattern as LogModal)
+- Click-to-filter directory tree → pass path as --input to jobs
+
+----------------------------------------------------------------------
+[2026-04-19] — ai-normalize: add --pre-sanitize flag to run metadata-sanitize first
+----------------------------------------------------------------------
+TYPE: New flag (additive, no behavior change when absent)
+SUMMARY: Adds --pre-sanitize to the ai-normalize subcommand. When present, runs
+         metadata-sanitize --apply on the input path before AI inference begins,
+         so the model receives clean tags rather than junk-polluted input.
+
+DETAILS:
+- New argument registered in the ai-normalize subparser in pipeline.py
+- Dispatch block checks getattr(args, "pre_sanitize", False) before calling
+  run_ai_normalize; if True, constructs a sanitize Namespace and calls
+  run_metadata_sanitize() first
+- Sanitize Namespace forwards: input, apply, limit, verbose from the parent args;
+  output_json is always None (sanitize JSON log not needed in this mode)
+- If run_metadata_sanitize() exits non-zero, the dispatch aborts before ai-normalize
+  runs — partial sanitize failure never feeds a broken state into the model
+- --apply is the single write gate for both steps:
+    no --apply → sanitize previews, ai-normalize previews
+    --apply    → sanitize writes to disk, ai-normalize reads clean tags and writes
+- Without --pre-sanitize, the ai-normalize dispatch path is byte-for-byte identical
+  to before — zero regression risk
+- modules/metadata_sanitize.py and ai/normalizer.py are not modified
+
+FILES:
+- pipeline.py (subparser: 1 add_argument call; dispatch: ~10 lines)
+- DJToolkit_CONTEXT.txt (ai-normalize entry updated)
+- NEXT_TASKS.txt (task marked done)
+
+DEFERRED:
+- --output-json for the sanitize step is not forwarded (not useful in this mode)
+- No combined summary output merging both steps' results
+
+----------------------------------------------------------------------
+[2026-04-18] — metadata-sanitize: clear album/label fields containing email addresses
+----------------------------------------------------------------------
+TYPE: Bug fix
+SUMMARY: Email-like strings (e.g. "privateftpmusic@gmail.com") were partially stripped
+         to "privateftpmusic@" because sanitize_text() removed the domain but left the
+         local-part prefix. The entire field value must be cleared when an email is present.
+
+DETAILS:
+- Added _RE_EMAIL regex: \b[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}\b
+- _sanitize_album(): email check runs first, before URL/path/dots/sanitize_text()
+  → clears value with reason code album_junk_email
+- _sanitize_label(): email check runs first, before placeholder and whitespace checks
+  → clears value with reason code label_junk_email
+- title and artist fields are not affected (per design: no full-clear on those fields)
+- Rule is deterministic: any email match → clear; partial strips are no longer possible
+
+FILES:
+- modules/metadata_sanitize.py
+
+----------------------------------------------------------------------
+[2026-04-18] — metadata-sanitize: fix single-file input + AIFF fixture corruption
+----------------------------------------------------------------------
+TYPE: Bug fix (2 bugs)
+SUMMARY: Running metadata-sanitize with --input pointing to a single file returned
+         "No audio files found". Separately, tc21 AIFF fixture was always read as
+         CORRUPT due to wrong mutagen class used when writing the fixture.
+
+DETAILS:
+Bug 1 — single-file input:
+- _collect_files() only called rglob() which requires a directory.
+- Added early guard: if input_path.is_file(), return [input_path] directly.
+
+Bug 2 — AIFF fixture malformed:
+- tests/create_sanitize_fixtures.py wrote AIFF tags using bare ID3().save(aiff_path),
+  which produces a raw ID3 file, not a valid AIFF+ID3 container.
+  MFile(easy=True) then raised "can't sync to MPEG frame" and marked the file CORRUPT.
+- _write_aiff_id3_tsrc() now uses mutagen.aiff.AIFF, adds tags, and saves —
+  the same interface used by _read_isrc/_clear_isrc in the module itself.
+
+FILES:
+- modules/metadata_sanitize.py (_collect_files one-line guard)
+- tests/create_sanitize_fixtures.py (_write_aiff_id3_tsrc rewritten)
+
+----------------------------------------------------------------------
+[2026-04-18] — metadata-sanitize: fix slash false positive in album path-fragment detection
+----------------------------------------------------------------------
+TYPE: Bug fix
+SUMMARY: Album values containing "/" were cleared as path fragments, incorrectly
+         deleting legitimate names like "AC/DC", "Black/White Remixes", "His/Hers".
+
+DETAILS:
+- Old rule: any "/" or "\" anywhere in the value → clear
+- New rule: clear only if value starts with "/" or "\" (Unix absolute path),
+  or contains a Windows drive prefix matching [A-Za-z]:[/\]  (e.g. C:\ or C:/)
+- A single slash between words is not a path signal
+- All other album rules (URL, ellipsis/dots, sanitize_text) unchanged
+
+FILES:
+- modules/metadata_sanitize.py
+
+----------------------------------------------------------------------
+[2026-04-18] — metadata-sanitize: fix ellipsis false positive in album sanitation
+----------------------------------------------------------------------
+TYPE: Bug fix
+SUMMARY: Album values containing a standard ellipsis (...) were incorrectly cleared
+         as junk. "Future...Past", "...And Justice For All", "So..." all triggered
+         the rule and would have been deleted.
+
+DETAILS:
+- Raised dots threshold from \.{3,} to \.{5,}
+- Three consecutive dots are a standard typographic ellipsis and must not trigger
+- Five or more consecutive dots have no legitimate use in an album name
+- Junk cases like "......DJPOOL........" and "Music.....junk" still clear correctly
+- No other album rules affected
+
+FILES:
+- modules/metadata_sanitize.py (one line change)
+
+----------------------------------------------------------------------
+[2026-04-18] — metadata-sanitize: fix ISRC handling for ID3-tagged AIFF files
+----------------------------------------------------------------------
+TYPE: Bug fix
+SUMMARY: AIFF files tagged with ID3 (common in DJ tools) had their ISRC silently
+         skipped because the code went straight to the iTunes freeform atom path.
+
+DETAILS:
+- _read_isrc() and _clear_isrc() now handle .aif/.aiff separately from .m4a
+- For AIFF: try ID3 TSRC first; if ID3 raises or TSRC absent, fall back to
+  the iTunes freeform atom (----:com.apple.iTunes:ISRC)
+- The inner ID3 attempt has its own try/except so a non-ID3 AIFF degrades
+  cleanly to the atom path without surfacing an error
+- For _clear_isrc: clears whichever location holds the ISRC (ID3 takes priority);
+  if ID3 clear succeeds, the atom path is skipped to avoid a redundant open
+- .m4a is now a separate branch (no behavioral change — just clarifies it never
+  needs the ID3 path)
+- MP3 and FLAC paths unchanged
+
+FILES:
+- modules/metadata_sanitize.py
+
+----------------------------------------------------------------------
+[2026-04-18] — metadata-sanitize: fix ISRC clear falsely logged as applied
+----------------------------------------------------------------------
+TYPE: Bug fix
+SUMMARY: ISRC clearing was logged as a successful applied change even when
+         _clear_isrc() silently failed (e.g. unsupported format, I/O error).
+
+DETAILS:
+- _clear_isrc() now returns bool: True if the clear was attempted and saved,
+  False on any exception or unsupported format
+- _apply_sanitized() return type changed from bool to Tuple[bool, set]:
+    (easy_tag_ok, failed_fields)
+  failed_fields is the set of field names whose write did not succeed
+- Call site in run_metadata_sanitize unpacks the tuple and skips log_action
+  for any field in failed_fields
+- A warning is emitted via log.warning when ISRC clear fails so the failure
+  is visible at --verbose level without polluting normal output
+- Title/artist/album/label logging is unaffected
+
+FILES:
+- modules/metadata_sanitize.py
+
+----------------------------------------------------------------------
+[2026-04-18] — metadata-sanitize: fix multi-value artist field data loss
+----------------------------------------------------------------------
+TYPE: Bug fix
+SUMMARY: Artist sanitization now skips files where the artist tag has more than one
+         value (common in FLAC). Previously, reading only [0] and writing back a
+         single string would silently collapse ["Artist A", "Artist B"] into one entry.
+
+DETAILS:
+- _read_tags() now returns (flat_tags, multi_value_fields) in a single file open
+- _sanitize_track() checks multi_value_fields before calling _sanitize_artist()
+- Multi-value artist fields are skipped entirely; no write occurs
+- Skip is surfaced in preview output as [SKIP] artist: skipped_multi_value_artist
+- Skip is written to the text log in --apply mode
+- _write_json_log includes a "skipped" key per track
+- Other fields (title, album, isrc, organization) are still processed normally
+- TrackSanitizeResult gains a skipped: List[str] field
+
+FILES:
+- modules/metadata_sanitize.py
+
+IMPACT: No data loss possible for multi-value FLAC artist tags.
+
+----------------------------------------------------------------------
+[2026-04-18] — New metadata-sanitize command: offline, deterministic tag sanitation
+----------------------------------------------------------------------
+TYPE: New feature / new CLI command
+SUMMARY: Adds a standalone metadata-sanitize subcommand that cleans tags before any
+         enrichment or AI layer runs. Fully offline, no network calls, no AI.
+
+DETAILS:
+- Covers 5 fields: album, isrc, title, artist, organization (label)
+- album:  clears if value contains a URL, path fragment, 3+ consecutive dots, or promo junk
+          (delegates to existing sanitize_text() for URL/domain/promo phrase detection)
+- isrc:   clears if value does not match strict ISRC format (CC-XXX-YY-NNNNNNN or 12-char bare)
+          Accepts standard dash-formatted ISRCs; rejects everything else
+- title:  strips leading numeric prefixes (e.g. "01. Track", "1 | Track") when an explicit
+          separator is present (safe — "01 Luftballons" is NOT stripped)
+          Also fixes duplicated separators, missing spaces before "(", unclosed parens,
+          empty brackets, and multi-space
+- artist: strips URL junk; normalises ft./featuring → feat.; collapses duplicate separators
+- label:  clears pure placeholder junk (unknown/n/a/none/—/???); normalises whitespace
+- Preview is the default; --apply required for writes
+- Every change logged with a reason code to the text log
+- Supports --limit N, --output-json FILE, --verbose
+
+FILES:
+- modules/metadata_sanitize.py  (new)
+- pipeline.py  (subparser + dispatch added)
+
+NOTES:
+- Designed to slot first in the workflow:
+    metadata-sanitize → ai-normalize → artist-intelligence → metadata-enrich-online
+- Does not modify BPM, key, genre, or cue data
+- Safe on clean libraries: zero changes if tags are already clean
+
+----------------------------------------------------------------------
+[2026-04-18] — Junk metadata cleaner pre-enrichment step + --clean-junk-only flag
+----------------------------------------------------------------------
+TYPE: New feature
+SUMMARY: Adds a junk metadata detection and cleanup pass that runs BEFORE the
+         online API search on every file, and a --clean-junk-only mode that skips
+         API calls entirely and just clears garbage tags.
+DETAILS:
+  New functions in intelligence/enrichment/runner.py:
+    is_junk_album(album) → bool
+      Rules (any one match → junk):
+        1. URL/TLD patterns (http/https/www/.com/.net/.org)
+        2. Known piracy watermarks: traxcrate, 0day, zippy, tukillas,
+           maismusicapro, download (whole word), mp3 (whole word),
+           blogspot, soundcloud rip
+        3. More than 2 dots  (domain / filename artifacts)
+        4. Contains / or \  (path fragments)
+        5. Alpha chars >80% uppercase AND automated punctuation pattern
+
+    _clear_easy_tag(path, key) → bool
+      Deletes a single tag key via mutagen easy tags and saves.
+
+    _clean_junk_fields(path, current_tags, do_write, dry_run)
+      Checks is_junk_album(); if junk: logs, clears in current_tags in-place
+      (so the API search below sees cleaned values), writes to disk when
+      do_write=True and dry_run=False.
+
+  Integration (runner.run_metadata_enrich_online):
+    Step 1 (new): _clean_junk_fields() — runs unconditionally before API lookup,
+      even when no match is found or file would otherwise be NO CHANGE.
+    Step 2 (new): if --clean-junk-only, print cleaned fields and continue (skip API).
+    Step 3 (existing): _search_with_fallback() — unchanged, but now receives
+      clean album values from the in-place update in step 1.
+    Summary: "Junk fields cleared: N" always printed; other counters hidden in
+      --clean-junk-only mode.
+
+  New CLI flag (pipeline.py):
+    --clean-junk-only   runs junk cleanup only, no API calls.
+      Default is preview. Combine with --apply to write:
+        python3 pipeline.py metadata-enrich-online --input DIR --clean-junk-only --apply
+
+FILES:
+  intelligence/enrichment/runner.py
+  pipeline.py
+IMPACT: No schema changes. 313 tests pass.
+
+----------------------------------------------------------------------
+[2026-04-18] — Fix version_sim scoring: both-absent case now scores 1.0
+----------------------------------------------------------------------
+TYPE: Bug fix
+SUMMARY: When neither the current title nor the candidate title had a version/remix
+         token, version_sim was 0.0 (penalising a correct match) instead of 1.0.
+         Root cause: _similarity() short-circuits on empty strings, so
+         _similarity("", "") returned 0.0 rather than indicating agreement.
+DETAILS:
+  Replaced the inline _similarity(_extract_version(a), _extract_version(b)) call
+  in score_candidate() with a dedicated _version_sim(title_a, title_b) function
+  that applies explicit rules:
+    Both absent          → 1.0   ("Setter" ↔ "Setter" now scores correctly)
+    Both present, same   → 1.0
+    Both present, differ → 0.0   (hard mismatch, different recording)
+    One present, one not → 0.0   (asymmetric; version unknown)
+
+  Before fix — "Setter" ↔ "Setter" (perfect artist+title match, no version):
+    version_sim = 0.0  →  composite = 0.35×1 + 0.30×1 + 0.25×0 + 0.10×0 = 0.65
+
+  After fix:
+    version_sim = 1.0  →  composite = 0.35×1 + 0.30×1 + 0.25×1 + 0.10×0 = 0.90
+
+FILES:
+  intelligence/enrichment/metadata_matcher.py
+IMPACT: Tracks with no version token now score correctly (0.90 for a perfect
+        artist+title match).  Mismatches and asymmetric cases unchanged.
+        313 tests pass.
+
+----------------------------------------------------------------------
+[2026-04-18] — metadata-enrich-online: tuned scoring, Traxsource specialist fallback
+----------------------------------------------------------------------
+TYPE: Improvement / new feature
+SUMMARY: Three changes to the online enrichment layer:
+         (1) Scoring weights rebalanced — version/remix similarity now weighted
+             more heavily (0.10→0.25) at the expense of base title (0.45→0.30),
+             because version identity is critical in dance music.
+         (2) Two new hard safeguards in best_match(): version mismatch caps at
+             0.74 (was 0.50); artist similarity < 0.90 also caps at 0.74 to
+             block auto-apply without losing the preview.
+         (3) Label alias boost: +0.05 when current label and candidate label are
+             known aliases of each other (13 alias groups seeded).
+         (4) Traxsource scraper as a dance-music specialist third fallback.
+DETAILS:
+  Weights (metadata_matcher.py):
+    title_sim   0.45 → 0.30
+    version_sim 0.10 → 0.25    (artist 0.35, label 0.10 unchanged)
+    Weights sum to 1.00.
+
+  Hard safeguards (metadata_matcher.best_match):
+    Version mismatch: cap 0.50 → 0.74, clear changes (wrong recording).
+    Artist guard:     cap at 0.74 when artist_sim < 0.90 (no ISRC anchor),
+                      keep changes visible in preview.
+    Neither fires for ISRC-confirmed matches.
+
+  Label alias boost (metadata_matcher.score_candidate):
+    _LABEL_ALIAS_GROUPS: 13 groups (Sony/Warner/Universal + Afro house labels).
+    Boost: +0.05 capped at 1.0. Reflected in reason string as [label-alias+0.05].
+
+  Traxsource (intelligence/enrichment/traxsource_lookup.py — new):
+    HTML scraper using requests + BeautifulSoup4.
+    Extracts: artist, title, version/remix, label, release, genre, date.
+    Combined title+version ("Drive" + "Original Mix" → "Drive (Original Mix)").
+    Robust: each row parsed independently; broken rows skipped; all I/O in try/except.
+    Self-test: python3 -m intelligence.enrichment.traxsource_lookup [artist] [title]
+    CSS selectors may need updating if Traxsource restructures its frontend.
+
+  Source priority (runner._search_with_fallback):
+    1. Spotify ISRC
+    2. Spotify artist+title
+    3. Deezer (when Spotify conf < 0.70)
+    4. Traxsource (when best-so-far < 0.80 OR genre is house/Afro/deep/soulful)
+    Winning match = highest confidence across all sources tried.
+
+  Schema changes (enrichment_schema.py):
+    EnrichmentCandidate.genre  — new optional field (Traxsource-provided)
+    EnrichmentMatch.sources_tried — ordered list of sources queried
+    EnrichmentMatch.match_reason  — property alias for .reason
+    to_dict() updated for both dataclasses.
+
+  Other:
+    _DANCE_GENRE_TERMS frozenset — 20 genre terms for Traxsource trigger
+    TraxsourceClient prints "ready" at startup (consistent with Spotify/Deezer)
+    Terminal output now shows "Sources tried: spotify → deezer → traxsource"
+    genre row added to _print_result() block
+    sources_tried and match_reason added to JSONL queue record
+    __init__.py: documented source priority order and extension instructions
+
+FILES:
+  intelligence/enrichment/metadata_matcher.py   (weights, safeguards, alias boost)
+  intelligence/enrichment/traxsource_lookup.py  (new)
+  intelligence/enrichment/enrichment_schema.py  (genre, sources_tried, match_reason)
+  intelligence/enrichment/runner.py             (source-merge, genre detection)
+  intelligence/enrichment/__init__.py           (source priority docs)
+IMPACT: No schema DB changes. 313 tests pass.
+
+----------------------------------------------------------------------
+[2026-04-18] — metadata-enrich-online: lower threshold to 0.80 + version mismatch safeguard
+----------------------------------------------------------------------
+TYPE: Improvement / safety fix
+SUMMARY: Two targeted changes to the metadata-enrich-online subcommand.
+         (1) Default confidence threshold lowered 0.92 → 0.80 to let more
+             high-confidence-but-not-ISRC matches through in practice.
+         (2) Version mismatch safeguard blocks applying a match when the
+             current file title carries an explicit version token (e.g. "Original Mix")
+             and the matched candidate carries a DIFFERENT version token
+             (e.g. "Radio Edit") — different mixdown, same base title.
+DETAILS:
+  Threshold change:
+    config.py:245                         "0.92" → "0.80"
+    intelligence/enrichment/runner.py:16  docstring updated
+    pipeline.py                           two help strings updated
+
+  Version mismatch safeguard (intelligence/enrichment/metadata_matcher.py):
+    + _extract_version_label() helper — returns inner term only ("Original Mix"),
+      distinct from existing _extract_version() which returns the full bracket.
+    + Block in best_match() after _build_changes(): extracts version labels from
+      both current title and top candidate title.  If both are present AND differ
+      (case-insensitive), caps confidence at min(conf, 0.50), clears proposed
+      changes to [], and rewrites reason as "VERSION MISMATCH BLOCKED — ...".
+    + Fires log.info("Blocked due to version mismatch: %s vs %s  (file=%s)", ...)
+
+  Edge cases handled intentionally:
+    - Missing version on EITHER side → allowed through (APIs routinely omit "(Original Mix)")
+    - ISRC exact match + version mismatch → still blocked (Radio Edit ≠ Original Mix master)
+    - Same version both sides → allowed through normally
+
+FILES:
+  config.py
+  intelligence/enrichment/metadata_matcher.py
+  intelligence/enrichment/runner.py
+  pipeline.py
+IMPACT: No schema changes. 313 tests pass. Version-mismatched pairs that previously
+        could slip through at ISRC confidence (0.98) are now safely blocked.
+
+----------------------------------------------------------------------
+[2026-04-18] — Online metadata enrichment layer (metadata-enrich-online)
+----------------------------------------------------------------------
+TYPE: New feature
+SUMMARY: Adds `python3 pipeline.py metadata-enrich-online` — a conservative
+         online enrichment layer using Spotify Web API (primary) and Deezer API
+         (fallback) to fill missing album, label, and ISRC tags.
+DETAILS:
+  New package: intelligence/enrichment/
+    __init__.py           — package doc + Traxsource extension point note
+    enrichment_schema.py  — EnrichmentCandidate, EnrichmentMatch dataclasses
+    metadata_matcher.py   — deterministic scoring (artist/title/version/label
+                            similarity + ISRC exact match at 0.98), change policy
+    spotify_lookup.py     — Spotify Web API (client credentials flow, token cache,
+                            ISRC lookup + artist+title search)
+    deezer_lookup.py      — Deezer public API (no auth, artist+title search)
+    runner.py             — orchestrator: search → score → preview/apply → log
+
+  config.py additions:
+    SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET (env-var-backed)
+    ENRICH_ONLINE_MIN_CONFIDENCE = 0.92
+    AI_ENRICH_QUEUE / AI_ENRICH_ACCEPTED / AI_ENRICH_REJECTED (JSONL paths)
+
+  pipeline.py: metadata-enrich-online subcommand + dispatch
+
+  data/intelligence/: 3 new empty JSONL stubs
+
+SAFETY RULES:
+  - Artist: never written
+  - Title: only if blank, or ISRC matches + base differs
+  - Album: if current is empty, or ISRC match
+  - Label: only if current is empty; high-conf ISRC match required otherwise
+  - ISRC: only if not already set
+  - Min confidence 0.92; ISRC exact match always passes at 0.98
+FILES:
+  intelligence/enrichment/{__init__, enrichment_schema, metadata_matcher,
+    spotify_lookup, deezer_lookup, runner}.py (all new)
+  config.py
+  pipeline.py
+  data/intelligence/enrichment_{queue,accepted,rejected}.jsonl
+IMPACT: No change to existing pipeline. 313 tests pass.
+NOTES: Traxsource not implemented. Extension point documented in
+  intelligence/enrichment/__init__.py and deezer_lookup.py.
+
+----------------------------------------------------------------------
+[2026-04-18] — Restructure: intelligence/ package, remove legacy clutter
+----------------------------------------------------------------------
+TYPE: Refactor (no runtime behaviour change)
+SUMMARY: Moved artist_intelligence/ → intelligence/artist/ and label_intel/
+         → intelligence/label/ into a single intelligence/ namespace. Removed
+         legacy scaffolding, generated preview files, and scratch files from
+         the tracked source tree.
+DETAILS:
+  Moves (git mv, history preserved):
+    artist_intelligence/ → intelligence/artist/
+    label_intel/         → intelligence/label/
+  Import updates:
+    intelligence/artist/artist_alias_store.py   — 1 import
+    intelligence/artist/artist_parser.py        — 2 imports
+    intelligence/artist/runner.py               — 4 imports
+    pipeline.py                                 — 3 import blocks + error strings
+  New file:
+    intelligence/__init__.py
+  Removed (git rm):
+    djtoolkit_label_intelligence_feature/   — 15 files, legacy Claude scaffold
+    sample_codes/                           — 3 scratch files
+    preview.txt                             — generated output
+  Untracked clutter deleted (already gitignored):
+    preview*.json, full_preview.json, artist_preview.json
+    djtoolkit_label_intelligence_feature.zip
+FILES: pipeline.py, intelligence/artist/*.py, config.py (path constants unchanged)
+IMPACT: No API changes. All 313 tests pass. Import paths for artist-intelligence
+        and label-intel subcommands updated throughout.
+MIGRATION: Any script importing from artist_intelligence.* or label_intel.*
+           must change to intelligence.artist.* or intelligence.label.*
+
+----------------------------------------------------------------------
+[2026-04-18] — Review dataset pipeline for ai-normalize
+----------------------------------------------------------------------
+TYPE: New feature
+SUMMARY: Captures ai-normalize decisions into JSONL training datasets and adds
+         a build-fewshot command for curating few-shot prompt examples.
+DETAILS:
+  - ai/review_dataset.py: new module with write_queue_entry(), write_accepted(),
+    write_rejected(), build_fewshot(), and load_fewshot_examples() helpers
+  - data/intelligence/{review_queue,accepted_examples,rejected_examples,
+    review_decisions,fewshot_examples}.jsonl: stub files created
+  - ai/normalizer.py: _normalize_track() returns parsed dict as 4th value;
+    apply_normalized() returns (success, field_map); run_ai_normalize() calls
+    dataset writers after each file in --apply/--dry-run modes
+  - config.py: 5 new path constants (AI_REVIEW_QUEUE, AI_ACCEPTED_EXAMPLES,
+    AI_REJECTED_EXAMPLES, AI_REVIEW_DECISIONS, AI_FEWSHOT_EXAMPLES)
+  - pipeline.py: build-fewshot subcommand wired up
+  - Dataset logging is non-fatal; import failure does not break ai-normalize
+  - Dataset writes only happen in --apply or non-preview modes (not bare preview)
+FILES:
+  ai/review_dataset.py (new)
+  ai/normalizer.py
+  config.py
+  pipeline.py
+  data/intelligence/accepted_examples.jsonl (new, empty)
+  data/intelligence/rejected_examples.jsonl (new, empty)
+  data/intelligence/review_queue.jsonl (new, empty)
+  data/intelligence/review_decisions.jsonl (new, empty)
+  data/intelligence/fewshot_examples.jsonl (new, empty)
+IMPACT: No change to default pipeline behavior; existing tests unaffected.
+NOTES: load_fewshot_examples() is wired but not yet injected into the Ollama
+       prompt — intentionally left for a future session.
+
+----------------------------------------------------------------------
+[2026-04-15] — Implement artist-intelligence subcommand (Phase 1)
+----------------------------------------------------------------------
+TYPE: New feature
+SUMMARY: Adds `python3 pipeline.py artist-intelligence` — a deterministic,
+         preview-first artist normalization layer sitting after ai-normalize
+         in the intelligence pipeline. No LLM required.
+DETAILS:
+  - Parses compound artist strings (commas, &, x, vs, feat) into typed entities
+  - Resolves canonical names via a JSON alias store (data/intelligence/artist_aliases.json)
+  - Low-confidence candidates written to review queue, never auto-applied
+  - Hard house-style rules: feat in title is never moved to artist field
+  - Designed for label_intelligence to follow the same schema/store/runner pattern
+FILES:
+  - artist_intelligence/__init__.py        — new package
+  - artist_intelligence/artist_schema.py   — ArtistEntity, ArtistParseResult
+  - artist_intelligence/artist_normalizer.py — unicode/whitespace/feat normalization
+  - artist_intelligence/artist_parser.py   — deterministic splitting
+  - artist_intelligence/artist_alias_store.py — alias store + review queue
+  - artist_intelligence/runner.py          — CLI entry point
+  - data/intelligence/artist_aliases.json  — seed: Heavy K / Heavy-K mapping
+  - config.py                              — ARTIST_ALIAS_STORE, ARTIST_REVIEW_QUEUE
+  - pipeline.py                            — argparse subcommand + dispatch
+IMPACT: No changes to existing pipeline behavior. New subcommand only.
+NOTES: data/intelligence/ is in-repo (version-controlled), not on music SSD.
+
+----------------------------------------------------------------------
+[2026-04-15] — Add ai-normalize subcommand (local Ollama metadata proposals)
+----------------------------------------------------------------------
+TYPE: New feature
+SUMMARY: Adds `python3 pipeline.py ai-normalize` — a safe, preview-first
+  workflow that uses a local Ollama LLM to propose normalized artist/title/
+  version/label/remixers/featured_artists metadata for a batch of audio files.
+
+DETAILS:
+  - New ai/ package: ollama_client.py (urllib, no new deps), metadata_schema.py
+    (strict validated dataclass), normalizer.py (prompt builder, JSON extractor,
+    diff engine, apply step, CLI entry point)
+  - OllamaClient uses stdlib urllib.request; healthcheck + generate endpoints
+  - NormalizedMetadata.from_dict() tolerates malformed model output (wrong types,
+    sentinel strings, confidence out of range) — never raises
+  - _extract_json() handles plain JSON, markdown code fences, and mixed text
+  - compute_diff() only surfaces fields where the proposal is non-empty AND
+    different from the current value — no spurious diffs
+  - apply_normalized() writes using mutagen easy tags (same pattern as
+    sanitizer._write_tags); artist + featured_artists combined to "A feat. B";
+    title + version combined to "Track (Original Mix)"
+  - Reuses parse_filename_stem() for deterministic pre-AI context
+  - Reuses sanitize_text() to strip residual junk from model output
+  - Reuses config.AUDIO_EXTENSIONS + same rglob dedup pattern as _collect_inbox()
+  - Safe by design: preview is the default; --apply is required to write anything;
+    --min-confidence gate (default 0.75); BPM/key/cue never touched
+  - config.py gains OLLAMA_BASE_URL, OLLAMA_DEFAULT_MODEL, OLLAMA_TIMEOUT
+    (all overridable via env vars or config_local.py)
+
+FILES:
+  ai/__init__.py          (new)
+  ai/ollama_client.py     (new)
+  ai/metadata_schema.py   (new)
+  ai/normalizer.py        (new)
+  config.py               (added OLLAMA_* constants)
+  pipeline.py             (ai-normalize subparser + lazy dispatch import)
+
+IMPACT: Additive only. No existing module changed structurally. The lazy import
+  (`from ai.normalizer import run_ai_normalize`) means the ai/ package is never
+  loaded unless the user explicitly runs the ai-normalize subcommand, so there is
+  zero startup-time cost for all other commands.
+
+NOTES:
+  - Default model: qwen2.5-coder:3b (already installed per user setup)
+  - Ollama must be running: `ollama serve`
+  - No cloud calls; no API keys; fully local inference
+  - v1 scope: artist, title, version, label, remixers, featured_artists only
+    (no BPM, key, genre, energy — those are MIK-owned or handled elsewhere)
+
+
+
+----------------------------------------------------------------------
+[2026-04-12] — Documentation update: README.md rewritten to reflect current state
+----------------------------------------------------------------------
+
+TYPE: docs
+
+SUMMARY:
+README.md was substantially out of date. It documented only 6 backend API
+endpoints (the original Phase 1 skeleton) when the backend now exposes 24+
+routes across 7 route files. The frontend web app had no documentation at all.
+Added Troubleshooting, Current Status, and Next Steps sections.
+
+CHANGES:
+- README.md rewritten from scratch.
+  Added: Current Status table, Repository Structure, Running the Web App
+  section (two-terminal start, after-reboot commands), Web App Pages table,
+  full Backend API Reference (all 24+ routes across health/jobs/tracks/
+  analysis/playlists/exports/sync), Troubleshooting section (6 common issues),
+  Next Steps section (planned items not yet built).
+  Updated: Backend section (was 6 routes, now complete), developer setup,
+  configuration, data locations (added backend/data/ paths).
+  Removed: stale "Phase 2 open" framing; frontend was not mentioned before.
+  Preserved: pipeline CLI docs, subcommands block (auto-generated section),
+  MIK-first safety table, environment variables, rollback, audit quality.
+
+FILES:
+  README.md
+
+IMPACT: Documentation only. No code changes.
+
+----------------------------------------------------------------------
+[2026-04-12] v0.6.2 — Frontend polish pass 2: lucide icons, PageHeader, Jobs/SetBuilder improvements
+----------------------------------------------------------------------
+
+TYPE: polish
+
+SUMMARY:
+Second UI pass. Installed lucide-react and replaced Unicode sidebar glyphs.
+Created a reusable PageHeader component applied across all 6 pages.  Rewrote
+Jobs page with lucide icon buttons, new progress/indeterminate bars, and a
+running-row left-border accent.  Rewrote SetBuilder with a collapsible log
+section and a new set-detail card (summary stats + track table).  Applied
+consistent table header contrast, improved row padding, and click affordances
+across all tables.  Added spin animation for async buttons.
+
+DETAILS:
+- package.json: added lucide-react@^1.8.0
+- Sidebar.tsx: replaced Unicode glyphs with lucide SVG icons (LayoutDashboard,
+  ListTodo, Music, AudioWaveform, ListMusic, Upload, HardDrive, Settings)
+- components/PageHeader.tsx: new — title, subtitle, badge, actions slots
+- pages/Jobs.tsx: PageHeader; JobProgress component (numeric bar + indeterminate
+  bar for pending); running row left-border accent; lucide icons on buttons;
+  table--jobs class with column widths; .text--ok for exit code 0
+- pages/SetBuilder.tsx: PageHeader; LogInline now collapsible via .log-section-toggle;
+  SetDetail replaces TrackTable — adds summary stat cards before the track list;
+  saved sets table uses .table + .table-wrapper; row click to select
+- pages/Tracks.tsx: PageHeader with track count subtitle
+- pages/BpmReview.tsx: PageHeader; Loader2 spinner on Scan button
+- pages/Export.tsx: PageHeader; Loader2 spinner on Run button
+- pages/SsdSync.tsx: PageHeader with mounted/not-mounted badge; Loader2 on Preview
+- index.css: spin/@keyframes; slide-in-out for indeterminate bar; PageHeader
+  layout classes (page-header-left, page-header-title-row, page-header-badge,
+  page-subtitle-small); improved .table th/td (better contrast #8490b0 header
+  color, 10px/12px padding, rgba borders); .table-wrap matched; .table--jobs
+  helpers; .job-progress* classes; .job-progress-indeterminate*; .log-section*;
+  .job-status-panel*; .set-detail*; .set-stat-card*; .td-num/mono/bold/cancel-error;
+  .row--running left-border accent; .row--clickable cursor; .text--ok
+
+FILES:
+  package.json, package-lock.json
+  frontend/src/components/PageHeader.tsx (new)
+  frontend/src/components/Sidebar.tsx
+  frontend/src/pages/Jobs.tsx
+  frontend/src/pages/SetBuilder.tsx
+  frontend/src/pages/Tracks.tsx
+  frontend/src/pages/BpmReview.tsx
+  frontend/src/pages/Export.tsx
+  frontend/src/pages/SsdSync.tsx
+  frontend/src/index.css
+
+IMPACT: Frontend only. Build verified clean (1770 modules, 247 kB JS / 29 kB CSS).
+
+----------------------------------------------------------------------
+[2026-04-12] v0.6.1 — UI/UX upgrade: log overflow fix, font, icons, table styles
+----------------------------------------------------------------------
+
+TYPE: polish / bugfix
+
+SUMMARY:
+Fixed the critical `.log-inline` CSS gap that caused all inline log views (Set
+Builder, Export, SSD Sync) to overflow page width.  Added IBM Plex Sans as the
+UI font, Unicode icons in the sidebar, improved active-link styling, and a
+`.table-wrap` CSS block so bare tables in SetBuilder render with consistent
+borders and hover.
+
+DETAILS:
+- index.css: Added `.log-inline` rule — max-height 55vh, overflow-x/y: auto,
+  white-space: pre, monospace font.  Previously the class had zero CSS, causing
+  every pre log block to expand to full content width and break page layout.
+- index.css: Added `.badge--info` (used by Camelot key badges in SetBuilder).
+- index.css: Added `.table-wrap` table/th/td rules — SetBuilder uses bare
+  `<table>` inside `.table-wrap` rather than `.table`, so it had no styling.
+- index.css: Sidebar `.sidebar-link` now uses flex layout with gap for icons.
+  `.sidebar-link--active` gains a 2px left-border accent.  `.sidebar-icon` added.
+- index.css: Updated `--font-ui` to IBM Plex Sans (falls back to system-ui).
+- index.html: Added Google Fonts preconnect + link for IBM Plex Sans and
+  JetBrains Mono.
+- components/Sidebar.tsx: Each nav item now has a Unicode icon glyph rendered
+  via `.sidebar-icon` span.
+
+FILES:
+  frontend/index.html
+  frontend/src/index.css
+  frontend/src/components/Sidebar.tsx
+
+IMPACT: Frontend-only, no backend changes, no DB changes.
+
+NOTES: Build verified clean (npx tsc --noEmit + npm run build, 63 modules).
+
+----------------------------------------------------------------------
+[2026-04-12] v0.6.0 — SSD Sync, job cancellation, and progress tracking
+----------------------------------------------------------------------
+
+TYPE: feature
+
+SUMMARY:
+Adds SSD Sync page (rsync library → SSD target), cancellation for all running
+jobs via SIGTERM, and progress tracking (current/total/percent/message) stored
+in the jobs DB and displayed as progress bars in the UI.
+
+DETAILS:
+Backend — new files:
+  backend/app/services/process_registry.py
+      Shared in-process table of running asyncio subprocesses (job_id →
+      asyncio.subprocess.Process).  Both toolkit_runner and rsync_runner
+      register here so the cancel route works for all job types.
+      request_cancel() adds job to _cancelling set and sends SIGTERM.
+      Background tasks check is_cancelling() to choose 'cancelled' vs 'failed'.
+
+  backend/app/schemas/sync.py
+      SyncPreviewRequest, SyncPreviewResponse, SyncFileChange,
+      SyncRunRequest, SyncRunResponse, SyncConfigResponse
+
+  backend/app/services/rsync_runner.py
+      preview_sync() — async dry-run rsync, parses file list + stats,
+        returns structured SyncPreviewResponse (no DB writes, no job).
+      start_sync_job() — validates paths, creates job record, launches
+        _run_rsync_job() as asyncio background task.
+      _run_rsync_job() — reads rsync stdout line-by-line, writes to log
+        file, parses --info=progress2 lines for to-chk=N/M progress,
+        throttled to one DB write per second.
+      _parse_progress_line() — regex parse for to-chk=remaining/total.
+      get_sync_config() — returns configured paths + SSD mount status.
+      Path validation: source must be 'library' or 'inbox' key (never
+        raw user-supplied paths); destination is always SYNC_DEST_SSD.
+
+  backend/app/api/routes/sync.py
+      GET  /api/sync/config       — read-only config + ssd_mounted flag
+      POST /api/sync/preview      — dry-run rsync preview (awaited, 60s timeout)
+      POST /api/sync/run          — dispatch live rsync job (202)
+      GET  /api/sync              — list past ssd-sync jobs
+      GET  /api/sync/{job_id}     — get single sync job
+
+Backend — modified files:
+  backend/app/core/config.py
+      SYNC_SOURCE_LIBRARY, SYNC_SOURCE_INBOX, SYNC_SOURCE_MAP,
+      SYNC_DEST_SSD, RSYNC_BIN (shutil.which)
+
+  backend/app/core/db.py
+      Added 5 new columns to jobs schema:
+        pid, progress_current, progress_total, progress_percent, progress_message
+      _add_column_safe() migration helper — ALTER TABLE with OperationalError
+      catch for "duplicate column name" (idempotent; safe on existing DB).
+      init_db() runs migrations on every startup.
+
+  backend/app/models/job.py
+      Added: pid, progress_current, progress_total, progress_percent,
+      progress_message (all Optional, default None).
+      Status now includes 'cancelled'.
+
+  backend/app/schemas/job.py
+      JobResponse includes all new progress + pid fields.
+
+  backend/app/services/job_service.py
+      mark_pid(), mark_progress(), clear_pid() added.
+      mark_finished() now accepts 'cancelled' status.
+
+  backend/app/services/toolkit_runner.py
+      Imports process_registry.  After subprocess creation: registers proc,
+      stores PID in DB.  On finish: checks is_cancelling() for 'cancelled'
+      status.  finally: unregister + clear_pid.
+
+  backend/app/api/routes/jobs.py
+      POST /api/jobs/{job_id}/cancel
+        - 404 if job not found
+        - 409 if job is not pending/running
+        - Calls process_registry.request_cancel() → SIGTERM
+        - If proc not in registry (e.g. pending), marks directly as cancelled
+
+  backend/app/main.py
+      Registers sync_router.
+
+Frontend — new files:
+  frontend/src/types/sync.ts       — SyncSource, SyncFileChange, SyncPreviewRequest/Response,
+                                     SyncRunRequest/Response, SyncConfigResponse
+  frontend/src/api/sync.ts         — fetchSyncConfig, previewSync, startSync,
+                                     fetchSyncJobs, fetchSyncJob
+  frontend/src/pages/SsdSync.tsx   — full sync page: config panel + source picker,
+                                     preview results with paginated file list,
+                                     run panel with allow_delete checkbox + warning,
+                                     active job with progress bar + live log + cancel,
+                                     sync history table
+
+Frontend — modified files:
+  frontend/src/types/job.ts        — added 'cancelled' to JobStatus; added pid,
+                                     progress_current/total/percent/message fields;
+                                     isActive() helper exported
+  frontend/src/api/jobs.ts         — cancelJob() → POST /api/jobs/{id}/cancel
+  frontend/src/components/StatusBadge.tsx — 'cancelled' label
+  frontend/src/pages/Jobs.tsx      — Cancel button on running/pending rows (SIGTERM);
+                                     InlineProgress bar for jobs with progress data;
+                                     row--cancelled CSS class
+  frontend/src/App.tsx             — /ssd-sync route
+  frontend/src/components/Sidebar.tsx — SSD Sync nav link
+  frontend/src/index.css           — --status-cancelled / --badge-cancelled-bg vars;
+                                     .badge--cancelled; .btn--danger; .row--cancelled;
+                                     progress bar (.progress-wrap, .progress-bar-outer,
+                                     .progress-bar-fill, .progress-labels);
+                                     inline progress (.inline-progress-*);
+                                     all SSD Sync page classes (.sync-*, .preview-*)
+
+IMPACT:
+  Existing DB rows are safe — migration adds columns with NULL defaults.
+  All existing jobs continue to work; new columns are null for pipeline.py jobs.
+  No --delete by default — explicit opt-in only.
+  rsync source is always the working library; SSD path is never used for DB lookups.
+
+----------------------------------------------------------------------
+[2026-04-12] v0.5.1 — Fix TypeScript build errors in Export + ErrorBanner
+----------------------------------------------------------------------
+
+TYPE: bugfix
+
+SUMMARY:
+Two TypeScript compilation errors left over from the Export page session:
+1. ErrorBanner had no onDismiss prop — Export.tsx and SetBuilder.tsx both
+   passed it, causing a TS2322 type error.
+2. canRun was computed in Export.tsx and passed to RunPanel but never
+   used inside RunPanel (TS6133 unused variable) — the Run button was
+   only guarded by busy, not by the validation-in-progress flag.
+
+DETAILS:
+  frontend/src/components/ErrorBanner.tsx — added optional onDismiss prop
+      + dismiss button (×) with aria-label; no change to existing callers
+      that omit the prop
+  frontend/src/index.css — ErrorBanner now flex; .error-banner-dismiss styles
+  frontend/src/pages/Export.tsx — RunPanel Run button: disabled={busy || !canRun}
+      so the button is disabled while validation is running
+
+IMPACT:
+  npm run build now compiles cleanly (0 errors, 0 warnings from tsc).
+
+----------------------------------------------------------------------
+[2026-04-12] v0.5.0 — Export validation and export workflow UI
+----------------------------------------------------------------------
+
+TYPE: feature
+
+SUMMARY:
+Adds an Export page with pre-export library validation, exclusion analysis,
+and a job-dispatching run workflow.  Validation runs inline (no subprocess)
+to give immediate feedback before the user commits to the long-running
+rekordbox-export job.
+
+DETAILS:
+Backend:
+  backend/app/services/export_validation.py — in-process validation service
+      that mirrors pipeline/modules/rekordbox_export.py exclusion logic:
+      junk placeholder, stale DB path, missing artist/title, BPM range,
+      Camelot key format, junk genre.  Returns structured ExcludedTrack +
+      ValidationStats + ExportWarning list, capped at 500 excluded tracks.
+  backend/app/schemas/export.py             — ExportRunRequest, ExportRunResponse,
+      ExcludedTrack, ExportWarning, ValidationStats, ValidateResponse
+  backend/app/api/routes/exports.py         — POST /api/exports/validate (fast,
+      synchronous), POST /api/exports/run (dispatches job), GET /api/exports,
+      GET /api/exports/{export_id}
+  backend/app/main.py                       — registers exports router
+  backend/app/services/toolkit_runner.py   — added --no-m3u and
+      --recover-missing-analysis to bool flag allowlist
+
+Frontend:
+  frontend/src/types/export.ts   — ExclusionCategory, ExportWarning, ValidationStats,
+                                   ExcludedTrack, ValidateResponse, ExportRunRequest,
+                                   CATEGORY_COLORS/LABELS, WARNING_COLORS
+  frontend/src/api/exports.ts    — validateExport(), runExport(), fetchExports(),
+                                   fetchExport()
+  frontend/src/pages/Export.tsx  — validation summary grid, paginated excluded-
+                                   tracks table with category filter tabs + search,
+                                   run options (dry-run, skip-m3u, force-xml,
+                                   recover-missing), inline job log viewer,
+                                   export history table
+  frontend/src/App.tsx           — /export route
+  frontend/src/components/Sidebar.tsx — Export nav link
+  frontend/src/index.css         — stat grid, warning banners, filter tabs,
+                                   category badges, reason cells, output paths
+
+IMPACT:
+  - Validation is read-only (pipeline DB + Path.exists() — no writes, no subprocesses)
+  - Export job runs through existing toolkit_runner subprocess path (consistent
+    with all other jobs — polling, log streaming, exit code tracking all work)
+  - GET /api/exports is a filtered view of the jobs table — no new DB tables
+  - rekordbox-export MIK-first policy preserved: XML stays disabled by default,
+    force_xml=False is the default in both schema and UI
+
+----------------------------------------------------------------------
+[2026-04-12] v0.4.0 — Set Builder UI
+----------------------------------------------------------------------
+
+TYPE: feature
+
+SUMMARY:
+Adds a browser UI for the set-builder: a form-based interface to dispatch
+energy-curve DJ set jobs, monitor their progress inline, and browse the
+saved playlist history with full track listings.
+
+DETAILS:
+Backend:
+  backend/app/services/toolkit_runner.py  — added set-builder flags to
+      allowlists: --vibe, --duration, --genre, --strategy, --structure,
+      --max-bpm-jump, --artist-repeat-window, --name (value flags) +
+      --no-strict-harmonic (bool flag).  All values validated by regex
+      or enum before subprocess dispatch.
+  backend/app/schemas/playlist.py         — SetBuilderRequest (with
+      field validators), SetBuilderJobResponse, PlaylistSummary,
+      SetTrackResponse, PlaylistDetail
+  backend/app/services/playlist_service.py — read-only pipeline DB
+      access: list_playlists(), get_playlist(), get_playlist_tracks(),
+      get_playlist_detail()
+  backend/app/api/routes/playlists.py     — POST /api/playlists/set-builder
+      (dispatches subprocess job), GET /api/playlists, GET /api/playlists/{id}
+  backend/app/main.py                     — registers playlists router
+
+Frontend:
+  frontend/src/types/playlist.ts          — Vibe/Strategy/Structure types,
+      SetBuilderParams, PlaylistSummary, SetTrack, PlaylistDetail,
+      VIBE_LABELS, STRATEGY_LABELS, STRUCTURE_LABELS, PHASE_COLORS
+  frontend/src/api/playlists.ts           — runSetBuilder(), fetchPlaylists(),
+      fetchPlaylist()
+  frontend/src/pages/SetBuilder.tsx       — build form (all set-builder params),
+      inline job log panel with polling, playlist history table, track
+      detail table with phase badges and transition notes
+  frontend/src/App.tsx                    — /set-builder route
+  frontend/src/components/Sidebar.tsx     — Set Builder nav link
+  frontend/src/index.css                  — set-builder form/table/badge styles
+
+IMPACT:
+  - No pipeline DB writes from backend (read-only, same policy as tracks)
+  - set-builder job runs as subprocess via toolkit_runner (consistent
+    with all other jobs — polling, log streaming, status tracking reused)
+  - Route order: /api/playlists/set-builder registered before
+    /api/playlists/{playlist_id} to prevent path collision
+
+----------------------------------------------------------------------
+[2026-04-12] v0.3.0 — BPM anomaly detection + review workflow
+----------------------------------------------------------------------
+
+TYPE: feature
+
+SUMMARY:
+Adds a BPM anomaly detection pipeline: scans existing BPM values in the
+library DB using heuristic rules (same logic as analyzer.py corrections),
+persists anomaly records with human review state in the backend DB, and
+surfaces them in a dedicated BPM Review page with per-row actions and
+an inline re-analysis job launcher.
+
+DETAILS:
+Backend:
+  backend/app/core/db.py              — added bpm_anomalies table to jobs.db schema
+  backend/app/services/bpm_analysis.py — classify_bpm() logic + scan/upsert/list/update
+  backend/app/schemas/bpm_analysis.py — BpmAnomalyResponse, BpmCheckResult, BpmSummary,
+                                        UpdateAnomalyRequest, ReanalyzeRequest
+  backend/app/api/routes/analysis.py  — POST /bpm-check, GET /bpm-anomalies,
+                                        GET /bpm-anomalies/summary, PATCH /bpm-anomalies/{id},
+                                        POST /reanalyze
+  backend/app/main.py                 — registered analysis_router
+
+Frontend:
+  frontend/src/types/analysis.ts      — BpmAnomaly, BpmCheckResult, BpmSummary types
+  frontend/src/api/analysis.ts        — all analysis API calls
+  frontend/src/api/client.ts          — added apiFetch.patch()
+  frontend/src/pages/BpmReview.tsx    — BPM Review page with scan, summary, filter table,
+                                        per-row actions, inline job log viewer
+  frontend/src/App.tsx                — added /bpm-review route
+  frontend/src/components/Sidebar.tsx — added BPM Review nav link
+  frontend/src/index.css              — reason badges, anomaly status badges, summary bar,
+                                        reanalyze panel, job log viewer, anomaly table styles
+
+BPM LOGIC (classify_bpm):
+  missing_bpm    : NULL or zero stored
+  too_low_10x    : 0 < BPM < 20  → suggest × 10  (e.g. 12.1 → 121)
+  likely_halved  : 20 ≤ BPM < 90 → suggest × 2   (e.g. 64 → 128)
+  likely_doubled : 160 < BPM ≤ 240, not DNB/jungle/hardcore → suggest ÷ 2
+  too_high       : BPM > 240 → suggest ÷ 2
+
+WHY:
+  Incorrect BPM (especially doubled/halved) is a common aubio artifact.
+  The analyzer already corrects these at analysis time, but values that
+  came from MIK, Rekordbox, or direct tag writes bypass that correction.
+  This feature surfaces those cases without touching files.
+
+NOTES:
+  - bpm_anomalies table is in backend jobs.db, NOT pipeline processed.db
+  - Human review state (reviewed/ignored/requeued) is preserved across re-scans
+  - reanalyze endpoint uses existing analyze-missing + --reanalyze via job system
+
+
+----------------------------------------------------------------------
+[2026-04-12] v0.2.0 — Track browsing: /api/tracks + /api/tracks/stats + /api/tracks/issues + Tracks UI
+----------------------------------------------------------------------
+
+TYPE: feature
+
+SUMMARY:
+Adds a full track-browsing layer: four read-only backend endpoints querying
+the pipeline's processed.db, and a Tracks page in the frontend with
+search/filter/sort table and a slide-in detail panel.
+
+DETAILS:
+Backend:
+  backend/app/core/config.py        — added PIPELINE_DB_PATH (resolved from toolkit config.py)
+  backend/app/core/pipeline_db.py   — read-only SQLite connection helper for processed.db
+  backend/app/models/track.py       — Track dataclass with computed `issues` field
+  backend/app/schemas/track.py      — TrackSummary, TrackDetail, TrackStats, TrackIssueItem
+  backend/app/services/track_service.py — list_tracks (filtered), get_track, get_stats, get_issues
+  backend/app/api/routes/tracks.py  — GET /api/tracks, /stats, /issues, /{id}
+  backend/app/main.py               — registered tracks router
+
+Frontend:
+  frontend/src/types/track.ts       — TrackSummary, TrackDetail, TrackStats, ISSUE_LABELS
+  frontend/src/api/tracks.ts        — fetchTracks, fetchTrack, fetchTrackStats, fetchTrackIssues
+  frontend/src/hooks/useTracks.ts   — filter-aware hook, 30 s poll cadence
+  frontend/src/pages/Tracks.tsx     — search/filter/sort/paginate table; click-to-open panel
+  frontend/src/components/TrackPanel.tsx — slide-in detail panel (Escape to close)
+  frontend/src/App.tsx              — added /tracks route
+  frontend/src/components/Sidebar.tsx — added Tracks nav link
+  frontend/src/index.css            — quality badges, issue flags, filter bar, panel styles
+
+WHY:
+  The pipeline DB already has all the data (BPM, key, quality tier, status, issues).
+  This surfaces it without duplicating or fighting the existing schema.
+  Backend is strictly read-only against processed.db — pipeline owns all writes.
+
+NOTES:
+  - If processed.db doesn't exist yet (no pipeline run), all endpoints return empty results.
+  - /api/tracks/stats and /api/tracks/issues registered before /{id} to avoid path conflict.
+
+
+----------------------------------------------------------------------
+[2026-04-12] v0.1.0 (frontend) — React/Vite/TS frontend shell: app entry, routing, CSS, Settings page
+----------------------------------------------------------------------
+
+TYPE: feature / new subsystem
+
+SUMMARY:
+Phase 2 of the web UI. Completes the frontend shell by adding the missing
+entry point, React Router wiring, Settings page, and full CSS layer.
+All existing components, pages, hooks, and API client were already present
+but not yet wired up.
+
+DETAILS:
+  frontend/src/main.tsx          — createRoot entry point; imports index.css
+  frontend/src/App.tsx           — BrowserRouter + Routes (/, /jobs, /settings)
+  frontend/src/pages/Settings.tsx — static settings reference page (live editing TBD)
+  frontend/src/index.css         — full CSS: layout, sidebar, cards, table, badges,
+                                   buttons, forms, modal/log viewer, utility classes
+
+WHY:
+  The component tree was complete but there was no entry point or styles,
+  so the app could not render.
+
+FILES ADDED:
+  frontend/src/main.tsx
+  frontend/src/App.tsx
+  frontend/src/pages/Settings.tsx
+  frontend/src/index.css
+
+IMPACT: frontend now runnable with `npm run dev`
+NOTES: node/npm must be installed first (see npm commands in README)
+
+
+----------------------------------------------------------------------
+[2026-04-12] v0.1.0 (backend) — FastAPI backend skeleton: jobs API, toolkit runner, SQLite job tracking
+----------------------------------------------------------------------
+
+TYPE: feature / new subsystem
+
+SUMMARY:
+Phase 1 of a local-first web API wrapper around the existing Python toolkit.
+Introduces a FastAPI backend with a SQLite job-tracking database, a safe
+subprocess runner, and five REST endpoints for health, version, and job
+management.  The CLI is unchanged.
+
+DETAILS:
+Architecture:
+  backend/app/main.py               — FastAPI app, CORS, lifespan startup/shutdown
+  backend/app/core/config.py        — resolved paths (TOOLKIT_ROOT, PIPELINE_PY,
+                                      JOBS_DB_PATH, JOBS_LOG_DIR, PYTHON_BIN)
+  backend/app/core/db.py            — jobs.db init (separate from pipeline processed.db)
+  backend/app/models/job.py         — Job dataclass with from_row()
+  backend/app/schemas/job.py        — Pydantic JobCreate / JobResponse
+  backend/app/services/job_service.py  — CRUD: create, get, list, mark_running,
+                                         mark_finished
+  backend/app/services/toolkit_runner.py — command builder with allowlists,
+                                         asyncio subprocess runner, task registry
+  backend/app/api/routes/health.py  — GET /api/health, GET /api/version
+  backend/app/api/routes/jobs.py    — POST /api/jobs, GET /api/jobs,
+                                      GET /api/jobs/{id}, GET /api/jobs/{id}/logs
+  backend/requirements.txt          — fastapi, uvicorn[standard], pydantic
+
+Security:
+  - Commands validated against ALLOWED_COMMANDS (18 subcommands)
+  - CLI args validated against _ALLOWED_BOOL_FLAGS and _ALLOWED_VALUE_FLAGS
+    with per-flag value validators
+  - Subprocess commands always built as argument lists (shell=False)
+  - No user-supplied string ever interpolated into a shell command
+  - Bad command or flag → HTTP 422 with clear error message
+
+Job lifecycle:
+  pending → running → succeeded / failed
+  stdout + stderr both written to backend/data/logs/{job_id}.log in real-time
+  /api/jobs/{id}/logs returns file contents; ?tail=N for last N lines
+
+FILES:
+  backend/__init__.py
+  backend/requirements.txt
+  backend/app/__init__.py
+  backend/app/main.py
+  backend/app/core/__init__.py
+  backend/app/core/config.py
+  backend/app/core/db.py
+  backend/app/models/__init__.py
+  backend/app/models/job.py
+  backend/app/schemas/__init__.py
+  backend/app/schemas/job.py
+  backend/app/services/__init__.py
+  backend/app/services/job_service.py
+  backend/app/services/toolkit_runner.py
+  backend/app/api/__init__.py
+  backend/app/api/routes/__init__.py
+  backend/app/api/routes/health.py
+  backend/app/api/routes/jobs.py
+  .gitignore               (added backend/data/)
+  README.md                (added Backend section)
+
+IMPACT:
+  No changes to pipeline.py, config.py, db.py, or any module.
+  The CLI is completely unchanged.
+  backend/data/ is git-ignored (runtime-only).
+
+HOW TO RUN:
+  pip install -r backend/requirements.txt
+  uvicorn backend.app.main:app --reload --port 8000
+
+
+----------------------------------------------------------------------
+[2026-04-12] v1.7.0 — Artist merge: three-category classification, normalization fix, tests
+----------------------------------------------------------------------
+
+TYPE: feature / bug fix
+
+SUMMARY:
+Refactored artist-merge classification so that punctuation/casing/hyphen variants
+(e.g. "Heavy-K" / "Heavy K", "H.O.S.H" / "HOSH") are correctly recognised as
+safe aliases instead of being marked ambiguous. Introduced three explicit merge
+categories and 77 new tests.
+
+DETAILS:
+Root cause of the bug:
+  The old _classify_merge() compared fi.primary_artist.lower() directly.
+  "Heavy-K".lower() = "heavy-k" ≠ "heavy k" = "Heavy K".lower(), so despite
+  being grouped correctly, the comparison flagged them as different primaries.
+
+Fix:
+  New _normalize_primary_for_compare() applies the same transforms used by
+  normalize_artist_key() (period strip, hyphen→space, etc.) before comparison.
+  Now "Heavy-K" and "Heavy K" both normalize to "heavy k" → SAFE_ALIAS.
+
+Three merge categories (replacing the old binary safe/unsafe):
+  SAFE_ALIAS          — formatting/punctuation/casing differences only; no collab.
+                        Examples: "Heavy-K" / "Heavy K", "H.O.S.H" / "HOSH",
+                        "Rosalie" / "Rosalie.", "culoe de song" / "Culoe De Song"
+  SAME_PRIMARY_COLLAB — same primary after normalization; ≥1 folder has feat/comma.
+                        Examples: "Heavy-K" / "Heavy-K feat. Davido"
+  AMBIGUOUS           — primary artists differ after normalization; never auto-merged.
+
+Other improvements:
+  - _describe_alias_differences() generates human-readable reason strings:
+      "capitalization variant", "dotted-initials variant", "hyphen/space variant",
+      "trailing period variant", "period variant", "underscore/space variant",
+      "quotation style variant"
+  - _pick_canonical() penalises all-uppercase names (e.g. HOSH loses to H.O.S.H)
+    and all-lowercase names; mixed-case preferred.
+  - FolderInfo.has_collab_suffix field added (populated at scan time).
+  - MergeGroup.merge_category field added.
+  - build_merge_groups() returns (safe, ambiguous) where safe = SAFE_ALIAS +
+    SAME_PRIMARY_COLLAB groups; ambiguous = AMBIGUOUS only.
+  - JSON report restructured with safe_alias_merges, same_primary_collab_merges,
+    ambiguous_merges sections.
+  - Console output shows all three categories with clear labels.
+  - New constants: MERGE_CATEGORY_SAFE_ALIAS, MERGE_CATEGORY_SAME_PRIMARY_COLLAB,
+    MERGE_CATEGORY_AMBIGUOUS.
+
+FILES:
+  modules/artist_merge.py     — full refactor (normalization fix, new functions,
+                                 updated dataclasses, report structure)
+  tests/test_artist_merge.py  — new: 77 tests across 7 test classes
+
+IMPACT:
+  - Behaviour change: groups that were previously marked AMBIGUOUS (and skipped)
+    because of hyphen/period/case differences are now correctly classified as
+    SAFE_ALIAS and auto-applied in --apply mode.
+  - No change to file-move logic, DB updates, or other pipeline steps.
+  - JSON report format changed (new category sections); any downstream tooling
+    reading the old flat structure should be updated.
+
+NOTES:
+  - Version bump: 1.6.0 → 1.7.0 (minor: new behaviour, backwards-compatible CLI)
+
+
+----------------------------------------------------------------------
+[2026-04-12] v1.6.0 — Developer experience: direnv, requirements, venv warning, autocomplete
+----------------------------------------------------------------------
+
+TYPE: developer tooling / infrastructure
+
+SUMMARY:
+Four developer-experience improvements: direnv auto-activation of .venv,
+split requirements files, a startup warning when no virtualenv is active,
+and argcomplete tab-completion for all subcommands and flags.
+
+DETAILS:
+1. .envrc (new)
+   direnv configuration. Sources .venv/bin/activate when you cd into the
+   project. Warns (stderr) if .venv does not exist. Includes setup
+   instructions in comments. .envrc.local added to .gitignore.
+
+2. requirements.txt (updated), requirements-dev.txt (new)
+   requirements.txt: added tqdm>=4.65.0, argcomplete>=3.1.0,
+     anthropic>=0.25.0 (uncommented); improved section comments.
+   requirements-dev.txt: new file, -r requirements.txt + pytest>=7.4.0.
+
+3. pipeline.py: _warn_if_no_venv() (new function)
+   Checks sys.prefix != sys.base_prefix and VIRTUAL_ENV / CONDA_DEFAULT_ENV.
+   Prints a one-line advisory to stderr. Non-fatal. Called at the top of main().
+
+4. pipeline.py: argcomplete wiring
+   Added PYTHON_ARGCOMPLETE_OK marker on line 2 (required for global
+   activation). Added try/import argcomplete; argcomplete.autocomplete(parser)
+   before parse_args() — silently skipped if argcomplete is not installed.
+
+5. README.md
+   Quick Start section expanded with venv creation steps.
+   New "Developer Setup" section added: direnv setup and tab-completion
+   activation (per-command and global).
+
+FILES:
+  .envrc                  (new)
+  .gitignore              (added .envrc.local)
+  requirements.txt        (updated: tqdm, argcomplete, anthropic uncommented)
+  requirements-dev.txt    (new)
+  pipeline.py             (PYTHON_ARGCOMPLETE_OK marker, _warn_if_no_venv(),
+                           argcomplete.autocomplete(parser))
+  README.md               (Quick Start + Developer Setup sections)
+  COMMANDS.txt            (regenerated — v1.6.0)
+  COMMANDS.html           (regenerated — v1.6.0)
+  modules/doc_registry.py (VERSION bumped to 1.6.0)
+
+IMPACT:
+  No changes to audio processing, tag writes, DB schema, or config.
+  All changes are additive and backward-compatible.
+
+----------------------------------------------------------------------
+[2026-04-12] v1.5.0 — Documentation enforcement and CLI help integration
+----------------------------------------------------------------------
+
+TYPE: infrastructure / developer tooling
+
+SUMMARY:
+Added a centralized command registry as the single source of truth for all
+CLI commands, flags, and examples. Two new subcommands regenerate and validate
+documentation automatically. An optional pre-commit hook enforces sync.
+
+DETAILS:
+New files:
+  modules/doc_registry.py  — COMMAND_REGISTRY: 18 commands with descriptions,
+                             flags (name, meta, description, default), and
+                             examples. Also defines VERSION = "1.5.0".
+  modules/doc_gen.py       — generate_commands_txt(), generate_readme_commands_section(),
+                             splice_readme_commands(), generate_commands_html().
+                             Generates all three doc formats from the registry.
+  scripts/pre_commit_validate_docs.sh  — Optional git hook (copy to
+                             .git/hooks/pre-commit). Runs validate-docs --strict
+                             and blocks commits when docs are out of sync.
+
+New subcommands in pipeline.py:
+  generate-docs  — Regenerates COMMANDS.txt, README.md (spliced in-place
+                   between <!-- COMMANDS:START --> and <!-- COMMANDS:END -->
+                   markers), and COMMANDS.html. Supports --dry-run (preview
+                   to stdout), --output-dir, and --format csv|md|html.
+  validate-docs  — Checks that all registry commands are present in
+                   COMMANDS.txt. Supports --strict (exit 1 on mismatch) for
+                   CI and pre-commit use.
+
+COMMANDS.txt updated:
+  Now generated from the registry (version bumped to 1.5.0, date updated).
+  Contains the generate-docs and validate-docs commands.
+
+README.md updated:
+  Old hand-crafted Subcommands section replaced with generated version inside
+  <!-- COMMANDS:START --> / <!-- COMMANDS:END --> splice markers.
+
+COMMANDS.html updated:
+  Fully regenerated from the registry with sidebar navigation.
+
+FILES:
+  modules/doc_registry.py     (new)
+  modules/doc_gen.py          (new)
+  scripts/pre_commit_validate_docs.sh  (new)
+  pipeline.py                 (added run_generate_docs, run_validate_docs,
+                               generate-docs and validate-docs subparsers)
+  COMMANDS.txt                (regenerated from registry — v1.5.0)
+  README.md                   (Subcommands section regenerated, markers added)
+  COMMANDS.html               (regenerated from registry)
+
+IMPACT:
+  No changes to audio processing, tag writes, DB schema, or config.
+  Fully additive — no existing behavior changed.
+
+HOW TO USE:
+  # Regenerate all docs after adding/changing a command
+  python3 pipeline.py generate-docs
+
+  # Verify docs are in sync before committing
+  python3 pipeline.py validate-docs
+
+  # Install optional pre-commit hook
+  cp scripts/pre_commit_validate_docs.sh .git/hooks/pre-commit
+  chmod +x .git/hooks/pre-commit
+
+----------------------------------------------------------------------
+[2026-04-11] v1.4.0 — New subcommand: audit-quality
+----------------------------------------------------------------------
+
+TYPE: feature
+
+SUMMARY:
+New `audit-quality` subcommand audits the library for codec/bitrate quality,
+classifies every audio file into LOSSLESS/HIGH/MEDIUM/LOW/UNKNOWN tiers, and
+generates CSV/JSON reports.  Optional actions (both off by default): move LOW
+files and/or write a QUALITY tag to each file.
+
+DETAILS:
+Quality tier rules:
+  LOSSLESS  FLAC / ALAC / WAV / AIFF (codec-based; bitrate irrelevant)
+  HIGH      lossy codec (MP3/AAC) >= 256 kbps
+  MEDIUM    lossy codec 192–255 kbps  (lower bound: --min-lossy-kbps, default 192)
+  LOW       lossy codec < 192 kbps
+  UNKNOWN   ffprobe could not read file or codec/bitrate not recognized
+
+Default run is fully non-destructive:
+  - probes files with ffprobe
+  - classifies each file
+  - writes CSV + JSON report to logs/reports/audit_quality/
+  - prints terminal summary with counts + percentages per tier
+  - no file moves, no tag writes
+
+Optional flags:
+  --move-low-quality DIR  move only LOW files; relative folder structure preserved
+  --write-tags            write QUALITY tag (MP3: TXXX:QUALITY, FLAC: QUALITY,
+                          M4A: ----:com.apple.iTunes:QUALITY; AIFF/WAV skipped safely)
+  --dry-run               log intended actions; make no changes; skip report files
+  --min-lossy-kbps N      shift LOW/MEDIUM boundary (default 192; HIGH fixed at 256)
+  --report-format csv,json  control output formats (default: both)
+  --verbose               per-file output
+
+DB:
+  - quality_tier TEXT column added to tracks table via ALTER TABLE migration in
+    init_db() (backward compatible; existing rows get NULL, not an error)
+  - quality_tier is stored per file when store_in_db=True (default, non-dry-run)
+
+TESTS:
+  - 46 new tests in tests/test_audit_quality.py
+  - TestClassifyTier: pure classification logic (lossless, HIGH, MEDIUM, LOW, UNKNOWN,
+    custom thresholds, case-insensitive, edge cases)
+  - TestMoveFile: folder-structure preservation, dry-run, invalid paths
+  - TestRunFunction: full integration with mocked ffprobe (all tier types,
+    unreadable files, move, write-tags off by default, CSV/JSON reports, dry-run,
+    empty dir, custom min_lossy_kbps)
+
+FILES:
+- modules/audit_quality.py     — new module
+- pipeline.py                  — new run_audit_quality(), argparse subcommand, dispatch
+- db.py                        — quality_tier migration in init_db()
+- config.py                    — AUDIT_QUALITY_REPORT_DIR, PIPELINE_VERSION→1.4.0
+- tests/test_audit_quality.py  — 46 new tests
+
+IMPACT:
+- Existing subcommands unchanged
+- DB schema gains quality_tier TEXT column (nullable, backward compatible)
+- Existing DB rows unaffected (column defaults to NULL)
+
+MIGRATION:
+- No manual DB action needed; init_db() runs the ALTER TABLE on next pipeline start
+
+
+----------------------------------------------------------------------
+[2026-04-11] v1.3.0 — Sanitizer: strip leading track-index junk before pipe
+----------------------------------------------------------------------
+
+TYPE: feature / patch
+
+SUMMARY:
+- New regex rule in sanitize_text() removes junk prefixes (digit, single letter,
+  or symbol+digit/letter) that appear at the very start of a title before a `|`
+  character and a space.  Handles DJ-pool numbering like "2 | Heartbreaker" or
+  "***3 | Track (Remix)" and single-letter prefixes like "A | Charlotte".
+
+DETAILS:
+- Pattern: `^[^\w\s]*(?:\d+|[A-Za-z])\s*\|\s*`
+  - `^`         — anchored to start; mid-string pipes are NEVER touched
+  - `[^\w\s]*`  — zero or more leading symbol chars (e.g. `***`)
+  - `(?:\d+|[A-Za-z])` — one or more digits OR exactly one letter (single-char only)
+  - `\s*\|\s*`  — optional spaces around the pipe (all consumed)
+- Multi-letter words before a pipe (e.g. "Rock | Roll", "Day | Night") are
+  preserved because the single `[A-Za-z]` token requires the next char to be
+  the pipe, not another word character.
+- Runs as Step 0 in sanitize_text(), before URL and promo-phrase passes.
+- 8 new test cases added to TestSanitizeText.
+
+FILES:
+- modules/sanitizer.py     — added _RE_PIPE_JUNK_PREFIX regex + Step 0 in sanitize_text()
+- tests/test_sanitizer.py  — 8 new tests for the pipe-prefix rule
+
+IMPACT:
+- Any title/field string starting with a short numeric or single-letter index
+  before a `|` will now be cleaned automatically in the sanitize pass.
+- No impact on MIK BPM/key/cue data (sanitizer never touches those fields).
+
+NOTES:
+- This is additive; all 76 existing tests pass.
+
+
+----------------------------------------------------------------------
+[2026-04-08] — README updated to reflect v1.1.0 and v1.2.0
+----------------------------------------------------------------------
+
+TYPE: docs
+
+SUMMARY:
+- README now documents MIK-first design philosophy, constraints, and safety rules
+- Added sections for rekordbox-export, analyze-missing, and convert-audio subcommands
+- Updated pipeline steps, feature tables, env vars, repo structure, and troubleshooting
+
+DETAILS:
+- Design Philosophy: added MIK-first bullet
+- Feature Overview: updated BPM/key rows to note MIK-first behavior; added
+  analyze-missing and convert-audio rows; noted XML disabled by default
+- Standalone Subcommands table: added rekordbox-export, analyze-missing, convert-audio
+- Repository Structure: added modules/analyze_missing.py and modules/convert_audio.py
+- Environment Variables: added FFMPEG_BIN (new in v1.2.0)
+- Pipeline steps: expanded to 9 steps; step 5 explains MIK-first; step 7 notes
+  cue-suggest default; step 8 notes XML default
+- Main Pipeline usage: added --force-cue-suggest; updated --skip-analysis note
+- New sections: Rekordbox Export, Analyze Missing BPM/Key, Convert Audio
+- cue-suggest section: added MIK workflow note
+- Safety section: added MIK-first rules table; updated "never written" list
+- Troubleshooting: added convert-audio and MIK overwrite entries
+- Table of Contents: added new section links
+
+FILES:
+- README.md
+
+IMPACT:
+- No code changes; documentation only
+
+
+----------------------------------------------------------------------
+[2026-04-07] v1.2.0 — Add convert-audio subcommand (.m4a → .aiff)
+----------------------------------------------------------------------
+
+TYPE: feature
+
+SUMMARY:
+- New subcommand: python3 pipeline.py convert-audio --src ... --dst ... --archive ...
+- Converts .m4a files to .aiff in parallel with ffmpeg
+- Preserves metadata (-map_metadata 0), relative folder structure, and originals
+- Full verification pipeline: ffprobe source check + duration delta check on output
+
+DETAILS:
+- modules/convert_audio.py  — new module with full conversion logic
+  - _probe()                — ffprobe JSON parse for readability + duration
+  - _build_dst / _build_archive — path helpers preserving relative structure
+  - _collision_free()       — safe archive rename on filename collision
+  - _convert_one()          — single-file worker: probe → convert → verify → archive
+  - run()                   — top-level entry: scan, pool, log, summary
+- pipeline.py
+  - run_convert_audio()     — arg parsing and delegation to module
+  - convert-audio subparser — --src, --dst, --archive, --workers, --overwrite,
+                              --verify-tolerance-sec, --dry-run, --no-progress, --verbose
+- config.py
+  - FFMPEG_BIN = os.environ.get("FFMPEG_BIN", "ffmpeg")  — new, mirrors FFPROBE_BIN
+  - PIPELINE_VERSION = "1.2.0"
+
+IMPACT:
+- No existing commands affected
+- All existing module imports unchanged
+- New dependency: tqdm (optional, graceful fallback if not installed)
+
+NOTES:
+- Output codec: pcm_s16be (16-bit big-endian PCM) — standard AIFF for DJ software
+- Archives originals by MOVING, never deleting
+- Archive move is only attempted after conversion + verification pass
+- Version bump: 1.1.0 → 1.2.0 (minor: additive new subcommand)
+
+
+----------------------------------------------------------------------
+[2026-04-07] v1.1.0 — MIK-first refactor: preserve BPM/key/cue data from Mixed In Key
+----------------------------------------------------------------------
+
+TYPE: feature / policy change
+
+SUMMARY:
+- Made Mixed In Key (MIK) the authoritative source for BPM, key, and cue data
+- Analyzer now skips detection for values that already exist (in DB or file tags)
+- Cue suggest disabled by default (opt-in via --force-cue-suggest)
+- Rekordbox XML export disabled by default (opt-in via --force-xml with warning)
+
+DETAILS:
+- Added _read_existing_analysis() to analyzer.py: reads BPM from TBPM/tmpo and
+  Camelot key from TKEY/INITIALKEY/©key tags before running aubio/keyfinder-cli.
+  This preserves data written by MIK without requiring an explicit --skip-* flag.
+- analyzer.run() is now MIK-first: only fills genuinely missing values; never
+  overwrites existing BPM or Camelot key from either DB or file tags.
+- run_pipeline() default changed: skip_cue_suggest=True (was False). Cue suggest
+  no longer runs automatically. Use --force-cue-suggest to enable.
+- --skip-cue-suggest is now a deprecated no-op (cue suggest is off by default).
+- --skip-analysis marked as [legacy]; no longer needed for normal MIK workflows.
+- rekordbox-export subcommand: XML disabled by default. --force-xml enables it
+  with a visible warning. M3U generation is unchanged (always safe).
+- CLAUDE.md updated with hard MIK-first rule for future sessions.
+
+FILES:
+- modules/analyzer.py  — MIK-first logic, _read_existing_analysis()
+- pipeline.py          — cue suggest default, --force-cue-suggest, --force-xml,
+                         updated argparser help texts, updated rekordbox description
+- CLAUDE.md            — MIK hard rule added, commands updated
+- CHANGELOG.txt        — this entry
+- NEXT_TASKS.txt       — updated
+- DJToolkit_CONTEXT.txt — updated
+
+IMPACT:
+- No pipeline steps removed; all subcommands still work
+- Tracks that MIK has already analyzed are never re-analyzed
+- Tracks MIK has not yet touched still get analysis from aubio/keyfinder-cli
+- No DB schema changes; no migration needed
+
+NOTES:
+- Version bump: 1.0.0 → 1.1.0 (minor: new behavior, backwards-compatible CLI)
+- --force-cue-suggest and --force-xml are new; old flags deprecated but not removed
+
+
+----------------------------------------------------------------------
+[2026-04-07] v1.0.0 — Initial stable release / context snapshot
+----------------------------------------------------------------------
+
+TYPE: release
+
+SUMMARY:
+- Full end-to-end DJ pipeline implemented and stabilized
+- Establishes baseline architecture and CLI feature set
+
+DETAILS:
+- Full pipeline operational: QC → dedupe → organize → sanitize → analyze → tag → cue-suggest → playlists → report
+- All subcommands implemented (label-intel, playlists, rekordbox-export, analyze-missing, dedupe, cue-suggest, set-builder, harmonic-suggest, etc.)
+- label_intel package with Beatport + Traxsource scraping and multiple export formats
+- SQLite schema implemented: tracks, track_history, pipeline_runs, duplicate_groups, cue_points
+- Idempotency system: TXXX:PROCESSED=1 + DB status='ok'
+- Corrupt-file isolation with timeout protection
+- Rekordbox export with Linux→Windows path mapping and fallback analysis
+- Tag normalization: ID3v2.4 → ID3v2.3, ID3v1 removal
+- Project state files introduced: CLAUDE.md, DJToolkit_CONTEXT.txt, CHANGELOG.txt, NEXT_TASKS.txt
+
+FILES:
+- pipeline.py
+- modules/*
+- label_intel/*
+- db.py
+- config.py
+- CLAUDE.md
+- DJToolkit_CONTEXT.txt
+- CHANGELOG.txt
+- NEXT_TASKS.txt
+
+IMPACT:
+- CLI: stable baseline interface established
+- Data: schema initialized and in active use
+- Compatibility: non-breaking (initial release)
+
+NOTES:
+- BPM accuracy depends on aubio + genre correction and requires improvement
+- Rekordbox compatibility is functional but not yet validated for high accuracy
+
+
+======================================================================
+END OF CHANGELOG
+======================================================================

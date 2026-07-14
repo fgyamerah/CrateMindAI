@@ -1,0 +1,87 @@
+[
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/&ME/&ME After Dark - 9A - 122.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/&ME/&ME Birdland - 7A - 120.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/&ME/&ME Blitz - 7A - 123.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/&ME/&ME Everless - 9A - 122.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/&ME/&ME Locust - 9A - 120.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/2point1/2Point1 Don't Say (1) - 8A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/2point1/2Point1 Don't Say - 8A - 125.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/4th Measure Men/4th Measure Men You - 2A - 123.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Can't Get Enough (vocal club mix) - 9A - 128.mp3",
+    "reason": "parsed_conflict",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Can't Get Through - 7A - 122.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Cherry (Miguel Migs Salted vocal edit) - 8A - 121.mp3",
+    "reason": "parsed_conflict",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Close Your Eyes - 6A - 120.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Don't Stop - 11A - 122.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Everybody - 8A - 116.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Giving It All (Migs Salted dub Deluxe) - 7A - 122.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - He Is The Joy (U.B.P Classic mix) - 5A - 123.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Life (unreleased version) - 5A - 124.mp3",
+    "reason": "guardrail_violation",
+    "details": ""
+  }
+]

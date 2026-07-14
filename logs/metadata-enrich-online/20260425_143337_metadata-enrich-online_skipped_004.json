@@ -1,0 +1,42 @@
+[
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/Reach Out.mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/Ride.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/Spread Your Love Around (Ricky Birickyno Radio Edit Mix).mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/Stone Cold Lover (Parov Stelar Remix).mp3",
+    "reason": "skipped_artist_mismatch",
+    "details": "conf=0.74"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/Talking Walls.mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.91"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/The Nervous Track (Ballsy Mix).mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/The Pressure (Frankie Knuckles Classic Mix).mp3",
+    "reason": "skipped_low_score",
+    "details": "conf=0.94"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/Thrill Me.mp3",
+    "reason": "review_ambiguous",
+    "details": "conf=1.00"
+  }
+]

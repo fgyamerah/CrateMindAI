@@ -1,0 +1,25 @@
+{
+  "command": "artist-intelligence",
+  "input_path": "/mnt/music_ssd/KKDJ/sorted",
+  "limit": 50,
+  "started_at": "2026-04-23T23:58:18.167959",
+  "finished_at": "2026-04-23T23:58:32.261612",
+  "duration_sec": 14.093653,
+  "files_scanned": 50,
+  "files_processed": 50,
+  "applied": true,
+  "results": {
+    "changed": 4,
+    "unchanged": 46,
+    "skipped": 0,
+    "errors": 0
+  },
+  "review_count": 0,
+  "moved_to_ignored": 0,
+  "exit_code": 0,
+  "detail_files": {
+    "modified": [
+      "20260423_235818_artist-intelligence_modified_001.json"
+    ]
+  }
+}

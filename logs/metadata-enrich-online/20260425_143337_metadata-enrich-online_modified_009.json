@@ -1,0 +1,1002 @@
+[
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Purple Disco Machine/Purple Disco Machine - Taste of Bitter Love - 6A - 111.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Purple Disco Machine/Purple Disco Machine - Times Get Tough - 7A - 117.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Purple Disco Machine/Purple Disco Machine - Up & Down - 5A - 118.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Purple Disco Machine/Purple Disco Machine - Vision of Paradise - 8A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Purple Disco Machine/Purple Disco Machine - Walls - 5A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Purple Disco Machine/Purple Disco Machine - Wanna Feel Like a Lover (Poolside Remix) [feat. Ed Mac] [Mixed] - 10A - 103.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=title"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Purple Disco Machine/Purple Disco Machine - Wanna Feel Like a Lover (feat. Ed Mac) - 10A - 109.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Purple Disco Machine/Purple Disco Machine - Where We Belong - 9A - 119.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Purple Disco Machine/Purple Disco Machine - Yeah Yeah - 8A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Purple Disco Machine/Purple Disco Machine - Yo - 11A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Purple Disco Machine/Purple Disco Machine - You No Fit Touch Am (Medlar Remix) - 7A - 118.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/Purple Disco Machine, Boris Dlugosch/Set It Out - 9A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/P/The Phenomenal Handclap Band/Baby - 2A - 114.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/Q/Qlab/Every Day - 1A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/Q/Qubiko & Fabio Ricciuti/On Your Mind - 8A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/R & R/Just Another Day - 5A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/R. Gallery/Tornado 961 - 10A - 132.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/ROUTE 94, JESS GLYNNE/MY LOVE - 5A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/RUZE/Mister DJ - 7A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rabs Vhafuwi/2 Africa My Home (Original Mix) - 5A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rabs Vhafuwi/Rabs Vhafuwi - Africa My Home - 5A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rabs Vhafuwi & Pale Rozay/Where She Goes - 11A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rafael Drager & Sebastian Rivero/Even If We Fight - 8A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Raffaele Ciavolino/Breathe - 5A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rampa/Rampa, Sparrow & Barbossa - Champion - 5A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rampa & Sparrow & Barbossa/Champion - 5A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rampa, Sparrow & Barbossa/Champion - 5A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Ray Naldo/Jamaala - 11A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Re-Tide/Into The Groove - 6A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Red Light [feat. David Gordon]/Thankful - 6A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Reel People Ft. Angela Johnson/In The Sun - 2A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Reggie Steele, Christie Love/Show Ya - 2A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rendah, Jakar/Get Lonely - 9A - 88.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Renga Weh/Polymid - 9A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Richard Grey, Deja Vue/Lets Do It Tonight - 10B - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Richard Grey, Lissat, Ghostbusterz/Makeba - 6A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Richard de Clark/Techno Experiment - 12A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Riordan/Needle On The Record - 11A - 129.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Risk Assessment/JUMP - 1A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Risk Assessment/SOMEONE LIKE YOU - 1B - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Risk Assessment/She's On The Floor - 8A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=title"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Risk Assessment Vanessa Freeman/Do U Love Me - 11A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Risque Connection Dave Lee/Saturday - 8A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rita Lee, Harry Romero/Mania De Você - Harry Romero Remix - 8A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Riva Starr/How It Feels (1) - 9A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Riva Starr/How It Feels - 9A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Riva Starr/Love You Till Tomorrow - 3A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Riva Starr & Hyperloop/Resilience - 5A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Riva Starr & Trim/Dance Me - 4A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Robin S/Show Me Love - 7A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rocco Rodamaal/Post Truth Youth - 7A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rocco Rodamaal Keith Thompson/Break 4 Love (1) - 6A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rockin Moroccin/You Got the Love - 12A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Roland Clark/Roland Clark - I Get Deep (Richard Earnshaw Remix) - 4A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Romanthony/Too Long - 4A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Ron Hall & The Muthafunkaz ft. Marc Evans/The Way You Love Me - 8A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Ronnie Spiteri/Revenge - 2A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rony Breaker, Coree Mathews/I'm Crazy In Love - 7A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Rossi., Mystic Bill/U Won't See Me - 9A - 129.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Route 94/Fly 4 Life - 8A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Roy Davis Jr/About Love - 9A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Roy Jazz Grant/From Inside - 4A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Ry, Frank Wiedemann/Howling - 11A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/Ryan Murgatroyd/Bantwana's Piano - 9A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/R/The Realm x Atjazz x Kelli Sae/On The Road - 2A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/S.E.L/You Gotta Be - 8B - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/SLAMTWISTED feat. Poetic Leestar/So Alive - 4A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/SLAMTWISTED, Kareem Shabazz/Love Will Find A Way - 12A - 102.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/SUDI/These Dayz - 5A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/SUPER BAD, Dario Cecchini/Superchicken - 3A - 105.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sable Blanc/Lumiere Douce - 6A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sable Sheep/Upon Burning Skies - 2A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Saint Evo/Arunachal - 5A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Saint Evo/Call - 6A - 118.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/SaintMark/Waiting For You - 3A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Samim/Heater - 11A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sammy Deuce/Delicious One - 10A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sammy Deuce/Give It To Me - 10A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sammy Deuce/Lips To Mine - 7A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sammy Deuce/Love City Groove - 9A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sammy Deuce/Say It Again - 3A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sammy Deuce, Treasure Fingers/Fooled Me - 5A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sammy Virji/If U Need It - 3A - 132.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Samson, Ekho, Tommy Kimpton/Kickin' - 2A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/San Pacho/Soundboy - 2A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sandy Rivera & Andy Daniell/Whatever - 1A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sandy Rivera & Haze/Freak - 7A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sandy Rivera, Rae/Hide U - 12A - 130.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Santé vs MD X-Spress/This Is House - 7A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Scoper & Bubba/I'm Satisfied - 8A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Scruscru/Back To Good Days - 3A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Scruscru/I Bet My Trumpet - 3A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Seamus Haji & Michael Gray Audrey Martells/Wish - 10A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Seamus HajiStephen Granville/Race Of Survival - 4A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Seb Skalski Nick Sinckler/Awaken Me - 8B - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Section Five, Vuscare/Appreciation Song - 2A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Seductive Souls/Ain't Nobody - 9A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Selected Works/Uncle Sam - 3A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Selva/Horacescope - 2A - 116.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Serge Devant/Frenzy - 1A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sergio Saffe/Rock This - 5A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sgt Slick/Everybody Dance - 7A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Shabi/Jirokichi Jazz - 7A - 119.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/SharingDB.eu/SharingDB.eu - Black Bird - 1A - 117.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Shaun Escoffery/Nature's Call - 9A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Shawn Christopher/Don't Lose The Magic - 8A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Shenoda, Huxley/I Don't Know - 11A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Shenoda, Huxley/Premier - 4A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sheree Hicks/Tempted (1) - 7A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sheree Hicks/Tempted - 7A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Shiba San/Are You Feeling This - 6A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Shimza, Argento Dust/All Alone - 11A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Shimza, Jnr SA/Euphoria - 1A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Shona SA & DJ Fresh SA feat. Zimkitha/Baleka - 1A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Shonky/Les Shonkettes - 4A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Shredder SA/Star of Sigui - 6A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Shuya Okino ft. Navasha Daya/Still In Love - 2A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Siji/Ijo - 2A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Silva DaDj/Silva DaDj - Vanity Slave - 9A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Simmy/Simmy - Ubala (feat. Sun-El Musician) - 1B - 118.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Simo Lagnawi, FNX OMAR/Simo Lagnawi, FNX OMAR Freeka (Original Mix) - 9A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Simo Moumen feat. Nuzu Deep/Promise - 8A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sio, Atmos Blaq/Abandonment Issues - 12A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sir Mos/Wait for Love - 2A - 117.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Skepta/Can't Play Myself - 12A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Skrillex, Boys Noize/Fine Day Anthem - 11A - 138.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Skrillex, Flowdan, Peekaboo/Badders - 2A - 145.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sky Motion/Night Impressions - 11A - 137.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Small Talk/Time To Be Real - 6A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soa mattrix/Mina Nawe - 4A - 112.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sofiya Nzau, Anouket/Nina Mambo - 7A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soha/Amour - 1A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soha/Balance - 1A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soha/Foulchette - 8A - 129.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soha/Gabbeh - 7A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soha/Izabelle - 1A - 95.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soha/Original - 8A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soha/Seas And Sirens - 8A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soha/Takemussa - 1A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Solardo/Lemon & Lime - 10A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soneec, Crazibiza & Vince Tomas/Once Again - 8A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sonic Soul Orchestra Kathy Brown/Good Inside - 6A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sonic Soul Orchestra feat. Kathy Brown/So Into You (2) - 12A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=title, album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sonic Soul Orchestra feat. Kathy Brown/So Into You - 12A - 114.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sonny Fodera/Chalk - 6A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sonny Fodera/P 2 Da J - 12A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sonny Fodera/Reseed - 7A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sonny Fodera/Say You Won't Ever - 9A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sonny Fodera/Still Believe - 7A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sonny Fodera/Submarine - 12A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sonny Fodera/Trainsurfing - 4A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sonny Fodera/Under The Sheets - 11A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sonny Fodera, Yasmin/Feeling U - 8A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soul Brucke/Rebellion - 7A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soul II Soul/Nothing Compares to you - 12B - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soul Scout/Superfly - 5A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soul Star, Soulroots/Sala Papa Ye - 3A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soul Star, Soulroots, Ceciel Moyano/Adibele - 6A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soul Vision feat. D'Layna/You've Been On My Mind - 4A - 127.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulful House/Burning With Ecstasy - 8A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulful House/Coffee in the Morning - 5A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulful House/Complete Me - 8A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulful House/Fooled Around 2021 - 7B - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulful House/Give Me Your Loving - 8A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulful House/Good - 6A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulful House/In The Sun - 11A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulful House/Lusting U - 7A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulful House/New Plan - 1A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulful House/On My Mind - 6A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulful House/One Dance - 3A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulful House/Running - 11A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulful House/Sun Came Up - 8A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulful House/The Ying Dance - 9A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulful House/Turn Me On - 3A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulfuledge, Hannah Clare/Sweat Is on the Dancefloor - 5A - 118.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulic M/Let Music Speak - 9A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=title, album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulista Feat. Karmina Dai/Symphomaniac - 2A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulista Feat. Tracy Hamlin/Invitation - 8A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulroots/Thando Lwethu (1) - 1A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulroots/Thando Lwethu - 1A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulroots & Native Tribe feat. Lelloh/Choose You - 2A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulroots feat. Idd Aziz/Dogo Dogo - 6A - 118.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulroots feat. Mnqobi Yazo/Lahloma - 8A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulroots feat. TroymusiQ/Voices of Liberation - 9A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulroots, Mnqobi Yazo/Lahloma - 8A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulroots, Zakes Bantwini/Love Again - 8A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulstance & The Modern African Spirit/Black Star - 5A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulstance feat. The Modern African Spirit/In The Future Together - 7A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Soulstar/Soulstar - Take Me Home - 8A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Stephanie Cooke, Han Litz, Diephuis/Beautiful Life - 8A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Steve Silk Hurley ft Sharon Pass/The Word Is Love - 5A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Stevens Santana/Hung Up - 7A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Stoto/Still Can't Sleep - 10A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Stuffa Featuring David A Tobin/Proof - 10A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Stylo, Space Motion/The Last Siren - 7A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.96 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Sunbeam/Outside World - 8A - 135.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Superlounge/Your Life - 9A - 118.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Supernova/I Can't Do Without You - 10A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Supernova/Never Give Up - 5A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/S/Supersavage/Back2Back - 9A - 125.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=isrc"
+  }
+]

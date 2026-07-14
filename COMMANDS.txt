@@ -1,0 +1,173 @@
+======================================================================
+CrateMindAI — COMMAND REFERENCE (Intelligence Pipeline)
+======================================================================
+
+Version : 2.0.0
+Platform: Ubuntu Studio 24 (Linux)
+Updated : 2026-04-20
+
+Commands:
+  metadata-sanitize
+  ai-normalize
+  artist-intelligence
+  metadata-enrich-online
+  review-queue
+
+======================================================================
+
+----------------------------------------------------------------------
+metadata-sanitize — Deterministic offline cleaning of all metadata fields. Removes URL watermarks, promo artifacts, DJ pool tags, malformed ISRCs, and BPM/key comment noise.
+----------------------------------------------------------------------
+
+  Idempotent — re-running a clean file produces no further changes.
+  Safe to run before any AI or enrichment step.
+
+FLAGS
+
+  --input DIR
+        Directory of audio files to process.
+
+  --apply
+        Write changes to files. Without this flag, preview only.
+
+  --verbose
+        Enable debug logging.
+
+EXAMPLES
+
+  python3 pipeline.py metadata-sanitize --input ~/Music/inbox
+  python3 pipeline.py metadata-sanitize --input ~/Music/inbox --apply
+
+----------------------------------------------------------------------
+ai-normalize — Local AI (Ollama) metadata proposals for artist, title, version, label, remixers, and featured artists. Preview by default; --apply to write. BPM, key, and cues are never touched.
+----------------------------------------------------------------------
+
+  Min confidence: 0.75 — proposals below threshold are skipped, not applied.
+  --pre-sanitize: runs metadata-sanitize before inference (recommended).
+
+FLAGS
+
+  --input DIR
+        Directory of audio files to process.
+
+  --apply
+        Write accepted proposals to files.
+
+  --pre-sanitize
+        Run metadata-sanitize before AI inference.
+
+  --min-confidence 0.75
+        Minimum confidence to accept a proposal.
+
+  --model MODEL
+        Ollama model to use. Default: OLLAMA_DEFAULT_MODEL env.
+
+  --verbose
+        Enable debug logging.
+
+EXAMPLES
+
+  python3 pipeline.py ai-normalize --input ~/Music/inbox
+  python3 pipeline.py ai-normalize --input ~/Music/inbox --apply
+  python3 pipeline.py ai-normalize --input ~/Music/inbox --pre-sanitize --apply
+  python3 pipeline.py ai-normalize --input ~/Music/inbox --min-confidence 0.80 --apply
+
+----------------------------------------------------------------------
+artist-intelligence — Deterministic artist normalization, alias resolution, and identity consistency across the library. Builds an alias store for consistent downstream processing.
+----------------------------------------------------------------------
+
+  Package: intelligence/artist/
+
+FLAGS
+
+  --input DIR
+        Directory or library path to process.
+
+  --apply
+        Write normalized artist tags to files.
+
+  --verbose
+        Enable debug logging.
+
+EXAMPLES
+
+  python3 pipeline.py artist-intelligence --input ~/Music/inbox
+  python3 pipeline.py artist-intelligence --input ~/Music/inbox --apply
+
+----------------------------------------------------------------------
+metadata-enrich-online — Fill missing album, label, and ISRC via Spotify + Deezer matching with confidence scoring. Preview by default; --apply to write. Artist field is never proposed.
+----------------------------------------------------------------------
+
+  Operational states per track:
+    APPLY   conf >= 0.80; all safety rules pass -> written with --apply
+    REVIEW  0.70 <= conf < 0.80 -> added to review queue
+    SKIP    hard safety block fires -> moved to IGNORED with --move-ignored
+  
+  IGNORED path: /home/koolkatdj/Music/music/IGNORED/
+
+FLAGS
+
+  --input DIR
+        Directory of audio files to enrich.
+
+  --apply
+        Write APPLY-state changes to files.
+
+  --min-confidence 0.80
+        Minimum confidence to apply. Default: 0.80.
+
+  --move-ignored
+        Move all hard-rejected files to the IGNORED quarantine directory.
+
+  --verbose
+        Enable debug logging.
+
+EXAMPLES
+
+  python3 pipeline.py metadata-enrich-online --input ~/Music/inbox
+  python3 pipeline.py metadata-enrich-online --input ~/Music/inbox --apply
+  python3 pipeline.py metadata-enrich-online --input ~/Music/inbox --apply --move-ignored
+  python3 pipeline.py metadata-enrich-online --input ~/Music/inbox --min-confidence 0.85
+
+----------------------------------------------------------------------
+review-queue — Review and resolve medium-confidence enrichment results interactively. Reads entries populated by metadata-enrich-online (REVIEW state: 0.70 <= conf < 0.80).
+----------------------------------------------------------------------
+
+  Queue file: data/intelligence/enrichment_review_queue.json
+  Actions: a=apply  s=skip  d=delete  n=next  q=quit
+
+FLAGS
+
+  --list-only
+        Print all pending entries without entering interactive mode.
+
+EXAMPLES
+
+  python3 pipeline.py review-queue
+  python3 pipeline.py review-queue --list-only
+
+----------------------------------------------------------------------
+filename-normalize — Rename audio files to {artist} - {title} ({version}).ext using embedded tags. Preview by default; --apply to commit.
+----------------------------------------------------------------------
+
+  Version deduplication: if version is already in the title, it is not appended.
+  No overwrite: collisions get a safe suffix ' (1)', ' (2)', ...
+  Tags are never modified. BPM, key, and cues are untouched.
+  Skipped if artist or title tag is missing.
+
+FLAGS
+
+  --input DIR
+        Directory of audio files to process. Required.
+
+  --apply
+        Commit renames. Without this flag, preview only.
+
+  --verbose
+        Show skipped and no-change files; enable debug logging.
+
+EXAMPLES
+
+  python3 pipeline.py filename-normalize --input ~/Music/inbox
+  python3 pipeline.py filename-normalize --input ~/Music/inbox --apply
+  python3 pipeline.py filename-normalize --input /mnt/music_ssd/KKDJ/sorted --apply

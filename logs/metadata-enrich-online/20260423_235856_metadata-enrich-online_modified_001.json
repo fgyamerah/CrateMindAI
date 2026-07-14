@@ -1,0 +1,112 @@
+[
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/&ME/&ME Birdland - 7A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/&ME/&ME Blitz - 7A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/&ME/&ME Everless - 9A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/&ME/&ME Locust - 9A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/&ME/Cape Coast - 9A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.94 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/&ME, Rampa, Adam Port, Ali Love/Confusion - 5A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=0.90 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/10th Street Assembly/Free Me - 7A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/2fox/So Long - 10A - 124.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=album, isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/Floyd Lavine/Little Scar - 8A - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/4th Measure Men/4th Measure Men - Given (MK dub) - 8A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Adelante - 4A - 90.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Bad Side - 5A - 100.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Can't Get Enough (vocal club mix) - 9A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Clorophilya - 9A - 110.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Close Your Eyes - 6A - 120.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Don't Stop - 11A - 122.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Feelin’ Love (Soulsearcher club mix) - 11A - 126.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Flying Higher - 7B - 121.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Freakismo - 4A - 116.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - He Is The Joy (U.B.P Classic mix) - 5A - 123.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Honey (Petalpusher Downtown 100bpm vocal) - 10A - 100.mp3",
+    "reason": "deezer",
+    "details": "conf=1.00 fields=isrc"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA_ Defected House Masters/VA_ Defected House Masters - Beau Mot Plage (Heaven & Earth re-edit) - 10A - 128.mp3",
+    "reason": "deezer",
+    "details": "conf=0.98 fields=album"
+  }
+]

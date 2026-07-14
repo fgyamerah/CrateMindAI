@@ -1,0 +1,38 @@
+{
+  "command": "ai-normalize",
+  "input_path": "/home/koolkatdj/Music/music/library/sorted/B",
+  "limit": 200,
+  "started_at": "2026-04-23T12:27:11.128654",
+  "finished_at": "2026-04-23T12:51:26.072042",
+  "duration_sec": 1454.943388,
+  "files_scanned": 200,
+  "files_processed": 200,
+  "applied": true,
+  "results": {
+    "changed": 1,
+    "unchanged": 174,
+    "skipped": 25,
+    "errors": 0
+  },
+  "ai": {
+    "valid_responses": 175,
+    "guard_rejections": 23
+  },
+  "quality": {
+    "high_confidence": 175
+  },
+  "sanitize": {
+    "sanitize_clean": 200
+  },
+  "review_count": 0,
+  "moved_to_ignored": 0,
+  "exit_code": 0,
+  "detail_files": {
+    "modified": [
+      "20260423_122711_ai-normalize_modified_001.json"
+    ],
+    "skipped": [
+      "20260423_122711_ai-normalize_skipped_001.json"
+    ]
+  }
+}

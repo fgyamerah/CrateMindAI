@@ -1,0 +1,21 @@
+{
+  "command": "metadata-sanitize",
+  "input_path": "/mnt/music_ssd/KKDJ/sorted/A",
+  "limit": null,
+  "started_at": "2026-05-02T23:08:53.873299",
+  "finished_at": "2026-05-02T23:08:54.663290",
+  "duration_sec": 0.789991,
+  "files_scanned": 119,
+  "files_processed": 34,
+  "applied": false,
+  "results": {
+    "changed": 0,
+    "unchanged": 34,
+    "skipped": 0,
+    "errors": 0
+  },
+  "review_count": 0,
+  "moved_to_ignored": 0,
+  "skipped_unchanged": 85,
+  "exit_code": 0
+}

@@ -1,0 +1,312 @@
+[
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Siyobalekelaphi.mp3",
+    "reason": "multi_artist_split",
+    "details": "Master T Rox Tabia → Master T Rox, Tabia"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Tierjag.mp3",
+    "reason": "separator_normalized",
+    "details": "Vito Lalinga (Vi Mode Inc. Project) x Pomante → Vito Lalinga (Vi Mode Inc. Project), Pomante"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Unknown Artist - 2 Fulani.mp3",
+    "reason": "separator_normalized",
+    "details": "Alsarah & The Nubatones → Alsarah, The Nubatones"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/Uthando.mp3",
+    "reason": "separator_normalized",
+    "details": "DJ Tomer Cisco De Sol Zipho Thusi & Ricardo Gi → DJ Tomer Cisco De Sol Zipho Thusi, Ricardo Gi"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/We Rise And We Fall.mp3",
+    "reason": "multi_artist_split",
+    "details": "Elias Kazais Stefanos Stergiou → Elias Kazais, Stefanos Stergiou"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Unknown Artist/You're a Freak.mp3",
+    "reason": "separator_normalized",
+    "details": "Block & Crown → Block, Crown"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Urban Blues Project & Michael Procter/Deliver Me - 8A - 123.mp3",
+    "reason": "separator_normalized",
+    "details": "Urban Blues Project & Michael Procter → Urban Blues Project, Michael Procter"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Urban Blues Project & Mother of Pearl/Your Heaven[feat - 5A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Urban Blues Project & Mother of Pearl → Urban Blues Project, Mother of Pearl"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Urban Soul Roland Clark/Alright (1) - 5A - 125.mp3",
+    "reason": "multi_artist_split",
+    "details": "Urban Soul Roland Clark → Urban Soul, Roland Clark"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Urban Soul Roland Clark/Alright - 6A - 125.mp3",
+    "reason": "multi_artist_split",
+    "details": "Urban Soul Roland Clark → Urban Soul, Roland Clark"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/U/Ursula Rucker, Riva Starr & CamelPhat/Crystal Clear feat. Ursula Rucker - 8A - 126.mp3",
+    "reason": "nested_split",
+    "details": "Ursula Rucker, Riva Starr & CamelPhat → Ursula Rucker, Riva Starr, CamelPhat"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/The Vision & Dames Brown/Down feat. Dames Brown - 6A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "The Vision & Dames Brown → The Vision, Dames Brown"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/VICTHOR/Do For Love - 6A - 115.mp3",
+    "reason": "casing_normalized",
+    "details": "VICTHOR → Victhor"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/Vanessa Castro, D'Andy & Bodyles/Questa Sono Io - 8A - 120.mp3",
+    "reason": "nested_split",
+    "details": "Vanessa Castro, D'Andy & Bodyles → Vanessa Castro, D'Andy, Bodyles"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/Vega & Romero Louie Vega feat. Harry Romero/El Ritmo - 4A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Vega & Romero / Louie Vega feat. Harry Romero → Vega, Romero / Louie Vega feat. Harry Romero"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/Vida-soul/Vida-soul War Dowgy (Original Mix) - 10A - 124.mp3",
+    "reason": "nested_split",
+    "details": "Vida-soul & Limpopo Rhythm, Izzysoul → Vida-soul, Limpopo Rhythm, Izzysoul"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/Vida-soul/Vida-soul War Dowgy - 10A - 124.mp3",
+    "reason": "nested_split",
+    "details": "Vida-soul & Limpopo Rhythm, Izzysoul → Vida-soul, Limpopo Rhythm, Izzysoul"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/Villager SA/Villager SA Can't Make Me (Limpopo Rhythm Remix) - 5A - 123.mp3",
+    "reason": "separator_normalized",
+    "details": "Villager SA Feat. Ray T → Villager SA feat. Ray T"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/Villager SA/Villager SA Ska Dhala Pelo - 2A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Villager SA Feat. Lebb Simons & Dios 1D → Villager SA feat. Lebb Simons & Dios 1D"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/V/Visti & Meyland/Yes Maam - 4A - 121.mp3",
+    "reason": "separator_normalized",
+    "details": "Visti & Meyland → Visti, Meyland"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/W/WHELAN, SCALA, NIKKI BELLE/TEARDROPS - 1A - 120.mp3",
+    "reason": "casing_normalized",
+    "details": "WHELAN, SCALA, NIKKI BELLE → WHELAN, SCALA, Nikki Belle"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/W/Wade Teo, Charles Rickards/La De Da - 9A - 126.mp3",
+    "reason": "multi_artist_split",
+    "details": "Wade Teo Charles Rickards → Wade Teo, Charles Rickards"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/W/Waifs & Strays/2 Body Shiver (1) - 7A - 122.mp3",
+    "reason": "separator_normalized",
+    "details": "Waifs & Strays → Waifs, Strays"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/W/Waifs & Strays/2 Body Shiver - 2A - 122.mp3",
+    "reason": "separator_normalized",
+    "details": "Waifs & Strays → Waifs, Strays"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/W/Wez Whynt/Let Me Know - 9A - 122.mp3",
+    "reason": "multi_artist_split",
+    "details": "Wez Whynt Cleo Simone → Wez Whynt, Cleo Simone"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/W/Wez Whynt/We Move - 9A - 123.mp3",
+    "reason": "multi_artist_split",
+    "details": "Wez Whynt Hannah Khemoh → Wez Whynt, Hannah Khemoh"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/W/Wez Whynt & Hannah Khemoh/Together - 10A - 123.mp3",
+    "reason": "separator_normalized",
+    "details": "Wez Whynt x Hannah Khemoh → Wez Whynt, Hannah Khemoh"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/W/Wez Whynt Hannah Khemoh/We Move - 8A - 123.mp3",
+    "reason": "multi_artist_split",
+    "details": "Wez Whynt Hannah Khemoh → Wez Whynt, Hannah Khemoh"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/W/Winnie Khumalo Feat. Uhuru/Winnie Khumalo Feat. Uhuru Too Late (Original) - 2A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Winnie Khumalo Feat. Uhuru → Winnie Khumalo feat. Uhuru"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/X/XtetiQsoul/XtetiQsoul Breath (feat. AfriKayla) - 1A - 122.mp3",
+    "reason": "separator_normalized",
+    "details": "XtetiQsoul & Limpopo Rhythm → XtetiQsoul, Limpopo Rhythm"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/Y/Yam Who Suki Soul/Let's Go Dancin - 12A - 120.mp3",
+    "reason": "multi_artist_split",
+    "details": "Yam Who Suki Soul → Yam Who, Suki Soul"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/Y/Yass/Yass, FNX OMAR Fema - 8A - 123.mp3",
+    "reason": "separator_normalized",
+    "details": "Yass, FNX OMAR → Yass, Fnx Omar"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/Y/Yaw Appiah/Bekezela - 8A - 120.mp3",
+    "reason": "multi_artist_split",
+    "details": "Yaw Appiah Larion Zizo → Yaw Appiah, Larion Zizo"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/Y/Yola Araujo/Yola Araujo Com Todos Os Molhos (Bonus) - 9A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Yola Araujo Feat. Preto Show → Yola Araujo feat. Preto Show"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/Z/Zakes Bantwini/Zakes Bantwini Feat. Xolani Sithole Clap Your Hands (Club Mix) - 11A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "Zakes Bantwini Feat. Xolani Sithole → Zakes Bantwini feat. Xolani Sithole"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/Z/Zakes Bantwini/Zakes Bantwini Freedom (Pex Africah Remix) - 7A - 122.mp3",
+    "reason": "separator_normalized",
+    "details": "Zakes Bantwini Feat. Moonga K → Zakes Bantwini feat. Moonga K"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/Z/ZiPheko/ZiPheko Abafundisi (Bonus Track) (1) - 2A - 95.mp3",
+    "reason": "separator_normalized",
+    "details": "ZiPheko & Eminent Fam → ZiPheko, Eminent Fam"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/Z/ZiPheko/ZiPheko Abafundisi (Bonus Track) - 2A - 95.mp3",
+    "reason": "separator_normalized",
+    "details": "ZiPheko & Eminent Fam → ZiPheko, Eminent Fam"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/Z/Ziggy Funk Ft Taliwa/What You Afraid Of - 5A - 125.mp3",
+    "reason": "feat_normalized",
+    "details": "Ziggy Funk Ft Taliwa → Ziggy Funk feat. Taliwa"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/Z/Zo! & Muhsinah/2 Packing For Chicago - 8A - 124.mp3",
+    "reason": "separator_normalized",
+    "details": "Zo! & Muhsinah → Zo!, Muhsinah"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/Z/Zulu Mageba Sibongile Aqua/Oceans Apart - 8A - 120.mp3",
+    "reason": "multi_artist_split",
+    "details": "Zulu Mageba Sibongile Aqua → Zulu Mageba, Sibongile Aqua"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/2 Don't Let Go (Extended Mix).mp3",
+    "reason": "separator_normalized",
+    "details": "DJ Kent Feat. Mo T → DJ Kent feat. Mo T"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/3 Dimensions (Maphorisa n Clap Uhuru Mix).mp3",
+    "reason": "separator_normalized",
+    "details": "Black Motion Feat. Lando → Black Motion feat. Lando"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/3 Don't You Worry Child (Maphorisa Remix) (1).mp3",
+    "reason": "separator_normalized",
+    "details": "Swedish House Mafia Feat. John Martin → Swedish House Mafia feat. John Martin"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/3 Don't You Worry Child (Maphorisa Remix).mp3",
+    "reason": "separator_normalized",
+    "details": "Swedish House Mafia Feat. John Martin → Swedish House Mafia feat. John Martin"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/3 Le Ya Ntombi (Original).mp3",
+    "reason": "separator_normalized",
+    "details": "Uhuru Feat. Busiwa → Uhuru feat. Busiwa"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/3 Push Pull (Club Mix).mp3",
+    "reason": "casing_normalized",
+    "details": "OFFAIAH → Offaiah"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/3 Shilolo (Original).mp3",
+    "reason": "separator_normalized",
+    "details": "Uhuru Feat. Dj Micks & Tzozo → Uhuru feat. Dj Micks & Tzozo"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/3 Soba.mp3",
+    "reason": "separator_normalized",
+    "details": "Dj Malvado Jr. Feat. Renato Xtr/Dj Malvado Jr. Feat. Renato Xtr → Dj Malvado Jr. feat. Renato Xtr/Dj Malvado Jr. Feat. Renato Xtr"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/Amanzi (Tom Staar Remix).mp3",
+    "reason": "separator_normalized",
+    "details": "Sunnery James & Ryan Marciano/Heavy-K/Just Bheki → Sunnery James, Ryan Marciano/Heavy-K/Just Bheki"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/Chants From The Motherland (Timmy Regisford Edit).mp3",
+    "reason": "separator_normalized",
+    "details": "KOD x Afro Wav → KOD, Afro Wav"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/En la Quinta.mp3",
+    "reason": "multi_artist_split",
+    "details": "Angel Doza Cristofer Laroye → Angel Doza, Cristofer Laroye"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/Get Down (Kenny Dope Dub).mp3",
+    "reason": "multi_artist_split",
+    "details": "Todd Terry All Stars → Todd Terry, All Stars"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/Horizon Red (Black Coffee Remix).mp3",
+    "reason": "separator_normalized",
+    "details": "Made By Pete x Zoe Kypri → Made By Pete, Zoe Kypri"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/I Don't Wanna Run.mp3",
+    "reason": "casing_normalized",
+    "details": "D.O.D/RIELL → D.o.d/riell"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/I Got Love.mp3",
+    "reason": "separator_normalized",
+    "details": "TradeMark Feat. Heizel Tee → TradeMark feat. Heizel Tee"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/King Of The Dancefloor (Micky More & Andy Tee Radio Edit).mp3",
+    "reason": "separator_normalized",
+    "details": "Papik/The Soultrend Orchestra/Micky More & Andy Tee → Papik/The Soultrend Orchestra/Micky More, Andy Tee"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/Maracaya.mp3",
+    "reason": "casing_normalized",
+    "details": "ODASOUL → Odasoul"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/Music Is The Cure.mp3",
+    "reason": "separator_normalized",
+    "details": "Cee ElAssaad x Lee Wilson → Cee ElAssaad, Lee Wilson"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/Summer Thing (Kryder Remix).mp3",
+    "reason": "separator_normalized",
+    "details": "Dragonette/Sunnery James & Ryan Marciano/Cat Dealers/Bruno Martini → Dragonette/Sunnery James, Ryan Marciano/Cat Dealers/Bruno Martini"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/That Piano.mp3",
+    "reason": "separator_normalized",
+    "details": "Dario D’attis → Dario D'attis"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/_compilations/This Chord (Original Mix).mp3",
+    "reason": "separator_normalized",
+    "details": "Dario D’attis → Dario D'attis"
+  }
+]

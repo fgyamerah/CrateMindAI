@@ -1,0 +1,22 @@
+[
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/2point1/2Point1 Don't Say (1) - 8A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "2Point1 Feat. DJ Tira, NaakMusiQ & DeLASoundz → 2Point1 feat. DJ Tira, NaakMusiQ & DeLASoundz"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/#/2point1/2Point1 Don't Say - 8A - 125.mp3",
+    "reason": "separator_normalized",
+    "details": "2Point1 Feat. DJ Tira, NaakMusiQ & DeLASoundz → 2Point1 feat. DJ Tira, NaakMusiQ & DeLASoundz"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/Henrik Schwarz/Henrik Schwarz - I Exist Because of You (Henrik Schwarz live version) - 6A - 121.mp3",
+    "reason": "separator_normalized",
+    "details": "Henrik Schwarz and Amampondo → Henrik Schwarz, Amampondo"
+  },
+  {
+    "path": "/mnt/music_ssd/KKDJ/sorted/$first/VA/VA - Home Is Where The Hatred Is - Ken@Work Mix - 9A - 100.mp3",
+    "reason": "nested_split",
+    "details": "Bossa Nostra, Vicki Anderson & Ken@Work → Bossa Nostra, Vicki Anderson, Ken@Work"
+  }
+]

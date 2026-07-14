@@ -1,0 +1,33 @@
+# known_labels.txt — DJ Toolkit label blocklist
+#
+# One label name per line (case-insensitive).
+# Lines starting with # are comments and are ignored.
+# Add label names that would otherwise slip through the automatic detection
+# (e.g. labels whose names contain no common label keywords).
+#
+# Usage:
+#   - The parser loads this file once and caches it for the process lifetime.
+#   - A match here gives score=-10 and immediately classifies as "label".
+#   - To override the file path, set KNOWN_LABELS_FILE in config.py.
+#
+# Examples of labels worth adding (uncomment or add your own):
+#
+# bedrock records
+# ministry of sound
+# fabric
+# renaissance
+# cocoon recordings
+# hypnotic records
+# underground resistance
+# soma quality recordings
+# yoshitoshi recordings
+# drumcode
+# hot creations
+# elrow music
+# trick
+# suara
+# noir music
+# kms records
+# strictly rhythm
+# mcs
+# hospital records

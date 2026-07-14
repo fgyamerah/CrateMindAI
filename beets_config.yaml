@@ -1,0 +1,119 @@
+# =============================================================================
+# Beets configuration for DJ Toolkit
+#
+# Install this file at: ~/.config/beets/config.yaml
+# Or point to it via: beet --config /path/to/this/file
+#
+# Key principles:
+#   - Non-interactive (timid: no, quiet: yes)
+#   - Does NOT write BPM or key (pipeline writes those after analysis)
+#   - Fetches artwork and genre automatically
+#   - Moves files to /music/library/sorted/<letter>/<artist>/
+# =============================================================================
+
+# Where beets keeps its own database (separate from our SQLite log)
+library: /music/beets_library.db
+
+# Where to put organized files
+directory: /music/library/sorted
+
+# ---------------------------------------------------------------------------
+# Import settings
+# ---------------------------------------------------------------------------
+import:
+  # Move files (not copy) — we don't want duplicates
+  move: yes
+  copy: no
+  # Write tags that beets fetches (artist, title, genre, album art)
+  write: yes
+  # Non-interactive — never prompt
+  timid: no
+  quiet: yes
+  # Log file for beets import activity
+  log: /music/logs/beets_import.log
+  # Don't group multiple files as an album — treat each file independently
+  singletons: yes
+  group_albums: no
+  # If MusicBrainz match score is below this, move to _unsorted instead
+  # of guessing wrong. 0.9 = 90% confidence required.
+  detail: yes
+
+# ---------------------------------------------------------------------------
+# File naming (matches our pipeline's convention)
+# ---------------------------------------------------------------------------
+paths:
+  # Singleton tracks: sorted by first letter → artist folder
+  singleton: $first/$albumartist/$albumartist - $title
+  # Default fallback
+  default: $first/$albumartist/$albumartist - $title
+
+# Custom template function: first letter of album artist, uppercase
+# beets has built-in %upper{} and %left{} — combine them:
+# Example: "Artist Name" → "A"
+
+# ---------------------------------------------------------------------------
+# Plugins
+# ---------------------------------------------------------------------------
+plugins:
+  - fetchart      # download album artwork
+  - lastgenre     # fetch genre from Last.fm
+  - duplicates    # detect duplicates within beets library
+  - scrub         # clean junk tags before writing
+  - zero          # zero out specified fields
+
+# ---------------------------------------------------------------------------
+# Artwork
+# ---------------------------------------------------------------------------
+fetchart:
+  auto: yes
+  # Embed artwork directly in audio file
+  store_source: yes
+  # Maximum artwork size in bytes (5MB)
+  maxwidth: 500
+  # Sources to try, in order
+  sources:
+    - filesystem
+    - coverart
+    - itunes
+    - amazon
+    - wikipedia
+
+# ---------------------------------------------------------------------------
+# Genre (from Last.fm)
+# ---------------------------------------------------------------------------
+lastgenre:
+  auto: yes
+  # Only keep the top genre (cleaner for DJ use)
+  count: 1
+  # Prefer these genres when available
+  prefer_specific: yes
+  # Minimum number of Last.fm tags before accepting genre
+  min_weight: 10
+
+# ---------------------------------------------------------------------------
+# Scrub junk tags before writing clean ones
+# ---------------------------------------------------------------------------
+scrub:
+  auto: yes
+
+# ---------------------------------------------------------------------------
+# Zero out fields we don't want pre-filled
+# (We'll write comment/key/bpm ourselves after analysis)
+# ---------------------------------------------------------------------------
+zero:
+  fields:
+    - comments    # we write this ourselves with BPM/key summary
+  # Don't zero out: title, artist, genre, albumartist
+
+# ---------------------------------------------------------------------------
+# DO NOT let beets write BPM or key
+# We handle these ourselves in the pipeline after aubio + keyfinder-cli
+# ---------------------------------------------------------------------------
+# (beets doesn't write TBPM/TKEY by default — this is just documentation)
+
+# ---------------------------------------------------------------------------
+# UI (non-interactive mode)
+# ---------------------------------------------------------------------------
+ui:
+  color: no
+  terminal_width: 120

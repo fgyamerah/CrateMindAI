@@ -1,0 +1,35 @@
+{
+  "command": "ai-normalize",
+  "input_path": "/home/koolkatdj/Music/music/library/sorted",
+  "limit": 20,
+  "started_at": "2026-04-21T15:26:52.076323",
+  "finished_at": "2026-04-21T15:28:22.737746",
+  "duration_sec": 90.661423,
+  "files_scanned": 20,
+  "files_processed": 20,
+  "applied": true,
+  "results": {
+    "changed": 0,
+    "unchanged": 17,
+    "skipped": 3,
+    "errors": 0
+  },
+  "ai": {
+    "valid_responses": 17,
+    "guard_rejections": 2
+  },
+  "quality": {
+    "high_confidence": 17
+  },
+  "sanitize": {
+    "sanitize_clean": 20
+  },
+  "review_count": 0,
+  "moved_to_ignored": 0,
+  "exit_code": 0,
+  "detail_files": {
+    "skipped": [
+      "20260421_152652_ai-normalize_skipped_001.json"
+    ]
+  }
+}

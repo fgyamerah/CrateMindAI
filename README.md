@@ -1,1 +1,698 @@
-# Here are your Instructions
+# CrateMindAI
+
+[![Status](https://img.shields.io/badge/status-active-green)](#current-platform-status)
+[![Backend](https://img.shields.io/badge/backend-FastAPI-009688)](#backend-api)
+[![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20Vite-646cff)](#frontend-dashboard)
+[![Safety](https://img.shields.io/badge/safety-dry--run%20first-blue)](#safety-model)
+[![Mode](https://img.shields.io/badge/mode-review--first-informational)](#core-philosophy)
+
+CrateMindAI is a local-first DJ library operations platform for building and maintaining a clean, auditable, Rekordbox-ready music library.
+
+It is built around deterministic automation, explicit review queues, and conservative metadata ownership. It helps inspect, normalize, reconcile, and enrich a DJ library without handing control of musical analysis or performance-critical data to unstable automation.
+
+CrateMindAI is not a Rekordbox replacement. It is an operational layer around a DJ library: it prepares, audits, reviews, and organizes metadata so Rekordbox and Mixed In Key can remain the source of truth for DJ performance workflows.
+
+## Overview
+
+CrateMindAI started as a pipeline for cleaning messy downloaded audio files and evolved into a broader library control system:
+
+- A canonical SQLite `tracks` table representing the current library state.
+- A historical `processed_state` table used for stage tracking, audit, and provenance.
+- Deterministic local metadata extraction from existing audio tags.
+- Conservative filename parsing with confidence scoring.
+- Online enrichment candidate scoring without automatic metadata application.
+- Human review state for enrichment decisions.
+- A root-aware read-first backend API.
+- A dense operational frontend dashboard for browsing tracks, issues, folders, audit reports, and enrichment queues.
+
+The platform is designed for large libraries where accidental writes, metadata churn, and path drift are more dangerous than missing a single enrichment opportunity.
+
+## Core Philosophy
+
+CrateMindAI follows a review-first operating model:
+
+- Deterministic operations before AI or online lookup.
+- Local data before external providers.
+- Dry-run by default for write-capable commands.
+- Apply mode requires explicit confirmation with `--apply --yes`.
+- No silent tag writes.
+- No silent file moves.
+- No silent database mutation.
+- Current-state data and historical/audit data are separated.
+- Human review is required before applying enrichment metadata.
+
+Metadata ownership is explicit:
+
+- `tracks` owns CrateMindAI's canonical current-state library record.
+- `processed_state` owns historical processing and incremental stage audit.
+- Mixed In Key and Rekordbox own BPM, key, beatgrid, cue, and performance preparation data.
+- CrateMindAI must not overwrite BPM, key, cues, beatgrids, or other performance-critical DJ data.
+
+The project prefers a safe skip over a confident-looking wrong update.
+
+## Architecture
+
+CrateMindAI is organized as a local pipeline plus an operational app.
+
+```text
+Audio files / DJ library root
+        |
+        v
+pipeline.py commands
+        |
+        +-- path audit and path planning
+        +-- tracks table build/update helpers
+        +-- local metadata extraction
+        +-- deterministic filename parsing
+        +-- metadata scoring and enrichment review
+        |
+        v
+logs/processed.db
+        |
+        +-- tracks           canonical current-state table
+        +-- processed_state  stage history and audit trail
+        |
+        v
+FastAPI backend
+        |
+        v
+React/Vite dashboard
+```
+
+The backend reads from the selected library root. The frontend uses the backend API and does not directly mutate files or databases.
+
+Important roots and artifacts:
+
+- `<root>/logs/processed.db`
+- `<root>/logs/path_audit/`
+- `<root>/logs/path_reconcile/`
+- `<root>/logs/metadata_extract/`
+- `<root>/logs/enrichment/`
+- `<root>/data/intelligence/enrichment_review_queue.jsonl`
+- `<root>/data/intelligence/enrichment_review_state.json`
+
+## Current Platform Status
+
+| Phase | Status |
+|---|---|
+| Phase 1 | Complete |
+| Phase 2 | Complete |
+| Phase 3 | Stable with legacy organizer caveat |
+| Phase 4 | Complete |
+| Phase 5 | Complete |
+| Phase 6 | Complete |
+| Phase 7 | Not started |
+| Phase 8 | Complete |
+
+Phase 3 is stable for the current canonical path/database work, with one caveat: `modules/organizer.py` is legacy/deprecated and should not be treated as the forward path for new organization behavior.
+
+## Major Features
+
+- Root-aware pipeline and backend operation.
+- Canonical `tracks` table for current library state.
+- `processed_state` history for incremental stage tracking and audit.
+- Read-only path audit reports.
+- Dry-run path reconciliation planning.
+- Local metadata extraction from existing audio tags.
+- Deterministic filename fallback parsing with confidence levels.
+- Enrichment candidate queue and review state.
+- Controlled DB-only enrichment apply for approved high-confidence rows.
+- FastAPI backend over safe library data.
+- React/Vite operational dashboard.
+- Track filtering, issue grouping, folder stats, audit viewer, enrichment moderation.
+- Large-library performance hardening with API caps, DB indexes, request timing, queue caching, debounced search, persisted UI state, and virtualized table rendering.
+
+## Path Audit System
+
+The path audit system checks whether the database and filesystem still agree.
+
+It is read-only. It does not move files, delete rows, write tags, or reconcile paths automatically.
+
+Typical output lives under:
+
+```text
+<root>/logs/path_audit/
+```
+
+The audit system can identify:
+
+- Files referenced by `tracks` that are missing on disk.
+- Audio files present on disk but not tracked.
+- Stale `processed_state` records.
+- Candidate path mismatches.
+- Canonical-source summary data used by the backend stats endpoint.
+
+The backend exposes the latest audit through:
+
+```text
+GET /api/audit/latest
+GET /api/stats
+```
+
+## Path Reconciliation
+
+Path reconciliation is intentionally separate from path audit.
+
+Audit answers: what is inconsistent?
+
+Reconciliation answers: what would be safe to fix?
+
+Current reconciliation behavior is planning-first. It should not be treated as a blind repair tool. Any write-capable reconciliation path must be explicit and narrowly scoped.
+
+CrateMindAI does not currently perform broad automatic path reconciliation in the frontend.
+
+## Canonical Tracks Database
+
+The `tracks` table is the canonical current-state table.
+
+It represents what CrateMindAI currently believes is in the active library. Backend track browsing, issue counts, folder stats, overview stats, metadata extraction, and enrichment apply all operate against `tracks`.
+
+`processed_state` is not the canonical current-state table. It is history and audit:
+
+- Which pipeline stages saw which paths.
+- File size and mtime fingerprints.
+- Stage-level processing status.
+- Incremental-run skip tracking.
+
+This distinction matters. Current UI and API views should prefer `tracks`; historical diagnosis should inspect `processed_state`.
+
+## Metadata Extraction
+
+Local metadata extraction populates missing `tracks` fields from metadata already present in audio files.
+
+Command:
+
+```bash
+python3 pipeline.py extract-track-metadata --root <root>
+```
+
+Dry-run is the default. Apply mode requires:
+
+```bash
+python3 pipeline.py extract-track-metadata --root <root> --apply --yes
+```
+
+Extraction is local and deterministic:
+
+- No online providers.
+- No AI.
+- No tag writes.
+- No audio file changes.
+- DB-only updates when applied.
+
+Fields considered when available:
+
+- `artist`
+- `title`
+- `album`
+- `genre`
+- `bpm`
+- `key_musical`
+- `duration_sec`
+- `bitrate_kbps`
+
+Existing non-empty fields are preserved. BPM and key fields are especially conservative because Mixed In Key and Rekordbox own musical analysis data.
+
+Logs are written under:
+
+```text
+<root>/logs/metadata_extract/
+```
+
+## Deterministic Filename Parsing
+
+Filename parsing is a fallback only. Embedded tags win when valid.
+
+The parser handles common DJ-library filename patterns such as:
+
+- `Artist - Title`
+- featured artist text such as `feat.`
+- remix/version suffixes like `(Original Mix)`
+- malformed but recoverable separators
+- suffix junk such as trailing `-Gold`
+
+The parser assigns:
+
+- `HIGH`
+- `MEDIUM`
+- `LOW`
+
+Fallback extraction applies only when confidence is at least `MEDIUM`. Weak parses are rejected safely rather than inventing metadata.
+
+Examples:
+
+```text
+C Minor - Kunapendeza feat. Alai K.mp3
+artist: C Minor
+title:  Kunapendeza feat. Alai K
+```
+
+```text
+Javier Mio - Ampreiah (Original Mix).aif
+artist: Javier Mio
+title:  Ampreiah (Original Mix)
+```
+
+Malformed examples such as long descriptive strings without a reliable artist/title separator are intentionally rejected.
+
+## Metadata Scoring And Review Workflow
+
+CrateMindAI can score enrichment candidates and place them into a review workflow.
+
+The key principle: candidate scoring is not the same as metadata application.
+
+Review artifacts:
+
+```text
+<root>/data/intelligence/enrichment_review_queue.jsonl
+<root>/data/intelligence/enrichment_review_state.json
+```
+
+Review states:
+
+- `pending`
+- `approved`
+- `rejected`
+- `deferred`
+
+Approved review rows can later be applied in a controlled DB-only step:
+
+```bash
+python3 pipeline.py enrichment-apply-approved --root <root>
+```
+
+Dry-run is the default. Apply mode requires:
+
+```bash
+python3 pipeline.py enrichment-apply-approved --root <root> --apply --yes
+```
+
+Controlled apply rules:
+
+- Only approved review-state items.
+- Only `HIGH` confidence.
+- Only update `tracks`.
+- Only allowed fields: `artist`, `title`, `album`, and optional `label` / `isrc` when columns exist.
+- Never update BPM.
+- Never update key.
+- Never update cues.
+- Never write tags.
+- Never modify audio files.
+- Never rename files.
+
+Apply logs are written under:
+
+```text
+<root>/logs/enrichment/
+```
+
+## Backend API
+
+The backend is a FastAPI app exposing the selected library root through controlled endpoints.
+
+The selected root can be configured with:
+
+```bash
+export CRATEMINDAI_LIBRARY_ROOT=/path/to/library
+```
+
+Representative endpoints:
+
+```text
+GET  /api/health
+GET  /api/stats
+GET  /api/tracks
+GET  /api/tracks/{id}
+GET  /api/tracks/issues
+GET  /api/library/folders
+GET  /api/library/overview
+GET  /api/enrichment/queue
+GET  /api/enrichment/review/state
+GET  /api/enrichment/review/export
+GET  /api/enrichment/review/summary
+POST /api/enrichment/review/{track_id}/approve
+POST /api/enrichment/review/{track_id}/reject
+POST /api/enrichment/review/{track_id}/defer
+POST /api/enrichment/apply-approved/dry-run
+POST /api/enrichment/apply-approved/apply?confirm=true
+GET  /api/audit/latest
+```
+
+Backend safety rules:
+
+- Root containment is enforced.
+- Track browsing is read-only.
+- Audit and overview endpoints do not perform expensive automatic filesystem scans.
+- Enrichment review endpoints write only queue review state.
+- Apply-approved endpoint writes only approved metadata fields to `tracks`.
+- Apply endpoint requires explicit `confirm=true`.
+
+## Frontend Dashboard
+
+The frontend is a React/Vite operational dashboard for CrateMindAI.
+
+It is intentionally dense and work-focused, not a marketing UI.
+
+Supported routes:
+
+| Route | Workflow |
+|---|---|
+| `/` | Command-center home: readiness, health, pending reviews, next action |
+| `/library` | Library workspace and track browsing |
+| `/quality` | Library quality summary |
+| `/issues` | Track issue review |
+| `/enrichment` | Enrichment queue review |
+| `/metadata-repair` | Deterministic metadata repair review |
+| `/metadata-sanitation` | Metadata sanitation review |
+| `/bpm-review` | BPM anomaly scan and review |
+| `/audit` | Latest path/library audit |
+| `/folders` | Folder-level library view |
+| `/jobs` | Allowlisted pipeline job submission and monitoring |
+| `/set-builder` | Set generation and saved set review |
+| `/exports` | Export validation and Rekordbox export jobs |
+| `/sync` | SSD sync preview and controlled execution |
+| `/reconciliation` | Read-only reconciliation ledger and plan validation |
+
+Legacy or incomplete page implementations remain in `frontend/src/pages/` for
+reference but are intentionally hidden. `/dashboard` and `/settings` redirect
+to `/`; `/collection` and `/tracks` redirect to `/library`; the singular
+`/export` and `/ssd-sync` aliases redirect to their supported routes.
+`Collection.tsx` includes unfinished controls, `Settings.tsx` is a placeholder,
+and `Dashboard.tsx`/`Tracks.tsx` duplicate the current library and operations
+surfaces.
+
+Core dashboard capabilities:
+
+- Track table with pagination, sorting, issue badges, search, and selection.
+- Selected track inspector.
+- Issue count page with clickable filters.
+- Folder statistics from DB paths only.
+- Overview cards for totals, BPM coverage, key coverage, missing metadata, parse confidence, and genre counts.
+- Enrichment queue moderation with approve/reject/defer.
+- Review summary and export.
+- Apply-approved dry-run preview and controlled apply button.
+
+The frontend is not allowed to write audio tags or modify files.
+
+## Performance Features
+
+Phase 8 added large-library hardening:
+
+- DB indexes for `artist`, `title`, `genre`, `bpm`, and `parse_confidence`.
+- `/api/tracks` SQL paging with `LIMIT` and `OFFSET`.
+- Limit cap protection for track listing.
+- SQL-backed filtering for common issue filters.
+- Lightweight request timing logs and `X-Process-Time-Ms`.
+- Safe mtime/size-based cache for enrichment queue JSONL reads.
+- Debounced frontend search.
+- Persisted UI state for filters, selected section, pagination, sort, queue filters, and selected track.
+- Virtualized track table rendering.
+- Loading skeletons/spinners and API error banners.
+
+The goal is not to hide large-library complexity. The goal is to keep browsing and review responsive while preserving explicit operational control.
+
+## Safety Model
+
+CrateMindAI's safety model is built around explicit intent.
+
+Default behavior:
+
+```bash
+python3 pipeline.py some-command --root <root>
+```
+
+Write behavior:
+
+```bash
+python3 pipeline.py some-command --root <root> --apply --yes
+```
+
+Safety guarantees by design:
+
+- Dry-run by default for write-capable commands.
+- Write operations require `--apply --yes`.
+- Backend write endpoints are narrow and explicit.
+- No metadata/tag/file writes from read-only pages.
+- No online lookup in local extraction.
+- No AI in deterministic parsing.
+- No automatic BPM/key/cue overwrite.
+- No broad reconciliation from the dashboard.
+
+BPM, key, beatgrid, and cues are performance data. They should be owned by Mixed In Key and Rekordbox, not overwritten by CrateMindAI automation.
+
+## Repository Structure
+
+Representative structure:
+
+```text
+.
+├── backend/
+│   └── app/
+│       ├── api/routes/
+│       ├── core/
+│       ├── models/
+│       ├── schemas/
+│       └── services/
+├── frontend/
+│   ├── src/
+│   │   ├── api/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   └── types/
+│   └── package.json
+├── modules/
+│   ├── filename_parse.py
+│   ├── enrichment_apply.py
+│   ├── metadata_enrich_online.py
+│   └── organizer.py
+├── tests/
+├── db.py
+├── pipeline.py
+└── README.md
+```
+
+Notes:
+
+- `pipeline.py` is the CLI entrypoint.
+- [COMMANDS.md](COMMANDS.md) is the canonical CrateMindAI CLI command reference.
+- [Legacy DJ Toolkit commands](docs/operations/LEGACY_DJ_TOOLKIT_COMMANDS.md)
+  are preserved for historical context only.
+- `db.py` owns the core SQLite schema helpers.
+- `backend/app/` owns the FastAPI backend.
+- `frontend/src/pages/CrateMind.tsx` owns the current dashboard workspace.
+- `modules/organizer.py` is legacy/deprecated and should not be used as the foundation for new canonical organization behavior.
+
+## Installation
+
+Requirements vary by workflow, but the common local setup is:
+
+- Python 3.10+
+- Node.js and npm for the frontend
+- SQLite
+- Audio tooling as needed for analysis/extraction workflows
+- Optional local AI tooling only for AI-specific phases
+
+Python setup:
+
+```bash
+python3 --version  # must be Python 3.10 or newer
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m pip install -r backend/requirements.txt
+```
+
+Frontend setup:
+
+```bash
+npm --prefix frontend install
+npm --prefix frontend run typecheck
+npm --prefix frontend run build
+```
+
+Configure the active library root:
+
+```bash
+export CRATEMINDAI_LIBRARY_ROOT=/path/to/library
+```
+
+## Running Backend/Frontend
+
+Run the backend from the repository root:
+
+```bash
+source .venv/bin/activate
+python -m uvicorn backend.app.main:app --reload --port 8000 --app-dir .
+```
+
+Run the frontend:
+
+```bash
+npm --prefix frontend run dev
+```
+
+Typical local URLs:
+
+```text
+Backend:  http://127.0.0.1:8000
+Frontend: http://127.0.0.1:5173
+```
+
+Health check:
+
+```bash
+curl http://127.0.0.1:8000/api/health
+```
+
+### Managed preview environment (supervisor)
+
+In the hosted preview environment the services are supervisor-managed:
+
+- backend: `uvicorn server:app --port 8001` from `backend/` (the
+  `backend/server.py` shim loads `backend/.env` and re-exports
+  `backend.app.main:app`)
+- frontend: `yarn start` (Vite on port 3000, `/api` proxied to 8001)
+- library root, sync source, and sync destination come from `backend/.env`
+  (`CRATEMINDAI_LIBRARY_ROOT`, `DJ_MUSIC_ROOT`, `CRATEMINDAI_SYNC_SOURCE_*`,
+  `CRATEMINDAI_SYNC_DEST`)
+
+A deterministic development fixture library (no real music) can be created
+with:
+
+```bash
+python3 scripts/seed_fixture_library.py --root /app/fixture_library --force
+```
+
+Runtime readiness can be verified at `GET /api/runtime/preflight`.
+
+## Example Workflows
+
+Audit current path state:
+
+```bash
+python3 pipeline.py path-audit --root /path/to/library
+```
+
+Build or refresh canonical tracks:
+
+```bash
+python3 pipeline.py build-tracks --root /path/to/library
+```
+
+Extract local metadata in dry-run mode:
+
+```bash
+python3 pipeline.py extract-track-metadata --root /path/to/library
+```
+
+Apply local metadata extraction:
+
+```bash
+python3 pipeline.py extract-track-metadata --root /path/to/library --apply --yes
+```
+
+Inspect enrichment review queue:
+
+```bash
+python3 pipeline.py enrichment-review --root /path/to/library
+```
+
+Dry-run approved enrichment apply:
+
+```bash
+python3 pipeline.py enrichment-apply-approved --root /path/to/library
+```
+
+Apply approved enrichment metadata to `tracks` only:
+
+```bash
+python3 pipeline.py enrichment-apply-approved --root /path/to/library --apply --yes
+```
+
+Open operational dashboard:
+
+```bash
+export CRATEMINDAI_LIBRARY_ROOT=/path/to/library
+source .venv/bin/activate
+python -m uvicorn backend.app.main:app --reload --port 8000 --app-dir .
+npm --prefix frontend run dev
+```
+
+## Testing
+
+Install Python test dependencies in an activated virtual environment:
+
+```bash
+python3 --version  # must be Python 3.10 or newer
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-dev.txt
+```
+
+Run the backend/pipeline test suite:
+
+```bash
+python -m pytest -q
+```
+
+`requirements-dev.txt` includes pipeline dependencies, backend dependencies,
+pytest, FastAPI TestClient support, and a binary-wheel compatibility constraint
+for librosa's numba/llvmlite chain. The test suite automatically assigns both
+`DJ_MUSIC_ROOT` and `CRATEMINDAI_LIBRARY_ROOT` to a temporary directory; no
+local music-library path is required and tests do not write under `/music`.
+
+Run frontend verification:
+
+```bash
+npm --prefix frontend install
+npm --prefix frontend run typecheck
+npm --prefix frontend run build
+```
+
+Common combined check:
+
+```bash
+python -m pytest -q
+npm --prefix frontend run typecheck
+npm --prefix frontend run build
+```
+
+There is currently no frontend unit-test script; TypeScript and the production
+Vite build are the frontend checks.
+
+## Known Limitations
+
+- CrateMindAI is not a Rekordbox replacement.
+- CrateMindAI does not own BPM, key, beatgrid, or cue authoring.
+- Phase 7 apply implementation has not started; a planning specification exists.
+- Path reconciliation is not a broad automatic repair system.
+- Online enrichment is candidate scoring plus review workflow, not blind metadata overwrite.
+- Some legacy modules remain in the repository for compatibility and historical context.
+- `modules/organizer.py` is legacy/deprecated.
+- Legacy frontend pages are retained but hidden as described in the supported route table.
+- There is no authentication; run the app only in a trusted local environment.
+- Runtime paths and external tool availability still depend heavily on environment configuration.
+- The generic Jobs page is constrained by backend allowlists but does not explain every command's individual safety semantics.
+- Production frontend dependencies audit clean; development tooling still has advisories whose npm-proposed fix requires a Vite major upgrade.
+- The backend suite passes but currently emits one FastAPI/Starlette TestClient deprecation warning about the future HTTP client transition.
+- The frontend dashboard is operational but is not intended to replace CLI control for every pipeline operation.
+- External provider data may be incomplete or wrong, which is why review state exists.
+
+The recommended next stabilization task is a reproducible local-runtime preflight:
+add a non-secret environment template, validate required paths/tools at startup,
+and add smoke tests for the supported frontend/API route contract.
+
+## Long-Term Vision
+
+CrateMindAI's long-term direction is a full DJ library operations console:
+
+- Canonical current-state tracking.
+- Auditable history and change plans.
+- Safe reconciliation workflows.
+- Human-approved metadata enrichment.
+- Library health dashboards.
+- Provider-independent metadata scoring.
+- Rekordbox/Mixed In Key respecting workflows.
+- Repeatable operations for large, evolving DJ collections.
+
+The destination is not autonomous metadata control. The destination is reliable operational confidence: every file, path, metadata field, and enrichment decision should be explainable, reviewable, and reversible where possible.

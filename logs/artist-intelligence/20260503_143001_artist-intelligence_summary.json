@@ -1,0 +1,25 @@
+{
+  "command": "artist-intelligence",
+  "input_path": "/mnt/music_ssd/KKDJ/sorted/B",
+  "limit": null,
+  "started_at": "2026-05-03T14:30:01.261076",
+  "finished_at": "2026-05-03T14:30:07.268514",
+  "duration_sec": 6.007438,
+  "files_scanned": 619,
+  "files_processed": 619,
+  "applied": true,
+  "results": {
+    "changed": 0,
+    "unchanged": 611,
+    "skipped": 0,
+    "errors": 0
+  },
+  "review_count": 8,
+  "moved_to_ignored": 0,
+  "exit_code": 0,
+  "detail_files": {
+    "skipped": [
+      "20260503_143001_artist-intelligence_skipped_001.json"
+    ]
+  }
+}
