@@ -149,3 +149,18 @@ djtoolkit_label_intelligence_feature/
 
 # Local service files if not meant for repo
 systemd/
+*.env
+credentials.json
+*.pem
+*.key
+.credentials
+
+# =========================
+# LOCAL DEV FIXTURES (never commit)
+# =========================
+/fixture_library/
+/fixture_ssd/
+*.db-shm
+*.db-wal
+backend/data/
+.pytest_cache/

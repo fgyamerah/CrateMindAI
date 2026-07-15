@@ -33,10 +33,14 @@ CURRENT FOCUS
 [x] (P1) Phase A+B: runtime preflight, fixture seeder, design system,
          responsive shell, consolidated navigation, command-center Home
          (2026-07-14). 862 backend tests pass; frontend typecheck/build pass.
-[ ] (P1) Phase C: library workspace refactor — break up CrateMind.tsx,
-         virtualized table, URL filter state, saved views, keyboard nav.
-[ ] (P1) Phase D: unified Fix & Review center — consolidate repair/sanitation/
-         enrichment/BPM queues with common lifecycle labels and safe bulk review.
+[x] (P1) Phase C: library workspace refactor — dedicated /library workspace
+         with virtualized table, URL filter state, saved views, column
+         manager, inspector, keyboard nav, mobile card list (2026-07-15).
+         877 backend tests pass; 26 frontend unit tests; build passes.
+[ ] (P1) Phase D (NOT STARTED): unified Fix & Review center — consolidate repair/
+         sanitation/enrichment/BPM queues with common lifecycle labels and safe
+         bulk review. Also split remaining CrateMind.tsx sections
+         (/issues,/enrichment,/audit,/folders) into the new architecture.
 [ ] (P2) Phase E: Sets improvements + guided Publish (export readiness → dry-run
          → export → sync preview → sync → verify).
 [ ] (P2) Phase F: duplicates review API/UI (quarantine-first), orphan-scan

@@ -26,6 +26,11 @@ _SORT_COLUMNS = {
     "bpm":          "bpm",
     "processed_at": "processed_at",
     "filename":     "LOWER(filename)",
+    "genre":        "LOWER(COALESCE(genre, ''))",
+    "key":          "LOWER(COALESCE(key_camelot, ''))",
+    "duration":     "duration_sec",
+    "bitrate":      "bitrate_kbps",
+    "status":       "status",
 }
 _DEFAULT_SORT = "artist"
 _KNOWN_ISSUES = {
@@ -122,6 +127,7 @@ def list_tracks(
     bpm_min: Optional[float] = None,
     bpm_max: Optional[float] = None,
     has_key: Optional[bool] = None,
+    has_bpm: Optional[bool] = None,
     issue: Optional[str] = None,
     parse_confidence: Optional[str] = None,
     sort: str = _DEFAULT_SORT,
@@ -204,6 +210,11 @@ def list_tracks(
         where_clauses.append(
             "(TRIM(COALESCE(key_camelot,'')) = '' AND TRIM(COALESCE(key_musical,'')) = '')"
         )
+
+    if has_bpm is True:
+        where_clauses.append("bpm IS NOT NULL")
+    elif has_bpm is False:
+        where_clauses.append("bpm IS NULL")
 
     issue_clause = _issue_sql_clause(issue)
     post_filter_issue = issue if issue and issue.strip().lower() in _POST_FILTER_ISSUES else None

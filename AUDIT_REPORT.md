@@ -1,5 +1,14 @@
 # CrateMindAI Audit Report
 
+> Post-audit update (2026-07-15): Phases A–C of the product redesign are
+> implemented (see CHANGELOG.txt). A runtime preflight API, design-token
+> system, responsive shell, command-center Home, and the new `/library`
+> workspace (virtualized table, URL-backed filters, saved views, inspector,
+> keyboard navigation) are in place. `python -m pytest -q` passes 877 tests;
+> frontend typecheck, 26 Vitest unit tests, and the production build pass.
+> Phase D (unified Fix & Review) has NOT started. Findings below otherwise
+> describe the original point-in-time audit.
+
 > Post-audit update (2026-07-02): frontend route/navigation consolidation is
 > complete. Supported operational pages are mounted, legacy/placeholder pages
 > redirect safely, and `npm install`, typecheck, and the production build now

@@ -6,6 +6,15 @@
 
 ## Latest Milestone
 
+- Phase C library workspace completed 2026-07-15 (see CHANGELOG.txt):
+  `/library` is a dedicated workspace (frontend/src/pages/library/) with a
+  virtualized track table, URL-backed sanitized filters, saved views
+  (definitions in localStorage only), column manager, track inspector
+  (side panel ≥1280px, drawer below), keyboard navigation, and a phone
+  card list. GET /api/tracks gained has_bpm/key/folder filters and
+  genre/key/duration/bitrate/status sorts. Phase D (unified Fix & Review)
+  NOT started; /issues,/enrichment,/audit,/folders still served by
+  CrateMind.tsx.
 - Phase A+B redesign foundation completed on 2026-07-14 (see CHANGELOG.txt):
   runtime preflight API (`GET /api/runtime/preflight`), env-overridable sync
   paths, deterministic fixture-library seeder

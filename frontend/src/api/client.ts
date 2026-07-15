@@ -80,8 +80,8 @@ async function request<T>(
 // ---------------------------------------------------------------------------
 
 export const apiFetch = {
-  get<T>(path: string): Promise<T> {
-    return request<T>(path)
+  get<T>(path: string, init: RequestInit = {}): Promise<T> {
+    return request<T>(path, init)
   },
 
   post<T>(path: string, body: unknown): Promise<T> {

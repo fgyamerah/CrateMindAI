@@ -2,6 +2,56 @@
 DJTOOLKIT — CHANGELOG
 ======================================================================
 
+[2026-07-15] — Phase C: library workspace refactor
+----------------------------------------------------------------------
+TYPE: Frontend workspace rebuild + additive backend filters. Phase D NOT started.
+SUMMARY: '/library' is now a dedicated, scalable track workspace: virtualized
+         table, URL-backed filters, saved views, column manager, right-side
+         track inspector (drawer on narrow screens), keyboard navigation, and
+         a compact card list on phones. Server-side pagination preserved
+         (100 rows/page; the full library is never loaded into the browser).
+
+DETAILS:
+  Backend (additive only):
+  - GET /api/tracks gains: has_bpm (true/false), key (camelot/musical,
+    case-insensitive), folder (path prefix, root-contained). New allowlisted
+    sort columns: genre, key, duration, bitrate, status.
+  - 7 new route tests (tests/test_tracks_filters.py) incl. SQL-injection-safe
+    sort fallback and folder containment. Suite: 877 passed.
+
+  Frontend (frontend/src/pages/library/):
+  - LibraryWorkspace, LibraryToolbar, FilterBar, TrackTable (TanStack Virtual),
+    TrackRow, TrackInspector, TrackCardList, ColumnManager, SavedViewSelector.
+  - URL-backed state (q, page, sort, order, issue, status, confidence, genre,
+    key, bpm_min/max, missing, track, view) with strict sanitization of
+    invalid values (libraryParams.ts). Views are shareable/restorable.
+  - Saved views: built-ins (All tracks, Needs attention, Missing artist/title/
+    BPM/key, Weak filename parse) + user views persisted to localStorage
+    (definitions only — never track data). Rename/delete supported.
+  - Filters map only to real API behavior; no dead controls.
+  - Inspector shows only real data: metadata, file, processing state, issues,
+    recommended route, and the genuine enrichment proposal (current vs
+    proposed) when one exists in the queue. No fabricated waveforms/energy.
+  - Keyboard: '/' focuses search, ArrowUp/Down navigate, Enter opens
+    inspector, Space toggles selection, Escape closes. Hints in footer.
+  - Selection: multi-select with count + clear; resets when the result-set
+    context changes. No bulk write actions (deferred to Phase D by design).
+  - Requests: TanStack Query with AbortSignal cancellation, 300ms debounced
+    search, keepPreviousData during refetch (shows 'refreshing…').
+  - Loading / error / empty / filtered-empty states are distinct; API failure
+    shows 'count unavailable' — never zero.
+  - 15 new Vitest tests (libraryParams sanitation, savedViews store).
+    Frontend total: 26 passed.
+
+FILES: backend/app/api/routes/tracks.py, backend/app/services/track_service.py,
+       tests/test_tracks_filters.py, frontend/src/pages/library/*,
+       frontend/src/styles/library.css, frontend/src/api/client.ts (signal),
+       frontend/src/lib/format.ts, frontend/src/App.tsx
+
+MIGRATION: none. /library now renders the new workspace; /issues, /enrichment,
+           /audit, /folders continue to use the previous combined page until
+           Phase D consolidates review flows.
+
 [2026-07-14] — Phase A+B: runtime foundation, design system, command-center home
 ----------------------------------------------------------------------
 TYPE: Product redesign foundation (backend additive, frontend shell + home)

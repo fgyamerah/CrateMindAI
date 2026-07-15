@@ -13,6 +13,19 @@ export function percentValue(value: number, total: number): number {
   return Math.min(100, Math.round((value / total) * 100))
 }
 
+export function formatDuration(seconds: number | null | undefined): string {
+  if (seconds === null || seconds === undefined || Number.isNaN(seconds)) return '—'
+  const m = Math.floor(seconds / 60)
+  const s = Math.round(seconds % 60)
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
+export function formatFileSize(bytes: number | null | undefined): string {
+  if (!bytes) return '—'
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 export function formatRelativeTime(iso: string | null | undefined): string {
   if (!iso) return '—'
   const then = new Date(iso).getTime()

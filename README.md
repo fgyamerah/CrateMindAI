@@ -358,7 +358,7 @@ Supported routes:
 | Route | Workflow |
 |---|---|
 | `/` | Command-center home: readiness, health, pending reviews, next action |
-| `/library` | Library workspace and track browsing |
+| `/library` | Library workspace: virtualized track table, URL-backed filters, saved views, inspector, keyboard navigation |
 | `/quality` | Library quality summary |
 | `/issues` | Track issue review |
 | `/enrichment` | Enrichment queue review |
@@ -380,6 +380,25 @@ to `/`; `/collection` and `/tracks` redirect to `/library`; the singular
 `Collection.tsx` includes unfinished controls, `Settings.tsx` is a placeholder,
 and `Dashboard.tsx`/`Tracks.tsx` duplicate the current library and operations
 surfaces.
+
+### Library workspace (`/library`)
+
+- **Filters** (all backed by real API behavior): search (artist/title/filename),
+  issue (missing artist/title, weak filename parse, suspicious artist/title),
+  status, parse confidence, genre, Camelot key, missing BPM/key, BPM range.
+  Filter, sort, page, and selected track are kept in the URL, so views are
+  shareable and restorable; invalid URL values are sanitized.
+- **Columns**: Artist, Title, Genre, BPM, Key, Length, Bitrate, Issues, Parse,
+  Status, Folder — visibility managed via the Columns menu (persisted locally).
+- **Saved views**: built-in (All tracks, Needs attention, Missing artist/title/
+  BPM/key, Weak filename parse) plus user-defined views stored locally
+  (filter definitions only, never track data).
+- **Keyboard**: `/` focuses search · `↑/↓` navigate rows · `Enter` opens the
+  inspector · `Space` toggles selection · `Esc` closes the inspector.
+- **Large libraries**: server-side pagination (100 rows/page) with virtualized
+  rows; the complete library is never loaded into the browser.
+- **Mobile**: below 768px the table is replaced by compact track cards with a
+  detail drawer; the inspector becomes a drawer below 1280px.
 
 Core dashboard capabilities:
 

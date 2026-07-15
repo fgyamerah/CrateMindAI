@@ -4,6 +4,7 @@ import { queryClient } from './lib/queryClient'
 import AppShell from './components/shell/AppShell'
 import ErrorBoundary from './components/ErrorBoundary'
 import Home from './pages/Home'
+import LibraryWorkspace from './pages/library/LibraryWorkspace'
 import CrateMind from './pages/CrateMind'
 import BpmReview from './pages/BpmReview'
 import Export from './pages/Export'
@@ -22,7 +23,7 @@ export default function App() {
         <Routes>
           <Route element={<AppShell />}>
             <Route index element={<ErrorBoundary><Home /></ErrorBoundary>} />
-            <Route path="library" element={<ErrorBoundary><CrateMind /></ErrorBoundary>} />
+            <Route path="library" element={<ErrorBoundary><LibraryWorkspace /></ErrorBoundary>} />
             <Route path="issues" element={<ErrorBoundary><CrateMind /></ErrorBoundary>} />
             <Route path="enrichment" element={<ErrorBoundary><CrateMind /></ErrorBoundary>} />
             <Route path="audit" element={<ErrorBoundary><CrateMind /></ErrorBoundary>} />
